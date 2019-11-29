@@ -40,7 +40,7 @@ getColDist <- function(lon, lat, colonyLon, colonyLat) {
 #' Calculates the distance between the current location and the previous location in a track.
 #'
 #' @param lon A vector of longitude values.
-#' @param lon A vector of latitude values.
+#' @param lat A vector of latitude values.
 #' @return A vector of values (in km) giving the distance between each location in the track and the previous location.
 #'
 #' @section Warning:
@@ -48,9 +48,48 @@ getColDist <- function(lon, lat, colonyLon, colonyLat) {
 #' Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
 
 getDist <- function(lon, lat) {
+
+  if (min(lon) < -180 | max(lon) > 180) {
+    stop("Longitude values are not between -180 and 180")
+  }
+
+  if (min(lat) < -180 | max(lat) > 90) {
+    stop("Longitude values are not between -180 and 180")
+  }
+
   dd <- data.frame(lon = lon, lat = lat)
+
+
   c(NA,
     raster::pointDistance(dd[2:nrow(dd),c("lon","lat")],
                   dd[1:(nrow(dd)-1),c("lon","lat")],
                   lonlat = T)/1000)
+}
+
+# --------------------------------------------------------------------------------------------------------------
+#' Calculates the time between between the current location and the previous location in a track.
+#'
+#' @param time A vector of time values in POSIXct format.
+#' @param units The units of time for the output (eg. "days","hours","min","sec")
+#' @return A numeric vector of values in the requested time unit, giving the time between each location in the track and the previous location.
+#'
+#' @section Warning:
+#' This function assumes that time values are in chronological order and all values are from a single individual.
+#' Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
+
+getDT <- function(time, units = "hours") {
+
+  if (is.na.POSIXlt(time) == F) {
+    stop("time values must be in POSIXct format")
+    }
+
+  tt <- c(NA,
+    as.numeric(difftime(time[2:length(time)],
+                        time[1:(length(time) - 1)],
+                        units = units)))
+  if (length(tt < 0) > 0) {
+    stop("Negative values for time difference, data need to be in chronological order before running getDT")
+  }
+
+  tt
 }
