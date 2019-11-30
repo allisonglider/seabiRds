@@ -6,9 +6,9 @@
 #' @param gpsID Character string with name of the field containing GPS IDs.
 #' @param onTime Character string with name of the field containing deployment start time, must be in a POSIXct compatible format.
 #' @param offTime Character string with name of the field containing deployment end time, must be in a POSIXct compatible format.
-#' @param dateFormat Character string specifying the POSIX standard format for times (default "%Y-%m-%d %H:%M")
+#' @param dateFormat Character string specifying the POSIX standard format for times.
 #' @param depTZ Timezone of deployment.
-#' @param gpsTZ Timezone of GPS data (default is "UTC").
+#' @param gpsTZ Timezone of GPS data.
 #' @param sinceDate Limit output to data collected after a certain date.
 #' @param keep List of variable names for other dpeloyment data to keep with output.
 #' @return A new dataframe with deployment times in the same timzone as the GPS data and field names that are compatible with other functions in this package.
