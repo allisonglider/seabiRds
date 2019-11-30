@@ -19,11 +19,11 @@ formatDeployments(deployments, birdID, gpsID, onTime, offTime,
 
 \item{offTime}{Character string with name of the field containing deployment end time, must be in a POSIXct compatible format.}
 
-\item{dateFormat}{Character string specifying the POSIX standard format for times (default "%Y-%m-%d %H:%M")}
+\item{dateFormat}{Character string specifying the POSIX standard format for times.}
 
 \item{depTZ}{Timezone of deployment.}
 
-\item{gpsTZ}{Timezone of GPS data (default is "UTC").}
+\item{gpsTZ}{Timezone of GPS data.}
 
 \item{sinceDate}{Limit output to data collected after a certain date.}
 
