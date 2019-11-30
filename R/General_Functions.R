@@ -87,9 +87,52 @@ getDT <- function(time, units = "hours") {
     as.numeric(difftime(time[2:length(time)],
                         time[1:(length(time) - 1)],
                         units = units)))
+
   if (length(tt < 0) > 0) {
     stop("Negative values for time difference, data need to be in chronological order before running getDT")
   }
 
   tt
+}
+
+# ---------------------------------------------------------------------------------------
+#' Calculates the ground speed for each location in a track and removes locations requiring movements above a speed threshold.
+#'
+#' @param data Data frame with tracking data for 1 individual, must contain fields with longitude, latitude, and time.
+#' @param lon Character string giving the name of longitude variable.
+#' @param lat Character string giving the name of latitude variable.
+#' @param time Character string giving the name of the time variable, time must be in POSIXct format.
+#' @param threshold Maximum ground speed for species in km/hr.
+#'
+#' @return Data frame with speed, distance between points, time between points added. Locations with unrealistic speeds are removed.
+#' The alogrithm is iterative, so consecutive unrealistic locations will be removed.
+#'
+#' @section Warning:
+#' This function assumes that time values are in chronological order and all values are from a single individual.
+#' Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
+
+filterSpeed <- function(data, lon, lat, time, threshold) {
+
+  if (is.na.POSIXlt(data[,time]) == F) {
+    stop("time values must be in POSIXct format")
+  }
+
+  if (min(lon) < -180 | max(lon) > 180) {
+    stop("Longitude values are not between -180 and 180")
+  }
+
+  if (min(lat) < -180 | max(lat) > 90) {
+    stop("Longitude values are not between -180 and 180")
+  }
+
+  maxSpeed <- threshold + 1
+  while (maxSpeed > threshold) {
+    data$dist <- getDist(data[,lon], data[,lat])
+    data$dt <- getDT(data[,time], units = "hours")
+    data$speed <- data$dist/data$dt
+    data <- subset(data, data$speed <= threshold)
+    maxSpeed <- max(data$speed, na.rm = T)
+  }
+
+  data
 }

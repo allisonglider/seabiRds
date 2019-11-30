@@ -9,7 +9,7 @@ getDist(lon, lat)
 \arguments{
 \item{lon}{A vector of longitude values.}
 
-\item{lon}{A vector of latitude values.}
+\item{lat}{A vector of latitude values.}
 }
 \value{
 A vector of values (in km) giving the distance between each location in the track and the previous location.
@@ -19,6 +19,7 @@ Calculates the distance between the current location and the previous location i
 }
 \section{Warning}{
 
-This function assumes that longitude and latitude values are in chronological order and all values are from a single individual
+This function assumes that longitude and latitude values are in chronological order and all values are from a single individual.
+Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
 }
 
