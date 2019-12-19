@@ -79,12 +79,14 @@ prepGPSData <- function(inputFolder,
                         deployments,
                         tagTZ = "UTC",
                         tagType = "Technosmart",
+                        speedThreshold = NA,
                         plot = T) {
 
   if (tagType == "Technosmart") {
     output <- prepTechnosmartGPS(inputFolder = inputFolder,
                                  deployments = deployments,
                                  tagTZ = tagTZ,
+                                 speedThreshold = speedThreshold,
                                  plot = plot)
   }
 
@@ -93,10 +95,13 @@ prepGPSData <- function(inputFolder,
   #' @export prepGPSData
 }
 
+# ---------------------------------------------------------------------------------------------------------------
+
 prepTechnosmartGPS <- function(inputFolder,
                                deployments,
                                tagTZ = "UTC",
                                tagType = "Technosmart",
+                               speedThreshold = NA,
                                plot = T) {
 
   gpsFiles <- list.files(inputFolder, pattern = '.txt', full.names = T)
@@ -160,6 +165,14 @@ prepTechnosmartGPS <- function(inputFolder,
         subData <- subData[,c("band","tag","deployment",names(temp)[!(names(temp) %in% c("band","tag","deployment"))])]
 
         if (nrow(subData) > 5) {
+
+          subData$dist <- getDist(subData$lon, subData$lat)
+          subData$dt <- getDT(subData$time, units = "hours")
+          subData$speed <- subData$dist/subData$dt
+
+          if (!is.na(speedThreshold)) {
+            subData <- filterSpeed(subData, threshold = speedThreshold)
+          }
 
           output <- rbind(output, subData)
           #print(paste("Finished: " ,subData$deployment[1]))
