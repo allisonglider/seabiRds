@@ -5,8 +5,8 @@
 \title{Prepares deployment data for use in clipping tracks}
 \usage{
 formatDeployments(deployments, birdID, gpsID, onTime, offTime,
-  dateFormat = "\%Y-\%m-\%d \%H:\%M", gpsFile, depTZ, gpsTZ = "UTC",
-  sinceDate = NULL, keep = NULL)
+  dateFormat = "\%Y-\%m-\%d \%H:\%M", colonyLon = NA, colonyLat = NA,
+  gpsFile, depTZ, gpsTZ = "UTC", sinceDate = NULL, keep = NULL)
 }
 \arguments{
 \item{deployments}{A data frame with deployment data.}
@@ -20,6 +20,10 @@ formatDeployments(deployments, birdID, gpsID, onTime, offTime,
 \item{offTime}{Character string with name of the field containing deployment end time, must be in a POSIXct compatible format.}
 
 \item{dateFormat}{Character string specifying the POSIX standard format for times.}
+
+\item{colonyLon}{Longitude of colony (or nest or deployment), default is NULL.}
+
+\item{colonyLat}{Latitude of colony (or nest or deployment), default is NULL.}
 
 \item{depTZ}{Timezone of deployment.}
 
