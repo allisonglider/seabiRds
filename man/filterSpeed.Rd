@@ -4,7 +4,7 @@
 \alias{filterSpeed}
 \title{Calculates the ground speed for each location in a track and removes locations requiring movements above a speed threshold.}
 \usage{
-filterSpeed(data, lon, lat, time, threshold)
+filterSpeed(data, lon = "lon", lat = "lat", time = "time", threshold)
 }
 \arguments{
 \item{data}{Data frame with tracking data for 1 individual, must contain fields with longitude, latitude, and time.}

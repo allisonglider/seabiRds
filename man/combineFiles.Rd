@@ -5,7 +5,7 @@
 \title{Combines files from a folder into a single dataframe}
 \usage{
 combineFiles(files, pattern = NULL, type = "csv", sep = NULL,
-  stringsAsFactors = F, header = T)
+  stringsAsFactors = F, header = T, sheetIndex = 1)
 }
 \arguments{
 \item{files}{a list  of file paths to the files to be combined.}
@@ -21,7 +21,7 @@ combineFiles(files, pattern = NULL, type = "csv", sep = NULL,
 \item{stringAsFactors}{True or False if strings should be read as factors, defaults to F}
 }
 \value{
-Data frame with all files combined.
+Dataframe with all files combined.
 }
 \description{
 Combines files from a folder into a single dataframe
