@@ -54,7 +54,7 @@ formatDeployments <- function(deployments,
   dep$offTime <- lubridate::with_tz(dep$offTime, tz = tagTZ)
 
   # Only keep records where the GPS was recovered
-  dep <- subset(dep,is.na(dep$offTime) == F)
+  dep <- subset(dep,is.na(dep$offTime) == F & is.na(dep$gpsFile) == F)
 
   # If using sinceDate, only keep deployments after this date
   if (is.null(sinceDate) == F) {dep <- subset(dep, dep$offTime >= as.POSIXct(sinceDate, tagTZ))}
