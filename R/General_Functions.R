@@ -84,7 +84,7 @@ getDist <- function(lon, lat) {
 
 getDT <- function(time, units = "hours") {
 
-  if (is.na.POSIXlt(time) == F) {
+  if (class(time)[1] != "POSIXct") {
     stop("time values must be in POSIXct format")
     }
 
@@ -93,7 +93,7 @@ getDT <- function(time, units = "hours") {
                         time[1:(length(time) - 1)],
                         units = units)))
 
-  if (length(tt < 0) > 0) {
+  if (min(tt < 0, na.rm = T)) {
     stop("Negative values for time difference, data need to be in chronological order before running getDT")
   }
 
@@ -118,17 +118,17 @@ getDT <- function(time, units = "hours") {
 #' This function assumes that time values are in chronological order and all values are from a single individual.
 #' Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
 
-filterSpeed <- function(data, lon, lat, time, threshold) {
+filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold) {
 
-  if (is.na.POSIXlt(data[,time]) == F) {
+  if (class(data[,"time"])[1] != "POSIXct") {
     stop("time values must be in POSIXct format")
   }
 
-  if (min(lon) < -180 | max(lon) > 180) {
+  if (min(data[,"lon"]) < -180 | max(data[,"lon"]) > 180) {
     stop("Longitude values are not between -180 and 180")
   }
 
-  if (min(lat) < -180 | max(lat) > 90) {
+  if (min(data[,"lat"]) < -90 | max(data[,"lat"]) > 90) {
     stop("Longitude values are not between -180 and 180")
   }
 
@@ -137,7 +137,7 @@ filterSpeed <- function(data, lon, lat, time, threshold) {
     data$dist <- getDist(data[,lon], data[,lat])
     data$dt <- getDT(data[,time], units = "hours")
     data$speed <- data$dist/data$dt
-    data <- subset(data, data$speed <= threshold)
+    data <- subset(data, data$speed <= threshold | is.na(data$speed))
     maxSpeed <- max(data$speed, na.rm = T)
   }
 
@@ -155,7 +155,8 @@ filterSpeed <- function(data, lon, lat, time, threshold) {
 #' @param stringAsFactors True or False if strings should be read as factors, defaults to F
 #' @param header Should first row be read as file header.
 #'
-#' @return Data frame with all files combined.
+#' @return Dataframe with all files combined.
+#' @import xlsx
 
 
 combineFiles <- function(files,
@@ -163,7 +164,8 @@ combineFiles <- function(files,
                          type = "csv",
                          sep = NULL,
                          stringsAsFactors = F,
-                         header = T) {
+                         header = T,
+                         sheetIndex = 1) {
 
   temp <- data.frame()
 
@@ -171,6 +173,15 @@ combineFiles <- function(files,
     for (ff in files) {
       if (file.size(ff) > 0) {
         tt <- read.csv(ff, sep = sep, header = header, stringsAsFactors = stringsAsFactors)
+        temp <- rbind(temp, tt)
+      }
+    }
+  }
+
+  if (type %in% c("xlsx")) {
+    for (ff in files) {
+      if (file.size(ff) > 0) {
+        tt <- read.xlsx(ff, sep = sep, sheetIndex = sheetIndex, stringsAsFactors = stringsAsFactors)
         temp <- rbind(temp, tt)
       }
     }
