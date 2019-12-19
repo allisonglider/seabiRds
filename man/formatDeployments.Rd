@@ -4,16 +4,16 @@
 \alias{formatDeployments}
 \title{Prepares deployment data for use in clipping tracks}
 \usage{
-formatDeployments(deployments, birdID, gpsID, onTime, offTime,
+formatDeployments(deployments, band, tag, onTime, offTime,
   dateFormat = "\%Y-\%m-\%d \%H:\%M", colonyLon = NA, colonyLat = NA,
-  gpsFile, depTZ, gpsTZ = "UTC", sinceDate = NULL, keep = NULL)
+  gpsFile, depTZ, tagTZ = "UTC", sinceDate = NULL, keep = NULL)
 }
 \arguments{
 \item{deployments}{A data frame with deployment data.}
 
-\item{birdID}{Character string with name of the field containing bird IDs.}
+\item{band}{Character string with name of the field containing band number or individual identifier.}
 
-\item{gpsID}{Character string with name of the field containing GPS IDs.}
+\item{tag}{Character string with name of the field containing tag IDs.}
 
 \item{onTime}{Character string with name of the field containing deployment start time, must be in a POSIXct compatible format.}
 
@@ -27,7 +27,7 @@ formatDeployments(deployments, birdID, gpsID, onTime, offTime,
 
 \item{depTZ}{Timezone of deployment.}
 
-\item{gpsTZ}{Timezone of GPS data.}
+\item{tagTZ}{Timezone of GPS data.}
 
 \item{sinceDate}{Limit output to data collected after a certain date.}
 
