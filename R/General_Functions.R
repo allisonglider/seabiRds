@@ -21,7 +21,10 @@
 getMode <- function(x) {
   uniqv <- unique(x)
   uniqv[which.max(tabulate(match(x, uniqv)))]
+  #' @export getMode
 }
+
+
 
 # ---------------------------------------------------------------------------------------------------------------
 #' Calculates the distance between the colony (or any fixed location) and each point in a track.
@@ -34,7 +37,8 @@ getMode <- function(x) {
 
 getColDist <- function(lon, lat, colonyLon, colonyLat) {
   raster::pointDistance(data.frame(lon = lon, lat = lat), c(colonyLon, colonyLat), lonlat = T)/1000 #distance from colony in km
-}
+  #' @export getColDist
+  }
 
 # --------------------------------------------------------------------------------------------------------------
 #' Calculates the distance between the current location and the previous location in a track.
@@ -64,6 +68,7 @@ getDist <- function(lon, lat) {
     raster::pointDistance(dd[2:nrow(dd),c("lon","lat")],
                   dd[1:(nrow(dd)-1),c("lon","lat")],
                   lonlat = T)/1000)
+  #' @export getDist
 }
 
 # --------------------------------------------------------------------------------------------------------------
@@ -93,6 +98,8 @@ getDT <- function(time, units = "hours") {
   }
 
   tt
+
+  #' @export getDT
 }
 
 # ---------------------------------------------------------------------------------------
@@ -135,4 +142,42 @@ filterSpeed <- function(data, lon, lat, time, threshold) {
   }
 
   data
+  #' @export filterSpeed
+}
+
+# ---------------------------------------------------------------------------------------
+#' Combines files from a folder into a single dataframe
+#'
+#' @param files a list  of file paths to the files to be combined.
+#' @param pattern Character string of pattern in file name to select files.
+#' @param type File type suffix, supported options are "txt", "csv", and "xlsx".
+#' @param sep File delimiter, if required.
+#' @param stringAsFactors True or False if strings should be read as factors, defaults to F
+#' @param header Should first row be read as file header.
+#'
+#' @return Data frame with all files combined.
+
+
+combineFiles <- function(files,
+                         pattern = NULL,
+                         type = "csv",
+                         sep = NULL,
+                         stringsAsFactors = F,
+                         header = T) {
+
+  temp <- data.frame()
+
+  if (type %in% c("csv","txt")) {
+    for (ff in files) {
+      if (file.size(ff) > 0) {
+        tt <- read.csv(ff, sep = sep, header = header, stringsAsFactors = stringsAsFactors)
+        temp <- rbind(temp, tt)
+      }
+    }
+  }
+
+  temp
+
+  #' @export combineFiles
+
 }
