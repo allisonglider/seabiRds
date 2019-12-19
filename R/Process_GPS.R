@@ -54,7 +54,7 @@ formatDeployments <- function(deployments,
   dep$offTime <- lubridate::with_tz(dep$offTime, tz = tagTZ)
 
   # Only keep records where the GPS was recovered
-  dep <- subset(dep,is.na(dep$offTime) == F)
+  dep <- subset(dep, is.na(dep$offTime) == F & is.na(dep$gpsFile) == F)
 
   # If using sinceDate, only keep deployments after this date
   if (is.null(sinceDate) == F) {dep <- subset(dep, dep$offTime >= as.POSIXct(sinceDate, tagTZ))}
@@ -66,43 +66,36 @@ formatDeployments <- function(deployments,
 }
 
 # ---------------------------------------------------------------------------------------------------------------
-#' Reads in raw GPS data, clips tracks to deployment times, and calculates distance from colony.
+#' Reads in raw GPS data and sets up standard field names.
 #'
 #' @param inputFolder Folder containing all the raw GPS files to be processed.
 #' @param deployments Name of object with deployment data.
 #' @param tagTZ Timezone of GPS data.
 #' @param tagType Type of GPS biologger used, options are "Technosmart".
-#' @param plot Should a plot be created for each deployment (TRUE or FALSE).
 #' @return A new dataframe containing all GPS data.
 
-prepGPSData <- function(inputFolder,
+readGPSData <- function(inputFolder,
                         deployments,
                         tagTZ = "UTC",
-                        tagType = "Technosmart",
-                        speedThreshold = NA,
-                        plot = T) {
+                        tagType = "Technosmart") {
 
   if (tagType == "Technosmart") {
-    output <- prepTechnosmartGPS(inputFolder = inputFolder,
+    output <- readTechnosmartGPS(inputFolder = inputFolder,
                                  deployments = deployments,
-                                 tagTZ = tagTZ,
-                                 speedThreshold = speedThreshold,
-                                 plot = plot)
+                                 tagTZ = tagTZ)
   }
 
   output
 
-  #' @export prepGPSData
+  #' @export readGPSData
 }
 
 # ---------------------------------------------------------------------------------------------------------------
 
-prepTechnosmartGPS <- function(inputFolder,
+readTechnosmartGPS <- function(inputFolder,
                                deployments,
                                tagTZ = "UTC",
-                               tagType = "Technosmart",
-                               speedThreshold = NA,
-                               plot = T) {
+                               tagType = "Technosmart") {
 
   gpsFiles <- list.files(inputFolder, pattern = '.txt', full.names = T)
   output <- data.frame()
@@ -125,7 +118,7 @@ prepTechnosmartGPS <- function(inputFolder,
       if (nrow(temp) > 5) {
 
         # set names and format date
-        names(temp) <- c("time","lat","lon","altitude","groundspeed","satellites","hdop","maxsignal")
+        names(temp) <- c("time","lat","lon","altitude","gpsspeed","satellites","hdop","maxsignal")
         temp$time <- as.POSIXct(strptime(temp$time, "%d-%m-%Y,%T"), tz = tagTZ)
         temp <- temp[order(temp$time),]
 
@@ -133,51 +126,8 @@ prepTechnosmartGPS <- function(inputFolder,
         temp$band <- deployments$band[i]
         temp$tag <- deployments$tag[i]
         temp$deployment <- deployments$gpsFile[i]
-
-        if (is.na(dep$colonyLon[i])) {
-          temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = subData$lon[1], colonyLat = subData$lat[1])
-          yy <- "Distance from first location (km)"
-
-        } else {
-          temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = dep$colonyLon[i], colonyLat = dep$colonyLat[i])
-          yy <- "Distance from colony (km)"
-        }
-
-        if (plot) {
-
-          ss <- min(c(temp$time[1],deployments$onTime[i]))
-          ee <- max(c(temp$time[nrow(temp)],deployments$offTime[i]))
-
-          myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = colDist)) +
-            ggplot2::geom_line() +
-            ggplot2::geom_point() +
-            ggplot2::geom_vline(xintercept = c(deployments$onTime[i], deployments$offTime[i]), col = "red") +
-            ggplot2::xlim(ss,ee) +
-            ggplot2::theme_light() +
-            ggplot2::labs(title = paste(temp$deployment[1]), y = yy, x = "Time")
-          print(myPlot) # plot distance from colony against time
-
-          readline("Press [enter] for next plot")
-        }
-
-        # subset data collected during the deployment
-        subData <- subset(temp, temp$time >= deployments$onTime[i] & temp$time <= deployments$offTime[i] & temp$lon != 0)
-        subData <- subData[,c("band","tag","deployment",names(temp)[!(names(temp) %in% c("band","tag","deployment"))])]
-
-        if (nrow(subData) > 5) {
-
-          subData$dist <- getDist(subData$lon, subData$lat)
-          subData$dt <- getDT(subData$time, units = "hours")
-          subData$speed <- subData$dist/subData$dt
-
-          if (!is.na(speedThreshold)) {
-            subData <- filterSpeed(subData, threshold = speedThreshold)
-          }
-
-          output <- rbind(output, subData)
-          #print(paste("Finished: " ,subData$deployment[1]))
-
-        } else (print(paste("Less than 5 locations for", dep$gpsFile[i], "- not processed")))
+        temp <- temp[,c("band","tag","deployment",names(temp)[!(names(temp) %in% c("band","tag","deployment"))])]
+        output <- rbind(output, temp)
 
       } else (print(paste("Less than 5 locations for", dep$gpsFile[i], "- not processed")))
 
@@ -186,5 +136,81 @@ prepTechnosmartGPS <- function(inputFolder,
   }
 
   output
+}
 
+# ---------------------------------------------------------------------------------------------------------------
+#' Cleans up GPS data, by clipping to deployment times and filtering unrealistic locations.
+#'
+#' @param data Name of object with formatted GPS data.
+#' @param deployments Name of object with formatted deployment data.
+#' @param tagTZ Timezone of GPS data.
+#' @param speedThresold Fastest possible movement in km/hr.
+#' @param plot Should data be plotted (TRUE or FALSE).
+#' @return A new dataframe containing cleaned GPS data.
+
+cleanGPSData <- function(data,
+                         deployments,
+                         tagTZ = "UTC",
+                         speedThreshold = NA,
+                         plot = T)
+{
+
+  output <- data.frame()
+  theDeps <- unique(data$deployment)
+
+  for (dd in theDeps) {
+    temp <- subset(data, data$deployment == dd)
+    tt <- subset(deployments, deployments$gpsFile == dd)
+
+    if (is.na(tt$colonyLon)) {
+      temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = subData$lon[1], colonyLat = subData$lat[1])
+      yy <- "Distance from first location (km)"
+
+    } else {
+      temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = tt$colonyLon, colonyLat = tt$colonyLat)
+      yy <- "Distance from colony (km)"
+    }
+
+    newData <- subset(temp, temp$time >= tt$onTime & temp$time <= tt$offTime)
+
+    if (nrow(newData) > 5) {
+
+      newData$dist <- getDist(newData$lon, newData$lat)
+      newData$dt <- getDT(newData$time, units = "hours")
+      newData$speed <- newData$dist/newData$dt
+
+      if (!is.na(speedThreshold)) {
+        newData <- filterSpeed(newData, threshold = speedThreshold)
+      }
+
+      if (plot) {
+
+        ss <- min(c(temp$time[1],tt$onTime))
+        ee <- max(c(temp$time[nrow(temp)],tt$offTime))
+
+        suppressWarnings(
+          myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = colDist)) +
+            ggplot2::geom_line(col = "red") +
+            ggplot2::geom_point(col = "red") +
+            ggplot2::geom_point(data = newData, ggplot2::aes(x = time, y = colDist)) +
+            ggplot2::geom_line(data = newData, ggplot2::aes(x = time, y = colDist)) +
+            ggplot2::geom_vline(xintercept = c(tt$onTime, tt$offTime), linetype = 2, col = "red") +
+            ggplot2::xlim(ss,ee) +
+            ggplot2::theme_light() +
+            ggplot2::labs(title = paste(temp$deployment[1]), y = yy, x = "Time")
+        )
+        print(myPlot)
+
+        readline("Press [enter] for next plot")
+      }
+
+
+
+      output <- rbind(output, newData)
+    } else (print(paste("Less than 5 deployed locations for", tt$gpsFile, "- removed")))
+  }
+
+  output
+
+  #' @export cleanGPSData
 }
