@@ -85,6 +85,13 @@ readGPSData <- function(inputFolder,
                                  tagTZ = tagTZ)
   }
 
+  if (tagType == "Ecotone") {
+    output <- readEcotoneGPS(inputFolder = inputFolder,
+                                 deployments = deployments,
+                                 tagTZ = tagTZ)
+  }
+
+
   output
 
   #' @export readGPSData
@@ -94,8 +101,7 @@ readGPSData <- function(inputFolder,
 
 readTechnosmartGPS <- function(inputFolder,
                                deployments,
-                               tagTZ = "UTC",
-                               tagType = "Technosmart") {
+                               tagTZ = "UTC") {
 
   gpsFiles <- list.files(inputFolder, pattern = '.txt', full.names = T)
   output <- data.frame()
@@ -126,7 +132,7 @@ readTechnosmartGPS <- function(inputFolder,
         temp$band <- deployments$band[i]
         temp$tag <- deployments$tag[i]
         temp$deployment <- deployments$gpsFile[i]
-        temp <- temp[,c("band","tag","deployment",names(temp)[!(names(temp) %in% c("band","tag","deployment"))])]
+        temp <- temp[,c("band","tag","deployment","time","lon","lat",names(temp)[!(names(temp) %in% c("band","tag","deployment","time","lon","lat"))])]
         output <- rbind(output, temp)
 
       } else (print(paste("Less than 5 locations for", dep$gpsFile[i], "- not processed")))
@@ -134,6 +140,46 @@ readTechnosmartGPS <- function(inputFolder,
     } else (print(paste("No gps files found for", dep$gpsFile[i])))
 
   }
+
+  output
+}
+
+# ---------------------------------------------------------------------------------------------------------------
+readEcotoneGPS <- function(inputFolder,
+                           deployments,
+                           tagTZ = "UTC") {
+
+
+  theFiles <- list.files(inputFolder, full.names = T)
+
+  output <- combineFiles(files = theFiles,
+                       pattern = "csv",
+                       type = "csv",
+                       sep = ";",
+                       stringsAsFactors = F,
+                       header = T)
+  output <- unique(output)
+
+  output$time <- paste(output$Year, output$Month, output$Day, output$Hour, output$Minute, output$Second, sep = "-")
+  output$time <- as.POSIXct(strptime(output$time, "%Y-%m-%d-%H-%M-%S"), tz = tagTZ)
+  output <- output[order(output$Logger.ID, output$time),]
+
+  names(output) <- gsub("[.]","",names(output))
+  output$tag <- output$LoggerID
+  output$lon <- output$Longitude
+  output$lat <- output$Latitude
+  output$gpsspeed <- output$Speed
+  output <- output[,names(output)[!(names(output) %in% c("LoggerID","Longitude","Latitude",
+                                                 "Year","Month","Day","Hour","Minute","Second",
+                                                 "Rawlatitude","RawLongitude","Speed"))]]
+  names(output) <- tolower(names(output))
+
+
+  output <- merge(output, deployments[,c("tag","band","gpsFile")])
+  names(output)[names(output) == "gpsFile"] <- "deployment"
+
+  output <- output[,c("band","tag","deployment","time","lon","lat",
+                  names(output)[!(names(output) %in% c("band","tag","deployment","time","lon","lat"))])]
 
   output
 }
@@ -162,8 +208,14 @@ cleanGPSData <- function(data,
     temp <- subset(data, data$deployment == dd)
     tt <- subset(deployments, deployments$gpsFile == dd)
 
+    if ("inrange" %in% names(temp)) {
+      temp$lon[temp$inrange == 1] <- tt$colonyLon
+      temp$lat[temp$inrange == 1] <- tt$colonyLat
+      temp <- subset(temp, is.na(temp$lon) == F)
+    }
+
     if (is.na(tt$colonyLon)) {
-      temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = subData$lon[1], colonyLat = subData$lat[1])
+      temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = temp$lon[temp$time >= tt$onTime][1], colonyLat = temp$lat[temp$time >= tt$onTime][1])
       yy <- "Distance from first location (km)"
 
     } else {
@@ -188,7 +240,7 @@ cleanGPSData <- function(data,
         ss <- min(c(temp$time[1],tt$onTime))
         ee <- max(c(temp$time[nrow(temp)],tt$offTime))
 
-        suppressWarnings(
+        suppressMessages(
           myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = colDist)) +
             ggplot2::geom_line(col = "red") +
             ggplot2::geom_point(col = "red") +
@@ -203,8 +255,6 @@ cleanGPSData <- function(data,
 
         readline("Press [enter] for next plot")
       }
-
-
 
       output <- rbind(output, newData)
     } else (print(paste("Less than 5 deployed locations for", tt$gpsFile, "- removed")))
