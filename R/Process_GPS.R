@@ -109,7 +109,7 @@ readTechnosmartGPS <- function(inputFolder,
   for (i in 1:nrow(deployments)) {
 
     # get lists of file names
-    theFiles <- gpsFiles[grep(dep$gpsFile[i], gpsFiles)]
+    theFiles <- gpsFiles[grep(deployments$gpsFile[i], gpsFiles)]
 
     if (length(theFiles > 0)) {
 
@@ -135,9 +135,9 @@ readTechnosmartGPS <- function(inputFolder,
         temp <- temp[,c("band","tag","deployment","time","lon","lat",names(temp)[!(names(temp) %in% c("band","tag","deployment","time","lon","lat"))])]
         output <- rbind(output, temp)
 
-      } else (print(paste("Less than 5 locations for", dep$gpsFile[i], "- not processed")))
+      } else (print(paste("Less than 5 locations for", deployments$gpsFile[i], "- not processed")))
 
-    } else (print(paste("No gps files found for", dep$gpsFile[i])))
+    } else (print(paste("No gps files found for", deployments$gpsFile[i])))
 
   }
 
