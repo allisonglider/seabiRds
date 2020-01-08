@@ -204,9 +204,9 @@ cleanGPSData <- function(data,
   output <- data.frame()
   theDeps <- unique(data$deployment)
 
-  for (dd in theDeps) {
-    temp <- subset(data, data$deployment == dd)
-    tt <- subset(deployments, deployments$gpsFile == dd)
+  for (dd in 1:length(theDeps)) {
+    temp <- subset(data, data$deployment == theDeps[dd])
+    tt <- subset(deployments, deployments$gpsFile == theDeps[dd])
 
     if ("inrange" %in% names(temp)) {
       temp$lon[temp$inrange == 1] <- tt$colonyLon
