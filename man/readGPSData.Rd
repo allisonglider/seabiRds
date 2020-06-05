@@ -4,8 +4,7 @@
 \alias{readGPSData}
 \title{Reads in raw GPS data and sets up standard field names.}
 \usage{
-readGPSData(inputFolder, deployments, tagTZ = "UTC",
-  tagType = "Technosmart")
+readGPSData(inputFolder, deployments, tagTZ = "UTC", tagType = "Technosmart")
 }
 \arguments{
 \item{inputFolder}{Folder containing all the raw GPS files to be processed.}

@@ -4,8 +4,7 @@
 \alias{cleanGPSData}
 \title{Cleans up GPS data, by clipping to deployment times and filtering unrealistic locations.}
 \usage{
-cleanGPSData(data, deployments, tagTZ = "UTC", speedThreshold = NA,
-  plot = T)
+cleanGPSData(data, deployments, tagTZ = "UTC", speedThreshold = NA, plot = T)
 }
 \arguments{
 \item{data}{Name of object with formatted GPS data.}

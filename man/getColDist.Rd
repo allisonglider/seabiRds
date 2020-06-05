@@ -7,13 +7,11 @@
 getColDist(lon, lat, colonyLon, colonyLat)
 }
 \arguments{
-\item{lon}{A vector of longitude values.}
+\item{lon}{A vector of latitude values.}
 
 \item{colonyLon}{Longitude of the colony (or fixed location).}
 
 \item{colonyLat}{Latitude of the colony (or fixed location).}
-
-\item{lon}{A vector of latitude values.}
 }
 \value{
 A vector of values (in km) giving the distance between each location in the track and the colony (or fixed location).

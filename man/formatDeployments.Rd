@@ -4,9 +4,21 @@
 \alias{formatDeployments}
 \title{Prepares deployment data for use in clipping tracks}
 \usage{
-formatDeployments(deployments, band, tag, onTime, offTime,
-  dateFormat = "\%Y-\%m-\%d \%H:\%M", colonyLon = NA, colonyLat = NA,
-  gpsFile, depTZ, tagTZ = "UTC", sinceDate = NULL, keep = NULL)
+formatDeployments(
+  deployments,
+  band,
+  tag,
+  onTime,
+  offTime,
+  dateFormat = "\%Y-\%m-\%d \%H:\%M",
+  colonyLon = NA,
+  colonyLat = NA,
+  gpsFile,
+  depTZ,
+  tagTZ = "UTC",
+  sinceDate = NULL,
+  keep = NULL
+)
 }
 \arguments{
 \item{deployments}{A data frame with deployment data.}

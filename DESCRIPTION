@@ -14,4 +14,4 @@ Imports:
     ggplot2,
     lubridate,
     raster
-RoxygenNote: 6.1.1
+RoxygenNote: 7.1.0

@@ -4,8 +4,15 @@
 \alias{combineFiles}
 \title{Combines files from a folder into a single dataframe}
 \usage{
-combineFiles(files, pattern = NULL, type = "csv", sep = NULL,
-  stringsAsFactors = F, header = T, sheetIndex = 1)
+combineFiles(
+  files,
+  pattern = NULL,
+  type = "csv",
+  sep = NULL,
+  stringsAsFactors = F,
+  header = T,
+  sheetIndex = 1
+)
 }
 \arguments{
 \item{files}{a list  of file paths to the files to be combined.}
