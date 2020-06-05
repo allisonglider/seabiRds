@@ -24,8 +24,6 @@ getMode <- function(x) {
   #' @export getMode
 }
 
-
-
 # ---------------------------------------------------------------------------------------------------------------
 #' Calculates the distance between the colony (or any fixed location) and each point in a track.
 #'
@@ -38,7 +36,33 @@ getMode <- function(x) {
 getColDist <- function(lon, lat, colonyLon, colonyLat) {
   raster::pointDistance(data.frame(lon = lon, lat = lat), c(colonyLon, colonyLat), lonlat = T)/1000 #distance from colony in km
   #' @export getColDist
+}
+
+# ---------------------------------------------------------------------------------------------------------------
+#' Creates a unique ID for consecutive values in a time series. This is useful for createing a unique id for all dives or trips
+#' @param value A vector containing the values you want to create IDs for, can be any data type.
+#' @param maxSession A numeric value indicating the maximum number of repeating values that should be assigned the same ID. Defaults to Inf for no limit.
+#' @return a numeric vector
+
+getSessions <- function(value, maxSession = Inf) {
+  output <- 1
+  j <- 1
+  k <- 0
+  for (i in 2:length(value)) {
+    j <- ifelse(value[i] == value[i - 1], j, j + 1)
+    k <- ifelse(value[i] == value[i - 1], k + 1, 0)
+    if (k >= maxSession) {
+      j <- j + 1
+      k <- 0
+    }
+    output[i] <- j
   }
+  output
+
+  #' @export getSessions
+
+}
+
 
 # --------------------------------------------------------------------------------------------------------------
 #' Calculates the distance between the current location and the previous location in a track.
@@ -192,3 +216,4 @@ combineFiles <- function(files,
   #' @export combineFiles
 
 }
+
