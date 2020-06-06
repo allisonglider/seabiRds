@@ -54,7 +54,7 @@ formatDeployments <- function(deployments,
   dep$offTime <- lubridate::with_tz(dep$offTime, tz = tagTZ)
 
   # Only keep records where the GPS was recovered
-  dep <- subset(dep, is.na(dep$offTime) == F & is.na(dep$gpsFile) == F)
+  #dep <- subset(dep, is.na(dep$offTime) == F & is.na(dep$gpsFile) == F)
 
   # If using sinceDate, only keep deployments after this date
   if (is.null(sinceDate) == F) {dep <- subset(dep, dep$offTime >= as.POSIXct(sinceDate, tagTZ))}
@@ -108,36 +108,40 @@ readTechnosmartGPS <- function(inputFolder,
 
   for (i in 1:nrow(deployments)) {
 
-    # get lists of file names
-    theFiles <- gpsFiles[grep(deployments$gpsFile[i], gpsFiles)]
+    if (is.na(deployments$gpsFile[i]) == F) {
 
-    if (length(theFiles > 0)) {
+      # get lists of file names
+      theFiles <- gpsFiles[grep(deployments$gpsFile[i], gpsFiles)]
 
-      temp <- combineFiles(files = theFiles,
-                           pattern = "txt",
-                           type = "txt",
-                           sep = "\t",
-                           stringsAsFactors = F,
-                           header = F)
-      head(temp)
+      if (length(theFiles > 0)) {
 
-      if (nrow(temp) > 5) {
+        temp <- combineFiles(files = theFiles,
+                             pattern = "txt",
+                             type = "txt",
+                             sep = "\t",
+                             stringsAsFactors = F,
+                             header = F)
+        head(temp)
 
-        # set names and format date
-        names(temp) <- c("time","lat","lon","altitude","gpsspeed","satellites","hdop","maxsignal")
-        temp$time <- as.POSIXct(strptime(temp$time, "%d-%m-%Y,%T"), tz = tagTZ)
-        temp <- temp[order(temp$time),]
+        if (nrow(temp) > 5) {
 
-        # add fields for band and tag and deployment
-        temp$band <- deployments$band[i]
-        temp$tag <- deployments$tag[i]
-        temp$deployment <- deployments$gpsFile[i]
-        temp <- temp[,c("band","tag","deployment","time","lon","lat",names(temp)[!(names(temp) %in% c("band","tag","deployment","time","lon","lat"))])]
-        output <- rbind(output, temp)
+          # set names and format date
+          names(temp) <- c("time","lat","lon","altitude","gpsspeed","satellites","hdop","maxsignal")
+          temp$time <- as.POSIXct(strptime(temp$time, "%d-%m-%Y,%T"), tz = tagTZ)
+          temp <- temp[order(temp$time),]
 
-      } else (print(paste("Less than 5 locations for", deployments$gpsFile[i], "- not processed")))
+          # add fields for band and tag and deployment
+          temp$band <- deployments$band[i]
+          temp$tag <- deployments$tag[i]
+          temp$deployment <- deployments$gpsFile[i]
+          temp <- temp[,c("band","tag","deployment","time","lon","lat",names(temp)[!(names(temp) %in% c("band","tag","deployment","time","lon","lat"))])]
+          output <- rbind(output, temp)
 
-    } else (print(paste("No gps files found for", deployments$gpsFile[i])))
+        } else (print(paste("Less than 5 locations:", deployments$gpsFile[i], "- not processed")))
+
+      } else (print(paste("No gps files found:", deployments$gpsFile[i])))
+
+    } else (print(paste("No gps file in deployment data:", deployments$tag[i], deployments$band[i])))
 
   }
 
