@@ -149,6 +149,7 @@ readTechnosmartGPS <- function(inputFolder,
 }
 
 # ---------------------------------------------------------------------------------------------------------------
+
 readEcotoneGPS <- function(inputFolder,
                            deployments,
                            tagTZ = "UTC") {
@@ -241,6 +242,8 @@ cleanGPSData <- function(data,
 
       if (plot) {
 
+        world <- rnaturalearth::ne_countries(scale = 'medium', returnclass = 'sf')
+
         ss <- min(c(temp$time[1],tt$onTime))
         ee <- max(c(temp$time[nrow(temp)],tt$offTime))
 
@@ -255,9 +258,25 @@ cleanGPSData <- function(data,
             ggplot2::theme_light() +
             ggplot2::labs(title = paste(temp$deployment[1]), y = yy, x = "Time")
         )
-        print(myPlot)
 
+        suppressMessages(
+        myMap<- ggplot2::ggplot(data = newData) +
+          ggplot2::geom_sf(data = world) +
+          ggplot2::geom_point(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
+          ggplot2::geom_path(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
+          ggplot2::geom_point(data = newData, ggplot2::aes(x = lon, y = lat)) +
+          ggplot2::geom_path(data = newData, ggplot2::aes(x = lon, y = lat)) +
+          ggplot2::geom_point(data = tt, ggplot2::aes(x = colonyLon, y = colonyLat), fill = 'green', shape = 24, size = 3) +
+          ggplot2::coord_sf(xlim = range(temp$lon), ylim = range(temp$lat)) +
+          ggplot2::theme_light() +
+          ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90)) +
+          ggplot2::labs(title = paste(temp$deployment[1]), x = "", y = "")
+        )
+
+        pp <- plot_grid(myPlot, myMap)
+        print(pp)
         readline("Press [enter] for next plot")
+
       }
 
       output <- rbind(output, newData)
