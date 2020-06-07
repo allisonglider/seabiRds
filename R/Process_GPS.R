@@ -4,30 +4,33 @@
 #' @param deployments A data frame with deployment data.
 #' @param band Character string with name of the field containing band number or individual identifier.
 #' @param tag Character string with name of the field containing tag IDs.
+#' @param depID Character string with name of the field containing deployment ID (see Details).
 #' @param onTime Character string with name of the field containing deployment start time, must be in a POSIXct compatible format.
 #' @param offTime Character string with name of the field containing deployment end time, must be in a POSIXct compatible format.
 #' @param dateFormat Character string specifying the POSIX standard format for times.
-#' @param colonyLon Longitude of colony (or nest or deployment), default is NULL.
-#' @param colonyLat Latitude of colony (or nest or deployment), default is NULL.
+#' @param colonyLon Longitude of colony (or nest) , default is NULL.
+#' @param colonyLat Latitude of colony (or nest), default is NULL.
 #' @param depTZ Timezone of deployment.
 #' @param tagTZ Timezone of GPS data.
 #' @param sinceDate Limit output to data collected after a certain date.
 #' @param keep List of variable names for other dpeloyment data to keep with output.
+#'
+#' @details
+#'
+#' depID is the key field for matching deployment information to the GPS data. If your GPS data has a single data file for
+#' each deployment (Technosmart units), then the depID should be consistent with the name of this file. If you have remotely
+#' downloaded data, where all the locations from all units are mixed together (Ecotone units), then leave this field as NA. The
+#' function willcreate a 'depID' based on the tag and band from each deployment.
+#'
+#' depTZ and tagTZ are used to make sure a consistent time zone is used clip the GPS data. The output times from this function
+#' will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
+#' Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
+#'
 #' @return A new dataframe with deployment times in the same timzone as the GPS data and field names that are compatible with other functions in this package.
 
-formatDeployments <- function(deployments,
-                              band,
-                              tag,
-                              onTime,
-                              offTime,
-                              dateFormat = "%Y-%m-%d %H:%M",
-                              colonyLon = NA,
-                              colonyLat = NA,
-                              gpsFile,
-                              depTZ,
-                              tagTZ = "UTC",
-                              sinceDate = NULL,
-                              keep = NULL) {
+formatDeployments <- function(deployments, band, tag, depID, onTime, offTime, dateFormat = "%Y-%m-%d %H:%M", colonyLon = NA,
+                              colonyLat = NA, depTZ, tagTZ = "UTC", sinceDate = NULL, keep = NULL)
+  {
 
   if (is.na(colonyLon) | is.na(colonyLat)) {
     deployments$colonyLon <- NA
@@ -38,13 +41,13 @@ formatDeployments <- function(deployments,
 
   # Extract key variables from deployment data and standardize names
   if (is.null(keep) == F) {
-    dep <- deployments[,c(band, tag, onTime, offTime, colonyLon, colonyLat, gpsFile, keep)]
-    names(dep) <- c("band","tag","onTime","offTime", "colonyLon", "colonyLat","gpsFile", keep)
+    dep <- deployments[,c(band, tag, onTime, offTime, colonyLon, colonyLat, depID, keep)]
+    names(dep) <- c("band","tag","onTime","offTime", "colonyLon", "colonyLat","depID", keep)
   }
 
   if (is.null(keep) == T) {
-    dep <- deployments[,c(band, tag, onTime, offTime, colonyLon, colonyLat, gpsFile)]
-    names(dep) <- c("band","tag","onTime","offTime", "colonyLon", "colonyLat","gpsFile")
+    dep <- deployments[,c(band, tag, onTime, offTime, colonyLon, colonyLat, depID)]
+    names(dep) <- c("band","tag","onTime","offTime", "colonyLon", "colonyLat","depID")
   }
 
   # Convert deployment times to GPS times
@@ -54,10 +57,14 @@ formatDeployments <- function(deployments,
   dep$offTime <- lubridate::with_tz(dep$offTime, tz = tagTZ)
 
   # Only keep records where the GPS was recovered
-  #dep <- subset(dep, is.na(dep$offTime) == F & is.na(dep$gpsFile) == F)
+  #dep <- subset(dep, is.na(dep$offTime) == F & is.na(dep$depID) == F)
 
   # If using sinceDate, only keep deployments after this date
   if (is.null(sinceDate) == F) {dep <- subset(dep, dep$offTime >= as.POSIXct(sinceDate, tagTZ))}
+
+  if (length(unique(dep$depID)) == 1 & is.na(unique(dep$depID)[1])) {
+    dep$depID <- paste0(dep$tag, '_', dep$band)
+  }
 
   # Return formatted deployment data
   dep
@@ -79,6 +86,11 @@ readGPSData <- function(inputFolder,
                         tagTZ = "UTC",
                         tagType = "Technosmart") {
 
+  if (!(tagType %in% c("Technosmart","Ecotone"))){
+    warning("Supported tagTypes are: Technosmart and Ecotone. If you have a different biologger please contact me.")
+  }
+
+
   if (tagType == "Technosmart") {
     output <- readTechnosmartGPS(inputFolder = inputFolder,
                                  deployments = deployments,
@@ -87,8 +99,8 @@ readGPSData <- function(inputFolder,
 
   if (tagType == "Ecotone") {
     output <- readEcotoneGPS(inputFolder = inputFolder,
-                                 deployments = deployments,
-                                 tagTZ = tagTZ)
+                             deployments = deployments,
+                             tagTZ = tagTZ)
   }
 
 
@@ -103,15 +115,15 @@ readTechnosmartGPS <- function(inputFolder,
                                deployments,
                                tagTZ = "UTC") {
 
-  gpsFiles <- list.files(inputFolder, pattern = '.txt', full.names = T)
+  dd <- list.files(inputFolder, pattern = '.txt', full.names = T)
   output <- data.frame()
 
   for (i in 1:nrow(deployments)) {
 
-    if (is.na(deployments$gpsFile[i]) == F) {
+    if (is.na(deployments$depID[i]) == F) {
 
       # get lists of file names
-      theFiles <- gpsFiles[grep(deployments$gpsFile[i], gpsFiles)]
+      theFiles <- dd[grep(deployments$depID[i], dd)]
 
       if (length(theFiles > 0)) {
 
@@ -133,13 +145,13 @@ readTechnosmartGPS <- function(inputFolder,
           # add fields for band and tag and deployment
           temp$band <- deployments$band[i]
           temp$tag <- deployments$tag[i]
-          temp$deployment <- deployments$gpsFile[i]
-          temp <- temp[,c("band","tag","deployment","time","lon","lat",names(temp)[!(names(temp) %in% c("band","tag","deployment","time","lon","lat"))])]
+          temp$depID <- deployments$depID[i]
+          temp <- temp[,c("band","tag","depID","time","lon","lat",names(temp)[!(names(temp) %in% c("band","tag","depID","time","lon","lat"))])]
           output <- rbind(output, temp)
 
-        } else (print(paste("Less than 5 locations:", deployments$gpsFile[i], "- not processed")))
+        } else (print(paste("Less than 5 locations:", deployments$depID[i], "- not processed")))
 
-      } else (print(paste("No gps files found:", deployments$gpsFile[i])))
+      } else (print(paste("No gps files found:", deployments$depID[i])))
 
     } else (print(paste("No gps file in deployment data:", deployments$tag[i], deployments$band[i])))
 
@@ -158,11 +170,11 @@ readEcotoneGPS <- function(inputFolder,
   theFiles <- list.files(inputFolder, full.names = T)
 
   output <- combineFiles(files = theFiles,
-                       pattern = "csv",
-                       type = "csv",
-                       sep = ";",
-                       stringsAsFactors = F,
-                       header = T)
+                         pattern = "csv",
+                         type = "csv",
+                         sep = ";",
+                         stringsAsFactors = F,
+                         header = T)
   output <- unique(output)
 
   output$time <- paste(output$Year, output$Month, output$Day, output$Hour, output$Minute, output$Second, sep = "-")
@@ -175,16 +187,18 @@ readEcotoneGPS <- function(inputFolder,
   output$lat <- output$Latitude
   output$gpsspeed <- output$Speed
   output <- output[,names(output)[!(names(output) %in% c("LoggerID","Longitude","Latitude",
-                                                 "Year","Month","Day","Hour","Minute","Second",
-                                                 "Rawlatitude","RawLongitude","Speed"))]]
+                                                         "Year","Month","Day","Hour","Minute","Second",
+                                                         "Rawlatitude","RawLongitude","Speed"))]]
   names(output) <- tolower(names(output))
 
 
-  output <- merge(output, deployments[,c("tag","band","gpsFile")])
-  names(output)[names(output) == "gpsFile"] <- "deployment"
+  output <- merge(output, deployments[,c("tag","band","depID")])
+  output$depID <- paste0(output$tag, '_', output$band)
 
-  output <- output[,c("band","tag","deployment","time","lon","lat",
-                  names(output)[!(names(output) %in% c("band","tag","deployment","time","lon","lat"))])]
+  output <- output[,c("band","tag","depID","time","lon","lat",
+                      names(output)[!(names(output) %in% c("band","tag","depID","time","lon","lat"))])]
+
+  output <- subset(output, !is.na(output$lon))
 
   output
 }
@@ -197,6 +211,12 @@ readEcotoneGPS <- function(inputFolder,
 #' @param tagTZ Timezone of GPS data.
 #' @param speedThresold Fastest possible movement in km/hr.
 #' @param plot Should data be plotted (TRUE or FALSE).
+#'
+#' @details This function clips the GPS data to the start and end times of each GPS deployment. The link between deployment
+#' times and the GPS data is made using the 'depID' field. Because
+#' Ecotone GPS units are remotely downloaded and data from multiple devices are stored in the same output file, this connection
+#' is missing. In this case the function creates a 'depID' field in each data frame by concatenating the tag
+#'
 #' @return A new dataframe containing cleaned GPS data.
 
 cleanGPSData <- function(data,
@@ -207,11 +227,12 @@ cleanGPSData <- function(data,
 {
 
   output <- data.frame()
-  theDeps <- unique(data$deployment)
+  theDeps <- unique(data$depID)
 
   for (dd in 1:length(theDeps)) {
-    temp <- subset(data, data$deployment == theDeps[dd])
-    tt <- subset(deployments, deployments$gpsFile == theDeps[dd])
+    temp <- subset(data, data$depID == theDeps[dd])
+    tt <- subset(deployments, deployments$depID == theDeps[dd])
+    if (is.na(tt$offTime)) tt$offTime <- max(temp$time)
 
     if ("inrange" %in% names(temp)) {
       temp$lon[temp$inrange == 1] <- tt$colonyLon
@@ -242,48 +263,67 @@ cleanGPSData <- function(data,
 
       if (plot) {
 
-        world <- rnaturalearth::ne_countries(scale = 'medium', returnclass = 'sf')
-
-        ss <- min(c(temp$time[1],tt$onTime))
-        ee <- max(c(temp$time[nrow(temp)],tt$offTime))
-
-        suppressMessages(
-          myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = colDist)) +
-            ggplot2::geom_line(col = "red") +
-            ggplot2::geom_point(col = "red") +
-            ggplot2::geom_point(data = newData, ggplot2::aes(x = time, y = colDist)) +
-            ggplot2::geom_line(data = newData, ggplot2::aes(x = time, y = colDist)) +
-            ggplot2::geom_vline(xintercept = c(tt$onTime, tt$offTime), linetype = 2, col = "red") +
-            ggplot2::xlim(ss,ee) +
-            ggplot2::theme_light() +
-            ggplot2::labs(title = paste(temp$deployment[1]), y = yy, x = "Time")
-        )
-
-        suppressMessages(
-        myMap<- ggplot2::ggplot(data = newData) +
-          ggplot2::geom_sf(data = world) +
-          ggplot2::geom_point(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
-          ggplot2::geom_path(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
-          ggplot2::geom_point(data = newData, ggplot2::aes(x = lon, y = lat)) +
-          ggplot2::geom_path(data = newData, ggplot2::aes(x = lon, y = lat)) +
-          ggplot2::geom_point(data = tt, ggplot2::aes(x = colonyLon, y = colonyLat), fill = 'green', shape = 24, size = 3) +
-          ggplot2::coord_sf(xlim = range(temp$lon), ylim = range(temp$lat)) +
-          ggplot2::theme_light() +
-          ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90)) +
-          ggplot2::labs(title = paste(temp$deployment[1]), x = "", y = "")
-        )
-
-        pp <- plot_grid(myPlot, myMap)
+        pp <- .cleanGPSDataPlot(temp, newData, tt, yy)
         print(pp)
+        Sys.sleep(3)
+
         readline("Press [enter] for next plot")
 
       }
 
       output <- rbind(output, newData)
-    } else (print(paste("Less than 5 deployed locations for", tt$gpsFile, "- removed")))
+    } else (print(paste("Less than 5 deployed locations for", tt$depID, "- removed")))
   }
 
   output
 
   #' @export cleanGPSData
+}
+
+# -----
+# Sub-function for plotting, called inside of cleanGPSData
+
+.cleanGPSDataPlot <- function(temp, newData, tt, yy) {
+
+  if (max(temp$colDist) < 500) {
+    world <- rnaturalearth::ne_countries(scale = 50, returnclass = 'sf')
+  } else {
+    world <- rnaturalearth::ne_countries(scale = 110, returnclass = 'sf')
+  }
+
+  ss <- min(c(temp$time[1],tt$onTime))
+  ee <- max(c(temp$time[nrow(temp)],tt$offTime))
+
+  suppressMessages(
+    myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = colDist)) +
+      ggplot2::geom_line(col = "red") +
+      ggplot2::geom_point(col = "red") +
+      ggplot2::geom_point(data = newData, ggplot2::aes(x = time, y = colDist)) +
+      ggplot2::geom_line(data = newData, ggplot2::aes(x = time, y = colDist)) +
+      ggplot2::geom_vline(xintercept = c(tt$onTime, tt$offTime), linetype = 2, col = "red") +
+      ggplot2::xlim(ss,ee) +
+      ggplot2::theme_light() +
+      ggplot2::labs(title = paste(temp$depID[1]), y = yy, x = "Time")
+  )
+  xran <- range(temp$lon)
+  yran <- range(temp$lat)
+
+  suppressMessages(
+    myMap<- ggplot2::ggplot(data = newData) +
+      ggplot2::geom_sf(data = world) +
+      ggplot2::geom_point(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
+      ggplot2::geom_path(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
+      ggplot2::geom_point(data = newData, ggplot2::aes(x = lon, y = lat)) +
+      ggplot2::geom_path(data = newData, ggplot2::aes(x = lon, y = lat)) +
+      ggplot2::geom_point(data = tt, ggplot2::aes(x = colonyLon, y = colonyLat), fill = 'green', shape = 24, size = 3) +
+      ggplot2::coord_sf(xlim = xran, ylim = yran) +
+      ggplot2::theme_light() +
+      ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90)) +
+      ggplot2::labs(title = paste(temp$depID[1]), x = "", y = "")
+  )
+
+  pp <- plot_grid(myPlot, myMap)
+  pp
+
+  #' @export .cleanGPSDataPlot
 }

@@ -8,12 +8,12 @@ formatDeployments(
   deployments,
   band,
   tag,
+  depID,
   onTime,
   offTime,
   dateFormat = "\%Y-\%m-\%d \%H:\%M",
   colonyLon = NA,
   colonyLat = NA,
-  gpsFile,
   depTZ,
   tagTZ = "UTC",
   sinceDate = NULL,
@@ -27,15 +27,17 @@ formatDeployments(
 
 \item{tag}{Character string with name of the field containing tag IDs.}
 
+\item{depID}{Character string with name of the field containing deployment ID (see Details).}
+
 \item{onTime}{Character string with name of the field containing deployment start time, must be in a POSIXct compatible format.}
 
 \item{offTime}{Character string with name of the field containing deployment end time, must be in a POSIXct compatible format.}
 
 \item{dateFormat}{Character string specifying the POSIX standard format for times.}
 
-\item{colonyLon}{Longitude of colony (or nest or deployment), default is NULL.}
+\item{colonyLon}{Longitude of colony (or nest) , default is NULL.}
 
-\item{colonyLat}{Latitude of colony (or nest or deployment), default is NULL.}
+\item{colonyLat}{Latitude of colony (or nest), default is NULL.}
 
 \item{depTZ}{Timezone of deployment.}
 
@@ -50,4 +52,14 @@ A new dataframe with deployment times in the same timzone as the GPS data and fi
 }
 \description{
 Prepares deployment data for use in clipping tracks
+}
+\details{
+depID is the key field for matching deployment information to the GPS data. If your GPS data has a single data file for
+each deployment (Technosmart units), then the depID should be consistent with the name of this file. If you have remotely
+downloaded data, where all the locations from all units are mixed together (Ecotone units), then leave this field as NA. The
+function willcreate a 'depID' based on the tag and band from each deployment.
+
+depTZ and tagTZ are used to make sure a consistent time zone is used clip the GPS data. The output times from this function
+will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
+Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
 }
