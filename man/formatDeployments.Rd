@@ -13,7 +13,7 @@ formatDeployments(
   dateFormat = "\%Y-\%m-\%d \%H:\%M",
   colonyLon = NA,
   colonyLat = NA,
-  gpsFile,
+  depID,
   depTZ,
   tagTZ = "UTC",
   sinceDate = NULL,
@@ -33,9 +33,9 @@ formatDeployments(
 
 \item{dateFormat}{Character string specifying the POSIX standard format for times.}
 
-\item{colonyLon}{Longitude of colony (or nest or deployment), default is NULL.}
+\item{colonyLon}{Longitude of colony (or nest) , default is NULL.}
 
-\item{colonyLat}{Latitude of colony (or nest or deployment), default is NULL.}
+\item{colonyLat}{Latitude of colony (or nest), default is NULL.}
 
 \item{depTZ}{Timezone of deployment.}
 
