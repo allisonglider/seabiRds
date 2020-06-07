@@ -79,6 +79,11 @@ readGPSData <- function(inputFolder,
                         tagTZ = "UTC",
                         tagType = "Technosmart") {
 
+  if (!(tagType %in% c("Technosmart","Ecotone"))){
+    warning("Supported tagTypes are: Technosmart and Ecotone. If you have a different biologger please contact me.")
+  }
+
+
   if (tagType == "Technosmart") {
     output <- readTechnosmartGPS(inputFolder = inputFolder,
                                  deployments = deployments,
@@ -186,6 +191,8 @@ readEcotoneGPS <- function(inputFolder,
   output <- output[,c("band","tag","deployment","time","lon","lat",
                   names(output)[!(names(output) %in% c("band","tag","deployment","time","lon","lat"))])]
 
+  output <- subset(output, !is.na(output$lon))
+
   output
 }
 
@@ -241,42 +248,9 @@ cleanGPSData <- function(data,
       }
 
       if (plot) {
-
-        world <- rnaturalearth::ne_countries(scale = 'medium', returnclass = 'sf')
-
-        ss <- min(c(temp$time[1],tt$onTime))
-        ee <- max(c(temp$time[nrow(temp)],tt$offTime))
-
-        suppressMessages(
-          myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = colDist)) +
-            ggplot2::geom_line(col = "red") +
-            ggplot2::geom_point(col = "red") +
-            ggplot2::geom_point(data = newData, ggplot2::aes(x = time, y = colDist)) +
-            ggplot2::geom_line(data = newData, ggplot2::aes(x = time, y = colDist)) +
-            ggplot2::geom_vline(xintercept = c(tt$onTime, tt$offTime), linetype = 2, col = "red") +
-            ggplot2::xlim(ss,ee) +
-            ggplot2::theme_light() +
-            ggplot2::labs(title = paste(temp$deployment[1]), y = yy, x = "Time")
-        )
-
-        suppressMessages(
-        myMap<- ggplot2::ggplot(data = newData) +
-          ggplot2::geom_sf(data = world) +
-          ggplot2::geom_point(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
-          ggplot2::geom_path(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
-          ggplot2::geom_point(data = newData, ggplot2::aes(x = lon, y = lat)) +
-          ggplot2::geom_path(data = newData, ggplot2::aes(x = lon, y = lat)) +
-          ggplot2::geom_point(data = tt, ggplot2::aes(x = colonyLon, y = colonyLat), fill = 'green', shape = 24, size = 3) +
-          ggplot2::coord_sf(xlim = range(temp$lon), ylim = range(temp$lat)) +
-          ggplot2::theme_light() +
-          ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90)) +
-          ggplot2::labs(title = paste(temp$deployment[1]), x = "", y = "")
-        )
-
-        pp <- plot_grid(myPlot, myMap)
+        pp <- .cleanGPSDataPlot(temp, newData, tt, yy)
         print(pp)
         readline("Press [enter] for next plot")
-
       }
 
       output <- rbind(output, newData)
@@ -286,4 +260,45 @@ cleanGPSData <- function(data,
   output
 
   #' @export cleanGPSData
+}
+
+# -----
+# Sub-function for plotting, called inside of cleanGPSData
+
+.cleanGPSDataPlot <- function(temp, newData, tt, yy) {
+  world <- rnaturalearth::ne_countries(scale = 'medium', returnclass = 'sf')
+
+  ss <- min(c(temp$time[1],tt$onTime))
+  ee <- max(c(temp$time[nrow(temp)],tt$offTime))
+
+  suppressMessages(
+    myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = colDist)) +
+      ggplot2::geom_line(col = "red") +
+      ggplot2::geom_point(col = "red") +
+      ggplot2::geom_point(data = newData, ggplot2::aes(x = time, y = colDist)) +
+      ggplot2::geom_line(data = newData, ggplot2::aes(x = time, y = colDist)) +
+      ggplot2::geom_vline(xintercept = c(tt$onTime, tt$offTime), linetype = 2, col = "red") +
+      ggplot2::xlim(ss,ee) +
+      ggplot2::theme_light() +
+      ggplot2::labs(title = paste(temp$deployment[1]), y = yy, x = "Time")
+  )
+
+  suppressMessages(
+    myMap<- ggplot2::ggplot(data = newData) +
+      ggplot2::geom_sf(data = world) +
+      ggplot2::geom_point(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
+      ggplot2::geom_path(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
+      ggplot2::geom_point(data = newData, ggplot2::aes(x = lon, y = lat)) +
+      ggplot2::geom_path(data = newData, ggplot2::aes(x = lon, y = lat)) +
+      ggplot2::geom_point(data = tt, ggplot2::aes(x = colonyLon, y = colonyLat), fill = 'green', shape = 24, size = 3) +
+      ggplot2::coord_sf(xlim = range(temp$lon), ylim = range(temp$lat)) +
+      ggplot2::theme_light() +
+      ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90)) +
+      ggplot2::labs(title = paste(temp$deployment[1]), x = "", y = "")
+  )
+
+  pp <- plot_grid(myPlot, myMap)
+  pp
+
+  #' @export .cleanGPSDataPlot
 }
