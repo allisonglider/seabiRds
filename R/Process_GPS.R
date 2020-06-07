@@ -4,6 +4,7 @@
 #' @param deployments A data frame with deployment data.
 #' @param band Character string with name of the field containing band number or individual identifier.
 #' @param tag Character string with name of the field containing tag IDs.
+#' @param depID Character string with name of the field containing deployment ID (see Details).
 #' @param onTime Character string with name of the field containing deployment start time, must be in a POSIXct compatible format.
 #' @param offTime Character string with name of the field containing deployment end time, must be in a POSIXct compatible format.
 #' @param dateFormat Character string specifying the POSIX standard format for times.
@@ -13,21 +14,23 @@
 #' @param tagTZ Timezone of GPS data.
 #' @param sinceDate Limit output to data collected after a certain date.
 #' @param keep List of variable names for other dpeloyment data to keep with output.
+#'
+#' @details
+#'
+#' depID is the key field for matching deployment information to the GPS data. If your GPS data has a single data file for
+#' each deployment (Technosmart units), then the depID should be consistent with the name of this file. If you have remotely
+#' downloaded data, where all the locations from all units are mixed together (Ecotone units), then leave this field as NA. The
+#' function willcreate a 'depID' based on the tag and band from each deployment.
+#'
+#' depTZ and tagTZ are used to make sure a consistent time zone is used clip the GPS data. The output times from this function
+#' will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
+#' Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
+#'
 #' @return A new dataframe with deployment times in the same timzone as the GPS data and field names that are compatible with other functions in this package.
 
-formatDeployments <- function(deployments,
-                              band,
-                              tag,
-                              onTime,
-                              offTime,
-                              dateFormat = "%Y-%m-%d %H:%M",
-                              colonyLon = NA,
-                              colonyLat = NA,
-                              depID,
-                              depTZ,
-                              tagTZ = "UTC",
-                              sinceDate = NULL,
-                              keep = NULL) {
+formatDeployments <- function(deployments, band, tag, depID, onTime, offTime, dateFormat = "%Y-%m-%d %H:%M", colonyLon = NA,
+                              colonyLat = NA, depTZ, tagTZ = "UTC", sinceDate = NULL, keep = NULL)
+  {
 
   if (is.na(colonyLon) | is.na(colonyLat)) {
     deployments$colonyLon <- NA
