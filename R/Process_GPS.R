@@ -64,7 +64,7 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
 
   if (is.na(nest)) {
     deployments$nest <- NA
-    subsite <- 'nest'
+    nest <- 'nest'
   }
 
   if (is.na(status_on)) {
@@ -88,8 +88,8 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
   }
 
   if (is.na(exclude)) {
-    deployments$exclude <- is.numeric(NA)
-    mass_off <- 'exclude'
+    deployments$exclude <- NA
+    exclude <- 'exclude'
   }
 
   if (is.na(gps_id)) {
@@ -135,12 +135,12 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
   # Extract key variables from deployment data and standardize names
   if (is.null(keep) == F) {
     dep <- deployments[,c(species, metal_band, colour_band, dep_id,
-                          site, subsite, dep_lon, dep_lat,
-                          time_released, time_recaptured, status_on, status_off, mass_on, mass_off,
+                          site, subsite, nest, dep_lon, dep_lat,
+                          time_released, time_recaptured, status_on, status_off, mass_on, mass_off, exclude,
                           gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id, keep)]
     names(dep) <- c('species', 'metal_band', 'colour_band', 'dep_id',
-                    'site', 'subsite', 'dep_lon', 'dep_lat',
-                    'time_released', 'time_recaptured', 'status_on', 'status_off', 'mass_on', 'mass_off',
+                    'site', 'subsite', 'nest','dep_lon', 'dep_lat',
+                    'time_released', 'time_recaptured', 'status_on', 'status_off', 'mass_on', 'mass_off', 'exclude',
                     'gps_id', 'tdr_id', 'acc_id', 'gls_id', 'mag_id', 'cam_id', 'hrl_id', keep)
   }
 
@@ -168,9 +168,16 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
     dep$dep_id <- paste0(dep$tag, '_', dep$metal_band)
   }
 
-  # Convert empty characters in status_on and status_off to NA
+  # Convert empty characters to NA
   dep$status_on[dep$status_on == ""] <- NA
   dep$status_off[dep$status_off == ""] <- NA
+  dep$dep_id[dep$dep_id == ""] <- NA
+  dep$site[dep$site == ""] <- NA
+  dep$subsite[dep$subsite == ""] <- NA
+  dep$nest[dep$nest == ""] <- NA
+
+  # check for duplicate dep_id
+  if (max(table(dep$dep_id)) > 1) stop("All dep_id values must be unique", call. = F)
 
   # Make sure status_on and status_off are upper case
   dep$status_on <- toupper(as.character(dep$status_on))
@@ -178,23 +185,23 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
 
   # check all entries for status_on and status_off are valid
   status_values <- c('E','C','F','N','P','J',NA)
-  if (sum(dep$status_on %in% status_values) != length(dep$status_on)) stop("Values in status_on can only be: E, C, F, N, P, J, or NA")
-  if (sum(dep$status_off %in% status_values) != length(dep$status_off)) stop("Values in status_off can only be: E, C, F, N, P, J, or NA")
+  if (sum(dep$status_on %in% status_values) != length(dep$status_on)) stop("Values in status_on can only be: E, C, F, N, P, J, or NA", call. = F)
+  if (sum(dep$status_off %in% status_values) != length(dep$status_off)) stop("Values in status_off can only be: E, C, F, N, P, J, or NA", call. = F)
 
   # check all mass values are
-  if (!is.numeric(dep$mass_on)) stop('Values in mass_on must be numeric')
-  if (!is.numeric(dep$mass_off)) stop('Values in mass_off must be numeric')
-  if (min(dep$mass_on, na.rm = T) <= 0) stop('Values in mass_on must be >0 or NA')
-  if (min(dep$mass_off, na.rm = T) <= 0) stop('Values in mass_off must be >0 or NA')
+  if (!is.numeric(dep$mass_on)) stop('Values in mass_on must be numeric', call. = F)
+  if (!is.numeric(dep$mass_off)) stop('Values in mass_off must be numeric', call. = F)
+  if (min(dep$mass_on, na.rm = T) <= 0) stop('Values in mass_on must be >0 or NA', call. = F)
+  if (min(dep$mass_off, na.rm = T) <= 0) stop('Values in mass_off must be >0 or NA', call. = F)
 
   # check metal_band values
-  if (!is.integer(dep$metal_band) | min(dep$metal_band, na.rm = T) < 10000000 | max(dep$metal_band, na.rm = T) > 999999999) stop('Values in metal_band must be integers with 8 or 9 digits')
+  if (!is.integer(dep$metal_band) | min(dep$metal_band, na.rm = T) < 10000000 | max(dep$metal_band, na.rm = T) > 999999999) stop('Values in metal_band must be integers with 8 or 9 digits', call. = F)
 
   # check dep_lon values
-  if (min(dep$dep_lon, na.rm = T) < -180 | max(dep$dep_lon, na.rm = T) > 180) stop('Values in dep_lon must be between -180 and 180')
+  if (min(dep$dep_lon, na.rm = T) < -180 | max(dep$dep_lon, na.rm = T) > 180) stop('Values in dep_lon must be between -180 and 180', call. = F)
 
   # check dep_lat values
-  if (min(dep$dep_lat, na.rm = T) < -90 | max(dep$dep_lat, na.rm = T) > 90) stop('Values in dep_lat must be between -90 and 90')
+  if (min(dep$dep_lat, na.rm = T) < -90 | max(dep$dep_lat, na.rm = T) > 90) stop('Values in dep_lat must be between -90 and 90', call. = F)
 
   # Return formatted deployment data
   dep
