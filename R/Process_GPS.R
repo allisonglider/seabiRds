@@ -8,17 +8,18 @@
 #' @param dep_id Character string with name of the field containing deployment ID (see details).
 #' @param site Character string with name of the field containing the site (e.g. Coats).
 #' @param subsite Character string with name of the field containing the subsite (e.g. Coats West). This is used if your study area has distinct units within the main site.
+#' @param nest Character string with name of the field containing the nest id.
 #' @param time_released Character string with name of the field containing deployment start time (when birds was released with tag), must be in a POSIXct compatible format (e.g. YYYY-mm-dd HH:MM).
 #' @param time_recaptured Character string with name of the field containing deployment end time (when birds was recaptured with tag), must be in a POSIXct compatible format (e.g. YYYY-mm-dd HH:MM)
 #' @param dateFormat Character string specifying the POSIX standard format for times.
 #' @param dep_tz Timezone of deployment.
-#' @param dep_lon Longitude of colony (or nest) , default is NULL.
-#' @param dep_lat Latitude of colony (or nest), default is NULL.
+#' @param dep_lon Character string with name of the field containing the longitude of colony (or nest), default is NULL.
+#' @param dep_lat Character string with name of the field containing the latitude of colony (or nest), default is NULL.
 #' @param status_on Breeding status at start of deployment (E: eggs, C: chicks, F: failed-breeder, N: non-breeder, P: pre-breeder, J: juvenile).
 #' @param status_off Breeding status at end of deployment (E: eggs, C: chicks, F: failed-breeder, N: non-breeder, P: pre-breeder, J: juvenile).
-#' @param mass_on Bird mass (g) at start of deployment.
-#' @param mass_off Bird mass (g) at end of deployment.
-#' @param tagTZ Timezone of GPS data.
+#' @param mass_on Character string with name of the field containing the bird mass (g) at start of deployment.
+#' @param mass_off Character string with name of the field containing the bird mass (g) at end of deployment.
+#' @param exclude Character string with name of the field containing flags for deployments with a significant treatment, which could make the data unsuitable for other analysis (e.g. Fed, Handicapped, Wing-clipped).
 #' @param gps_id Character string with name of the field containing the name of the GPS tag deployed.
 #' @param tdr_id Character string with name of the field containing the name of the TDR tag deployed.
 #' @param acc_id Character string with name of the field containing the name of the ACC tag deployed.
@@ -42,11 +43,11 @@
 #' @return A new dataframe with deployment times in the same timzone as the GPS data and field names that are compatible with other functions in this package.
 
 formatDeployments <- function(deployments, species, metal_band, colour_band, dep_id,
-                              site, subsite = NA, dep_lon = NA, dep_lat = NA,
+                              site, subsite = NA, nest = NA, dep_lon = NA, dep_lat = NA,
                               time_released, time_recaptured, dateFormat = "%Y-%m-%d %H:%M", dep_tz,
-                              status_on = NA, status_off = NA, mass_on = NA, mass_off = NA,
+                              status_on = NA, status_off = NA, mass_on = NA, mass_off = NA, exclude = NA,
                               gps_id = NA, tdr_id = NA, acc_id = NA, gls_id = NA, mag_id = NA, cam_id = NA, hrl_id = NA,
-                              tagTZ = "UTC", keep = NULL)
+                              keep = NULL)
   {
 
   if (is.na(dep_lon) | is.na(dep_lat)) {
@@ -59,6 +60,11 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
   if (is.na(subsite)) {
     deployments$subsite <- NA
     subsite <- 'subsite'
+  }
+
+  if (is.na(nest)) {
+    deployments$nest <- NA
+    subsite <- 'nest'
   }
 
   if (is.na(status_on)) {
@@ -79,6 +85,11 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
   if (is.na(mass_off)) {
     deployments$mass_off <- is.numeric(NA)
     mass_off <- 'mass_off'
+  }
+
+  if (is.na(exclude)) {
+    deployments$exclude <- is.numeric(NA)
+    mass_off <- 'exclude'
   }
 
   if (is.na(gps_id)) {
@@ -135,12 +146,12 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
 
   if (is.null(keep) == T) {
     dep <- deployments[,c(species, metal_band, colour_band, dep_id,
-                          site, subsite, dep_lon, dep_lat,
-                          time_released, time_recaptured, status_on, status_off, mass_on, mass_off,
+                          site, subsite, nest, dep_lon, dep_lat,
+                          time_released, time_recaptured, status_on, status_off, mass_on, mass_off, exclude,
                           gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id)]
     names(dep) <- c('species', 'metal_band', 'colour_band', 'dep_id',
-                    'site', 'subsite', 'dep_lon', 'dep_lat',
-                    'time_released', 'time_recaptured', 'status_on', 'status_off', 'mass_on', 'mass_off',
+                    'site', 'subsite', 'nest','dep_lon', 'dep_lat',
+                    'time_released', 'time_recaptured', 'status_on', 'status_off', 'mass_on', 'mass_off', 'exclude',
                     'gps_id', 'tdr_id', 'acc_id', 'gls_id', 'mag_id', 'cam_id', 'hrl_id')
   }
 

@@ -12,6 +12,7 @@ formatDeployments(
   dep_id,
   site,
   subsite = NA,
+  nest = NA,
   dep_lon = NA,
   dep_lat = NA,
   time_released,
@@ -22,6 +23,7 @@ formatDeployments(
   status_off = NA,
   mass_on = NA,
   mass_off = NA,
+  exclude = NA,
   gps_id = NA,
   tdr_id = NA,
   acc_id = NA,
@@ -29,7 +31,6 @@ formatDeployments(
   mag_id = NA,
   cam_id = NA,
   hrl_id = NA,
-  tagTZ = "UTC",
   keep = NULL
 )
 }
@@ -48,9 +49,11 @@ formatDeployments(
 
 \item{subsite}{Character string with name of the field containing the subsite (e.g. Coats West). This is used if your study area has distinct units within the main site.}
 
-\item{dep_lon}{Longitude of colony (or nest) , default is NULL.}
+\item{nest}{Character string with name of the field containing the nest id.}
 
-\item{dep_lat}{Latitude of colony (or nest), default is NULL.}
+\item{dep_lon}{Character string with name of the field containing the longitude of colony (or nest), default is NULL.}
+
+\item{dep_lat}{Character string with name of the field containing the latitude of colony (or nest), default is NULL.}
 
 \item{time_released}{Character string with name of the field containing deployment start time (when birds was released with tag), must be in a POSIXct compatible format (e.g. YYYY-mm-dd HH:MM).}
 
@@ -64,9 +67,11 @@ formatDeployments(
 
 \item{status_off}{Breeding status at end of deployment (E: eggs, C: chicks, F: failed-breeder, N: non-breeder, P: pre-breeder, J: juvenile).}
 
-\item{mass_on}{Bird mass (g) at start of deployment.}
+\item{mass_on}{Character string with name of the field containing the bird mass (g) at start of deployment.}
 
-\item{mass_off}{Bird mass (g) at end of deployment.}
+\item{mass_off}{Character string with name of the field containing the bird mass (g) at end of deployment.}
+
+\item{exclude}{Character string with name of the field containing flags for deployments with a significant treatment, which could make the data unsuitable for other analysis (e.g. Fed, Handicapped, Wing-clipped).}
 
 \item{gps_id}{Character string with name of the field containing the name of the GPS tag deployed.}
 
@@ -81,8 +86,6 @@ formatDeployments(
 \item{cam_id}{Character string with name of the field containing the name of the camera tag deployed.}
 
 \item{hrl_id}{Character string with name of the field containing the name of the hear rate logger tag deployed.}
-
-\item{tagTZ}{Timezone of GPS data.}
 
 \item{keep}{List of variable names for other dpeloyment data to keep with output.}
 }
