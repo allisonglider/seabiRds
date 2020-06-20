@@ -28,7 +28,7 @@ getMode <- function(x) {
 #' Calculates the distance between the colony (or any fixed location) and each point in a track.
 #'
 #' @param lon A vector of longitude values.
-#' @param lon A vector of latitude values.
+#' @param lat A vector of latitude values.
 #' @param colonyLon Longitude of the colony (or fixed location).
 #' @param colonyLat Latitude of the colony (or fixed location).
 #' @return A vector of values (in km) giving the distance between each location in the track and the colony (or fixed location).
