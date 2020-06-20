@@ -48,7 +48,7 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
                               status_on = NA, status_off = NA, mass_on = NA, mass_off = NA, exclude = NA,
                               gps_id = NA, tdr_id = NA, acc_id = NA, gls_id = NA, mag_id = NA, cam_id = NA, hrl_id = NA,
                               keep = NULL)
-  {
+{
 
   if (is.na(dep_lon) | is.na(dep_lat)) {
     deployments$dep_lon <- is.numeric(NA)
@@ -130,7 +130,7 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
   if (is.na(hrl_id)) {
     deployments$hrl_id <- NA
     hrl_id <- 'hrl_id'
-    }
+  }
 
   # Extract key variables from deployment data and standardize names
   if (is.null(keep) == F) {
@@ -360,49 +360,53 @@ cleanGPSData <- function(data,
   theDeps <- unique(data$dep_id)
 
   for (dd in 1:length(theDeps)) {
+
     temp <- subset(data, data$dep_id == theDeps[dd])
+
     tt <- subset(deployments, deployments$dep_id == theDeps[dd])
-    if (is.na(tt$time_recaptured)) tt$time_recaptured <- max(temp$time)
+    if (nrow(tt) > 0) {
 
-    if ("inrange" %in% names(temp)) {
-      temp$lon[temp$inrange == 1] <- tt$dep_lon
-      temp$lat[temp$inrange == 1] <- tt$dep_lat
-      temp <- subset(temp, is.na(temp$lon) == F)
-    }
+      if (is.na(tt$time_recaptured)) tt$time_recaptured <- max(temp$time, na.rm = T)
 
-    if (is.na(tt$dep_lon)) {
-      temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, dep_lon = temp$lon[temp$time >= tt$time_released][1], dep_lat = temp$lat[temp$time >= tt$time_released][1])
-      yy <- "Distance from first location (km)"
-
-    } else {
-      temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, dep_lon = tt$dep_lon, dep_lat = tt$dep_lat)
-      yy <- "Distance from colony (km)"
-    }
-
-    newData <- subset(temp, temp$time >= tt$time_released & temp$time <= tt$time_recaptured)
-
-    if (nrow(newData) > 5) {
-
-      newData$dist <- getDist(newData$lon, newData$lat)
-      newData$dt <- getDT(newData$time, units = "hours")
-      newData$speed <- newData$dist/newData$dt
-
-      if (!is.na(speedThreshold)) {
-        newData <- filterSpeed(newData, threshold = speedThreshold)
+      if ("inrange" %in% names(temp)) {
+        temp$lon[temp$inrange == 1] <- tt$dep_lon
+        temp$lat[temp$inrange == 1] <- tt$dep_lat
+        temp <- subset(temp, is.na(temp$lon) == F)
       }
 
-      if (plot) {
-
-        pp <- .cleanGPSDataPlot(temp, newData, tt, yy)
-        print(pp)
-        Sys.sleep(3)
-
-        readline("Press [enter] for next plot")
-
+      if (is.na(tt$dep_lon)) {
+        temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, dep_lon = temp$lon[temp$time >= tt$time_released][1], dep_lat = temp$lat[temp$time >= tt$time_released][1])
+        yy <- "Distance from first location (km)"
+      } else {
+        temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = tt$dep_lon, colonyLat = tt$dep_lat)
+        yy <- "Distance from colony (km)"
       }
 
-      output <- rbind(output, newData)
-    } else (print(paste("Less than 5 deployed locations for", tt$dep_id, "- removed")))
+      newData <- subset(temp, temp$time >= tt$time_released & temp$time <= tt$time_recaptured)
+
+      if (nrow(newData) > 5) {
+
+        newData$dist <- getDist(newData$lon, newData$lat)
+        newData$dt <- getDT(newData$time, units = "hours")
+        newData$speed <- newData$dist/newData$dt
+
+        if (!is.na(speedThreshold)) {
+          newData <- filterSpeed(newData, threshold = speedThreshold)
+        }
+
+        if (plot) {
+
+          pp <- .cleanGPSDataPlot(temp, newData, tt, yy)
+          print(pp)
+          Sys.sleep(3)
+
+          readline("Press [enter] for next plot")
+
+        }
+
+        output <- rbind(output, newData)
+      } else (print(paste("Less than 5 deployed locations for", tt$dep_id, "- removed")))
+    }
   }
 
   output
@@ -452,7 +456,7 @@ cleanGPSData <- function(data,
       ggplot2::labs(title = paste(temp$dep_id[1]), x = "", y = "")
   )
 
-  pp <- plot_grid(myPlot, myMap)
+  pp <- cowplot::plot_grid(myPlot, myMap)
   pp
 
   #' @export .cleanGPSDataPlot
