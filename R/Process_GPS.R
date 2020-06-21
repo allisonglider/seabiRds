@@ -51,8 +51,8 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
 {
 
   if (is.na(dep_lon) | is.na(dep_lat)) {
-    deployments$dep_lon <- is.numeric(NA)
-    deployments$dep_lat <- is.numeric(NA)
+    deployments$dep_lon <- as.numeric(NA)
+    deployments$dep_lat <- as.numeric(NA)
     dep_lat <- "dep_lat"
     dep_lon <- "dep_lon"
   }
@@ -78,12 +78,12 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
   }
 
   if (is.na(mass_on)) {
-    deployments$mass_on <- is.numeric(NA)
+    deployments$mass_on <- as.numeric(NA)
     mass_on <- 'mass_on'
   }
 
   if (is.na(mass_off)) {
-    deployments$mass_off <- is.numeric(NA)
+    deployments$mass_off <- as.numeric(NA)
     mass_off <- 'mass_off'
   }
 
@@ -198,11 +198,13 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
   if (!is.integer(dep$metal_band) | min(dep$metal_band, na.rm = T) < 10000000 | max(dep$metal_band, na.rm = T) > 999999999) stop('Values in metal_band must be integers with 8 or 9 digits', call. = F)
 
   # check dep_lon values
-  if (min(dep$dep_lon, na.rm = T) < -180 | max(dep$dep_lon, na.rm = T) > 180) stop('Values in dep_lon must be between -180 and 180', call. = F)
-
+  if (sum(is.na(dep$dep_lon)) < length(dep$dep_lon)) {
+    if (min(dep$dep_lon, na.rm = T) < -180 | max(dep$dep_lon, na.rm = T) > 180) stop('Values in dep_lon must be between -180 and 180', call. = F)
+  }
   # check dep_lat values
-  if (min(dep$dep_lat, na.rm = T) < -90 | max(dep$dep_lat, na.rm = T) > 90) stop('Values in dep_lat must be between -90 and 90', call. = F)
-
+  if (sum(is.na(dep$dep_lat)) < length(dep$dep_lon)) {
+    if (min(dep$dep_lat, na.rm = T) < -90 | max(dep$dep_lat, na.rm = T) > 90) stop('Values in dep_lat must be between -90 and 90', call. = F)
+  }
   # Return formatted deployment data
   dep
 
@@ -382,7 +384,7 @@ cleanGPSData <- function(data,
       }
 
       if (is.na(tt$dep_lon)) {
-        temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, dep_lon = temp$lon[temp$time >= tt$time_released][1], dep_lat = temp$lat[temp$time >= tt$time_released][1])
+        temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = temp$lon[temp$time >= tt$time_released][1], colonyLat = temp$lat[temp$time >= tt$time_released][1])
         yy <- "Distance from first location (km)"
       } else {
         temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = tt$dep_lon, colonyLat = tt$dep_lat)
@@ -456,7 +458,7 @@ cleanGPSData <- function(data,
       ggplot2::geom_path(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
       ggplot2::geom_point(data = newData, ggplot2::aes(x = lon, y = lat)) +
       ggplot2::geom_path(data = newData, ggplot2::aes(x = lon, y = lat)) +
-      ggplot2::geom_point(data = tt, ggplot2::aes(x = dep_lon, y = dep_lat), fill = 'green', shape = 24, size = 3) +
+      #ggplot2::geom_point(data = tt, ggplot2::aes(x = tt$dep_lon, y = tt$dep_lon), fill = 'green', shape = 24, size = 3) +
       ggplot2::coord_sf(xlim = xran, ylim = yran) +
       ggplot2::theme_light() +
       ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90)) +
