@@ -136,23 +136,23 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
   if (is.null(keep) == F) {
     dep <- deployments[,c(species, metal_band, colour_band, dep_id,
                           site, subsite, nest, dep_lon, dep_lat,
-                          time_released, time_recaptured, status_on, status_off, mass_on, mass_off, exclude,
-                          gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id, keep)]
+                          time_released, time_recaptured, status_on, status_off, mass_on, mass_off,
+                          gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id, exclude, keep)]
     names(dep) <- c('species', 'metal_band', 'colour_band', 'dep_id',
                     'site', 'subsite', 'nest','dep_lon', 'dep_lat',
-                    'time_released', 'time_recaptured', 'status_on', 'status_off', 'mass_on', 'mass_off', 'exclude',
-                    'gps_id', 'tdr_id', 'acc_id', 'gls_id', 'mag_id', 'cam_id', 'hrl_id', keep)
+                    'time_released', 'time_recaptured', 'status_on', 'status_off', 'mass_on', 'mass_off',
+                    'gps_id', 'tdr_id', 'acc_id', 'gls_id', 'mag_id', 'cam_id', 'hrl_id', 'exclude', keep)
   }
 
   if (is.null(keep) == T) {
     dep <- deployments[,c(species, metal_band, colour_band, dep_id,
                           site, subsite, nest, dep_lon, dep_lat,
-                          time_released, time_recaptured, status_on, status_off, mass_on, mass_off, exclude,
-                          gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id)]
+                          time_released, time_recaptured, status_on, status_off, mass_on, mass_off,
+                          gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id, exclude)]
     names(dep) <- c('species', 'metal_band', 'colour_band', 'dep_id',
                     'site', 'subsite', 'nest','dep_lon', 'dep_lat',
-                    'time_released', 'time_recaptured', 'status_on', 'status_off', 'mass_on', 'mass_off', 'exclude',
-                    'gps_id', 'tdr_id', 'acc_id', 'gls_id', 'mag_id', 'cam_id', 'hrl_id')
+                    'time_released', 'time_recaptured', 'status_on', 'status_off', 'mass_on', 'mass_off',
+                    'gps_id', 'tdr_id', 'acc_id', 'gls_id', 'mag_id', 'cam_id', 'hrl_id', 'exclude')
   }
 
   # Convert deployment times to GPS times
@@ -161,20 +161,26 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
   dep$time_recaptured <- lubridate::force_tz(as.POSIXct(strptime(dep$time_recaptured, dateFormat)), tz = dep_tz)
   dep$time_recaptured <- lubridate::with_tz(dep$time_recaptured, tz = 'UTC')
 
-  # Only keep records where the GPS was recovered
-  #dep <- subset(dep, is.na(dep$time_recaptured) == F & is.na(dep$dep_id) == F)
-
   if (length(unique(dep$dep_id)) == 1 & is.na(unique(dep$dep_id)[1])) {
     dep$dep_id <- paste0(dep$tag, '_', dep$metal_band)
   }
 
   # Convert empty characters to NA
+  dep$colour_band[dep$colour_band == ""] <- NA
   dep$status_on[dep$status_on == ""] <- NA
   dep$status_off[dep$status_off == ""] <- NA
   dep$dep_id[dep$dep_id == ""] <- NA
   dep$site[dep$site == ""] <- NA
   dep$subsite[dep$subsite == ""] <- NA
   dep$nest[dep$nest == ""] <- NA
+  dep$gps_id[dep$gps_id == ""] <- NA
+  dep$tdr_id[dep$tdr_id == ""] <- NA
+  dep$gls_id[dep$gls_id == ""] <- NA
+  dep$mag_id[dep$mag_id == ""] <- NA
+  dep$cam_id[dep$cam_id == ""] <- NA
+  dep$hrl_id[dep$hrl_id == ""] <- NA
+  dep$exclude[dep$exclude == ""] <- NA
+
 
   # check for duplicate dep_id
   if (max(table(dep$dep_id)) > 1) stop("All dep_id values must be unique", call. = F)
@@ -205,6 +211,7 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
   if (sum(is.na(dep$dep_lat)) < length(dep$dep_lon)) {
     if (min(dep$dep_lat, na.rm = T) < -90 | max(dep$dep_lat, na.rm = T) > 90) stop('Values in dep_lat must be between -90 and 90', call. = F)
   }
+
   # Return formatted deployment data
   dep
 
@@ -217,13 +224,22 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
 #' @param inputFolder Folder containing all the raw GPS files to be processed.
 #' @param deployments Name of object with deployment data.
 #' @param tagTZ Timezone of GPS data.
-#' @param tagType Type of GPS biologger used, options are "Technosmart".
+#' @param tagType Type of GPS biologger used, options are "Technosmart" and "Ecotone".
+#' @param date_format POSIXct string indicating how dates are formatted in the GPS files.
+#'
+#' @details
+#'
+#' Technosmart can export GPS data with the following date formats: %d-%m-%Y, %m-%d-%Y, "%Y-%m-%d, %Y-%d-%m. All the files in the inputFolder need to have the same formatting.
+#'
+#' The function will print lists of: GPS files that contain no data, GPS files that have no matching deployments in the deployment data, and deployments that have no matching GPS files. This is intended to help you identify errors in data entry or file naming. For technosmart units, I recommend you re-export data any time you change the file name because X-Manager includes the file name as a column in the data.
+#'
 #' @return A new dataframe containing all GPS data.
 
 readGPSData <- function(inputFolder,
                         deployments,
                         tagTZ = "UTC",
-                        tagType = "Technosmart") {
+                        tagType = "Technosmart",
+                        date_format = "%d-%m-%Y") {
 
   if (!(tagType %in% c("Technosmart","Ecotone"))){
     warning("Supported tagTypes are: Technosmart and Ecotone. If you have a different biologger please contact me.")
@@ -233,7 +249,8 @@ readGPSData <- function(inputFolder,
   if (tagType == "Technosmart") {
     output <- readTechnosmartGPS(inputFolder = inputFolder,
                                  deployments = deployments,
-                                 tagTZ = tagTZ)
+                                 tagTZ = tagTZ,
+                                 date_format = date_format)
   }
 
   if (tagType == "Ecotone") {
@@ -252,9 +269,21 @@ readGPSData <- function(inputFolder,
 
 readTechnosmartGPS <- function(inputFolder,
                                deployments,
-                               tagTZ = "UTC") {
+                               tagTZ = "UTC",
+                               date_format = date_format) {
 
   dd <- list.files(inputFolder, pattern = '.txt', full.names = T)
+
+  emptyfiles <- dd[file.size(dd) == 0]
+  if (length(emptyfiles) > 0) {
+    print("-- Files containing no data --")
+    print(emptyfiles)
+  }
+
+  .matchFiles(files = dd, deployment_ids = deployments$dep_id)
+
+  dd <- dd[file.size(dd) > 0]
+
   output <- data.frame()
 
   for (i in 1:nrow(deployments)) {
@@ -272,27 +301,33 @@ readTechnosmartGPS <- function(inputFolder,
                              sep = "\t",
                              stringsAsFactors = F,
                              header = F)
-        head(temp)
 
         if (nrow(temp) > 5) {
 
           # set names and format date
           names(temp) <- c("time","lat","lon","altitude","gpsspeed","satellites","hdop","maxsignal")
-          temp$time <- as.POSIXct(strptime(temp$time, "%d-%m-%Y,%T"), tz = tagTZ)
+          df <- paste0(date_format, ",%T")
+
+          # check that date format is correct
+          if (is.na(as.POSIXct(strptime(temp$time[1], df), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
+
+          # format dates
+          temp$time <- as.POSIXct(strptime(temp$time, df), tz = tagTZ)
+
+          # order data and remove duplicate records
           temp <- temp[order(temp$time),]
+          temp <- temp[duplicated(temp) == F,]
 
           # add fields for metal_band and tag and deployment
-          temp$metal_band <- deployments$metal_band[i]
-          temp$tag <- deployments$tag[i]
           temp$dep_id <- deployments$dep_id[i]
-          temp <- temp[,c("metal_band","tag","dep_id","time","lon","lat",names(temp)[!(names(temp) %in% c("metal_band","tag","dep_id","time","lon","lat"))])]
+          temp <- temp[,c("dep_id","time","lon","lat",names(temp)[!(names(temp) %in% c("dep_id","time","lon","lat"))])]
           output <- rbind(output, temp)
 
-        } else (print(paste("Less than 5 locations:", deployments$dep_id[i], "- not processed")))
+        } else (print(paste("-- Less than 5 locations:", deployments$dep_id[i], "- not processed")))
 
-      } else (print(paste("No gps files found:", deployments$dep_id[i])))
+      }
 
-    } else (print(paste("No gps file in deployment data:", deployments$tag[i], deployments$metal_band[i])))
+    }
 
   }
 
@@ -469,4 +504,33 @@ cleanGPSData <- function(data,
   pp
 
   #' @export .cleanGPSDataPlot
+}
+
+# -----
+# Sub-function to check if files in the input folder have a matching record in the deployment data
+
+.matchFiles <- function(files, deployment_ids) {
+  mf <- data.frame(
+    files = files,
+    match = NA
+  )
+
+  for (theDeps in deployment_ids) {
+    mf$match[grep(theDeps, mf$files)] <- theDeps
+  }
+
+  unmatchedFiles <- mf$files[is.na(mf$match)]
+
+  if (length(unmatchedFiles) > 0) {
+    print("-- Files that have no matching deployment --")
+    print(as.character(unmatchedFiles))
+  }
+
+  unmatchedDeployments <- deployment_ids[!(deployment_ids %in% mf$match)]
+  if (length(unmatchedDeployments) > 0) {
+    print("-- Deployments that have no matching files --")
+    unmatchedDeployments <- unmatchedDeployments[!is.na(unmatchedDeployments)]
+    print(as.character(unmatchedDeployments))
+  }
+  #' @export .matchFiles
 }
