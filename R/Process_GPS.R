@@ -185,6 +185,9 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
   # check for duplicate dep_id
   if (max(table(dep$dep_id)) > 1) stop("All dep_id values must be unique", call. = F)
 
+  # make dep_id a character variable
+  dep$dep_id <- as.character(dep$dep_id)
+
   # Make sure status_on and status_off are upper case
   dep$status_on <- toupper(as.character(dep$status_on))
   dep$status_off <- toupper(as.character(dep$status_off))
