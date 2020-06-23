@@ -9,7 +9,7 @@ readGPSData(
   deployments,
   tagTZ = "UTC",
   tagType = "Technosmart",
-  date_format = "\%d-\%m-\%Y"
+  dateFormat = "\%d-\%m-\%Y"
 )
 }
 \arguments{
@@ -21,7 +21,7 @@ readGPSData(
 
 \item{tagType}{Type of GPS biologger used, options are "Technosmart" and "Ecotone".}
 
-\item{date_format}{POSIXct string indicating how dates are formatted in the GPS files.}
+\item{dateFormat}{POSIXct string indicating how dates are formatted in the GPS files.}
 }
 \value{
 A new dataframe containing all GPS data.

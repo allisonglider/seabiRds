@@ -2,6 +2,8 @@
 #' Prepares deployment data for use in clipping tracks
 #'
 #' @param deployments A data frame with deployment data. Required.
+#' @param dateFormat Character string specifying the POSIX standard format for times.
+#' @param dep_tz Timezone of deployment.
 #' @param species Character string with name of the field containing the 4-letter AOU species code. Required.
 #' @param metal_band Character string with name of the field containing the metal band number, input should be an integer with 9-10 digits.
 #' @param colour_band Character string with name of the field containing the colour band code.
@@ -11,8 +13,6 @@
 #' @param nest Character string with name of the field containing the nest id.
 #' @param time_released Character string with name of the field containing deployment start time (when birds was released with tag), must be in a POSIXct compatible format (e.g. YYYY-mm-dd HH:MM).
 #' @param time_recaptured Character string with name of the field containing deployment end time (when birds was recaptured with tag), must be in a POSIXct compatible format (e.g. YYYY-mm-dd HH:MM)
-#' @param dateFormat Character string specifying the POSIX standard format for times.
-#' @param dep_tz Timezone of deployment.
 #' @param dep_lon Character string with name of the field containing the longitude of colony (or nest), default is NULL.
 #' @param dep_lat Character string with name of the field containing the latitude of colony (or nest), default is NULL.
 #' @param status_on Breeding status at start of deployment (E: eggs, C: chicks, F: failed-breeder, N: non-breeder, P: pre-breeder, J: juvenile).
@@ -42,9 +42,10 @@
 #'
 #' @return A new dataframe with deployment times in the same timzone as the GPS data and field names that are compatible with other functions in this package.
 
-formatDeployments <- function(deployments, species, metal_band, colour_band, dep_id,
+formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz,
+                              species, metal_band, colour_band, dep_id,
                               site, subsite = NA, nest = NA, dep_lon = NA, dep_lat = NA,
-                              time_released, time_recaptured, dateFormat = "%Y-%m-%d %H:%M", dep_tz,
+                              time_released, time_recaptured,
                               status_on = NA, status_off = NA, mass_on = NA, mass_off = NA, exclude = NA,
                               gps_id = NA, tdr_id = NA, acc_id = NA, gls_id = NA, mag_id = NA, cam_id = NA, hrl_id = NA,
                               keep = NULL)
@@ -175,18 +176,27 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
   dep$nest[dep$nest == ""] <- NA
   dep$gps_id[dep$gps_id == ""] <- NA
   dep$tdr_id[dep$tdr_id == ""] <- NA
+  dep$acc_id[dep$acc_id == ""] <- NA
   dep$gls_id[dep$gls_id == ""] <- NA
   dep$mag_id[dep$mag_id == ""] <- NA
   dep$cam_id[dep$cam_id == ""] <- NA
   dep$hrl_id[dep$hrl_id == ""] <- NA
   dep$exclude[dep$exclude == ""] <- NA
 
-
   # check for duplicate dep_id
   if (max(table(dep$dep_id)) > 1) stop("All dep_id values must be unique", call. = F)
 
   # make dep_id a character variable
   dep$dep_id <- as.character(dep$dep_id)
+  dep$colour_band <- as.character(dep$colour_band)
+  dep$gps_id <- as.character(dep$gps_id)
+  dep$tdr_id <- as.character(dep$tdr_id)
+  dep$acc_id <- as.character(dep$acc_id)
+  dep$gls_id <- as.character(dep$gls_id)
+  dep$mag_id <- as.character(dep$mag_id)
+  dep$cam_id <- as.character(dep$cam_id)
+  dep$hrl_id <- as.character(dep$hrl_id)
+  dep$exclude <- as.character(dep$exclude)
 
   # Make sure status_on and status_off are upper case
   dep$status_on <- toupper(as.character(dep$status_on))
@@ -228,7 +238,7 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
 #' @param deployments Name of object with deployment data.
 #' @param tagTZ Timezone of GPS data.
 #' @param tagType Type of GPS biologger used, options are "Technosmart" and "Ecotone".
-#' @param date_format POSIXct string indicating how dates are formatted in the GPS files.
+#' @param dateFormat POSIXct string indicating how dates are formatted in the GPS files.
 #'
 #' @details
 #'
@@ -242,7 +252,7 @@ readGPSData <- function(inputFolder,
                         deployments,
                         tagTZ = "UTC",
                         tagType = "Technosmart",
-                        date_format = "%d-%m-%Y") {
+                        dateFormat = "%d-%m-%Y") {
 
   if (!(tagType %in% c("Technosmart","Ecotone"))){
     warning("Supported tagTypes are: Technosmart and Ecotone. If you have a different biologger please contact me.")
@@ -253,7 +263,7 @@ readGPSData <- function(inputFolder,
     output <- readTechnosmartGPS(inputFolder = inputFolder,
                                  deployments = deployments,
                                  tagTZ = tagTZ,
-                                 date_format = date_format)
+                                 dateFormat = dateFormat)
   }
 
   if (tagType == "Ecotone") {
@@ -273,7 +283,7 @@ readGPSData <- function(inputFolder,
 readTechnosmartGPS <- function(inputFolder,
                                deployments,
                                tagTZ = "UTC",
-                               date_format = date_format) {
+                               dateFormat = dateFormat) {
 
   dd <- list.files(inputFolder, pattern = '.txt', full.names = T)
 
@@ -309,7 +319,7 @@ readTechnosmartGPS <- function(inputFolder,
 
           # set names and format date
           names(temp) <- c("time","lat","lon","altitude","gpsspeed","satellites","hdop","maxsignal")
-          df <- paste0(date_format, ",%T")
+          df <- paste0(dateFormat, ",%T")
 
           # check that date format is correct
           if (is.na(as.POSIXct(strptime(temp$time[1], df), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
@@ -545,7 +555,7 @@ cleanGPSData <- function(data,
 #' @param deployments Name of object with deployment data.
 #' @param tagTZ Timezone of TDR data.
 #' @param tagType Type of TDR biologger used, options are "Technosmart".
-#' @param date_format POSIXct string indicating how dates are formatted in the TDR files.
+#' @param dateFormat POSIXct string indicating how dates are formatted in the TDR files.
 #'
 #' @details
 #'
@@ -561,7 +571,7 @@ readTDRData <- function(inputFolder,
                         deployments,
                         tagTZ = "UTC",
                         tagType = "Technosmart",
-                        date_format = "%d-%m-%Y") {
+                        dateFormat = "%d-%m-%Y") {
 
   if (!(tagType %in% c("Technosmart"))){
     warning("Supported tagTypes are: Technosmart. If you have a different biologger please contact me.")
@@ -572,7 +582,7 @@ readTDRData <- function(inputFolder,
     output <- readTechnosmartTDR(inputFolder = inputFolder,
                                  deployments = deployments,
                                  tagTZ = tagTZ,
-                                 date_format = date_format)
+                                 dateFormat = dateFormat)
   }
 
   output
@@ -586,7 +596,7 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
                                deployments = depData,
                                tagTZ = "UTC",
                                tagType = "Technosmart",
-                               date_format = "%Y-%m-%d") {
+                               dateFormat = "%Y-%m-%d") {
 
   dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
 
@@ -637,7 +647,7 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
 
           # set names and format date
           names(temp) <- c("dep_id","time","depth","pressure","temperature","activity")
-          df <- paste0(date_format, " %H:%M:%OS")
+          df <- paste0(dateFormat, " %H:%M:%OS")
 
           # check that date format is correct
           if (is.na(as.POSIXct(strptime(temp$time[1], df), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
@@ -656,7 +666,7 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
           temp <- temp[duplicated(temp) == F,]
 
           # get sampling frequency of data
-          tt <- as.numeric(difftime(temp$time, dplyr::lag(temp$time, 1), units = 'sec'))
+          tt <- c(NA, as.numeric(difftime(temp$time[2:nrow(temp)], temp$time[1:(nrow(temp) - 1)], units = 'sec')))
           freq <- round(1/getMode(tt))
 
           # subsample to 1 Hz if the sampling frequency was higher than 1 Hz

@@ -9,7 +9,7 @@ readTDRData(
   deployments,
   tagTZ = "UTC",
   tagType = "Technosmart",
-  date_format = "\%d-\%m-\%Y"
+  dateFormat = "\%d-\%m-\%Y"
 )
 }
 \arguments{
@@ -21,7 +21,7 @@ readTDRData(
 
 \item{tagType}{Type of TDR biologger used, options are "Technosmart".}
 
-\item{date_format}{POSIXct string indicating how dates are formatted in the TDR files.}
+\item{dateFormat}{POSIXct string indicating how dates are formatted in the TDR files.}
 }
 \value{
 A new dataframe containing all TDR data.

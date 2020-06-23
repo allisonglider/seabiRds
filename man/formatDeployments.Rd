@@ -6,6 +6,8 @@
 \usage{
 formatDeployments(
   deployments,
+  dateFormat = "\%Y-\%m-\%d \%H:\%M",
+  dep_tz,
   species,
   metal_band,
   colour_band,
@@ -17,8 +19,6 @@ formatDeployments(
   dep_lat = NA,
   time_released,
   time_recaptured,
-  dateFormat = "\%Y-\%m-\%d \%H:\%M",
-  dep_tz,
   status_on = NA,
   status_off = NA,
   mass_on = NA,
@@ -36,6 +36,10 @@ formatDeployments(
 }
 \arguments{
 \item{deployments}{A data frame with deployment data. Required.}
+
+\item{dateFormat}{Character string specifying the POSIX standard format for times.}
+
+\item{dep_tz}{Timezone of deployment.}
 
 \item{species}{Character string with name of the field containing the 4-letter AOU species code. Required.}
 
@@ -58,10 +62,6 @@ formatDeployments(
 \item{time_released}{Character string with name of the field containing deployment start time (when birds was released with tag), must be in a POSIXct compatible format (e.g. YYYY-mm-dd HH:MM).}
 
 \item{time_recaptured}{Character string with name of the field containing deployment end time (when birds was recaptured with tag), must be in a POSIXct compatible format (e.g. YYYY-mm-dd HH:MM)}
-
-\item{dateFormat}{Character string specifying the POSIX standard format for times.}
-
-\item{dep_tz}{Timezone of deployment.}
 
 \item{status_on}{Breeding status at start of deployment (E: eggs, C: chicks, F: failed-breeder, N: non-breeder, P: pre-breeder, J: juvenile).}
 
