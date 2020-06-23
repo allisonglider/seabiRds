@@ -25,7 +25,7 @@ Cleans up GPS data, by clipping to deployment times and filtering unrealistic lo
 }
 \details{
 This function clips the GPS data to the start and end times of each GPS deployment. The link between deployment
-times and the GPS data is made using the 'depID' field. Because
+times and the GPS data is made using the 'dep_id' field. Because
 Ecotone GPS units are remotely downloaded and data from multiple devices are stored in the same output file, this connection
-is missing. In this case the function creates a 'depID' field in each data frame by concatenating the tag
+is missing. In this case the function creates a 'dep_id' field in each data frame by concatenating the tag
 }

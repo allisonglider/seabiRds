@@ -6,44 +6,86 @@
 \usage{
 formatDeployments(
   deployments,
-  band,
-  tag,
-  depID,
-  onTime,
-  offTime,
   dateFormat = "\%Y-\%m-\%d \%H:\%M",
-  colonyLon = NA,
-  colonyLat = NA,
-  depTZ,
-  tagTZ = "UTC",
-  sinceDate = NULL,
+  dep_tz,
+  species,
+  metal_band,
+  colour_band,
+  dep_id,
+  site,
+  subsite = NA,
+  nest = NA,
+  dep_lon = NA,
+  dep_lat = NA,
+  time_released,
+  time_recaptured,
+  status_on = NA,
+  status_off = NA,
+  mass_on = NA,
+  mass_off = NA,
+  exclude = NA,
+  gps_id = NA,
+  tdr_id = NA,
+  acc_id = NA,
+  gls_id = NA,
+  mag_id = NA,
+  cam_id = NA,
+  hrl_id = NA,
   keep = NULL
 )
 }
 \arguments{
-\item{deployments}{A data frame with deployment data.}
-
-\item{band}{Character string with name of the field containing band number or individual identifier.}
-
-\item{tag}{Character string with name of the field containing tag IDs.}
-
-\item{depID}{Character string with name of the field containing deployment ID (see Details).}
-
-\item{onTime}{Character string with name of the field containing deployment start time, must be in a POSIXct compatible format.}
-
-\item{offTime}{Character string with name of the field containing deployment end time, must be in a POSIXct compatible format.}
+\item{deployments}{A data frame with deployment data. Required.}
 
 \item{dateFormat}{Character string specifying the POSIX standard format for times.}
 
-\item{colonyLon}{Longitude of colony (or nest) , default is NULL.}
+\item{dep_tz}{Timezone of deployment.}
 
-\item{colonyLat}{Latitude of colony (or nest), default is NULL.}
+\item{species}{Character string with name of the field containing the 4-letter AOU species code. Required.}
 
-\item{depTZ}{Timezone of deployment.}
+\item{metal_band}{Character string with name of the field containing the metal band number, input should be an integer with 9-10 digits.}
 
-\item{tagTZ}{Timezone of GPS data.}
+\item{colour_band}{Character string with name of the field containing the colour band code.}
 
-\item{sinceDate}{Limit output to data collected after a certain date.}
+\item{dep_id}{Character string with name of the field containing deployment ID (see details).}
+
+\item{site}{Character string with name of the field containing the site (e.g. Coats).}
+
+\item{subsite}{Character string with name of the field containing the subsite (e.g. Coats West). This is used if your study area has distinct units within the main site.}
+
+\item{nest}{Character string with name of the field containing the nest id.}
+
+\item{dep_lon}{Character string with name of the field containing the longitude of colony (or nest), default is NULL.}
+
+\item{dep_lat}{Character string with name of the field containing the latitude of colony (or nest), default is NULL.}
+
+\item{time_released}{Character string with name of the field containing deployment start time (when birds was released with tag), must be in a POSIXct compatible format (e.g. YYYY-mm-dd HH:MM).}
+
+\item{time_recaptured}{Character string with name of the field containing deployment end time (when birds was recaptured with tag), must be in a POSIXct compatible format (e.g. YYYY-mm-dd HH:MM)}
+
+\item{status_on}{Breeding status at start of deployment (E: eggs, C: chicks, F: failed-breeder, N: non-breeder, P: pre-breeder, J: juvenile).}
+
+\item{status_off}{Breeding status at end of deployment (E: eggs, C: chicks, F: failed-breeder, N: non-breeder, P: pre-breeder, J: juvenile).}
+
+\item{mass_on}{Character string with name of the field containing the bird mass (g) at start of deployment.}
+
+\item{mass_off}{Character string with name of the field containing the bird mass (g) at end of deployment.}
+
+\item{exclude}{Character string with name of the field containing flags for deployments with a significant treatment, which could make the data unsuitable for other analysis (e.g. Fed, Handicapped, Wing-clipped).}
+
+\item{gps_id}{Character string with name of the field containing the name of the GPS tag deployed.}
+
+\item{tdr_id}{Character string with name of the field containing the name of the TDR tag deployed.}
+
+\item{acc_id}{Character string with name of the field containing the name of the ACC tag deployed.}
+
+\item{gls_id}{Character string with name of the field containing the name of the GLS tag deployed.}
+
+\item{mag_id}{Character string with name of the field containing the name of the magnetometer tag deployed.}
+
+\item{cam_id}{Character string with name of the field containing the name of the camera tag deployed.}
+
+\item{hrl_id}{Character string with name of the field containing the name of the hear rate logger tag deployed.}
 
 \item{keep}{List of variable names for other dpeloyment data to keep with output.}
 }
@@ -54,12 +96,12 @@ A new dataframe with deployment times in the same timzone as the GPS data and fi
 Prepares deployment data for use in clipping tracks
 }
 \details{
-depID is the key field for matching deployment information to the GPS data. If your GPS data has a single data file for
-each deployment (Technosmart units), then the depID should be consistent with the name of this file. If you have remotely
+dep_id is the key field for matching deployment information to the GPS data. If your GPS data has a single data file for
+each deployment (Technosmart units), then the dep_id should be consistent with the name of this file. If you have remotely
 downloaded data, where all the locations from all units are mixed together (Ecotone units), then leave this field as NA. The
-function willcreate a 'depID' based on the tag and band from each deployment.
+function willcreate a 'dep_id' based on the tag and metal_band from each deployment.
 
-depTZ and tagTZ are used to make sure a consistent time zone is used clip the GPS data. The output times from this function
+dep_tz and tagTZ are used to make sure a consistent time zone is used clip the GPS data. The output times from this function
 will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
 Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
 }

@@ -7,7 +7,9 @@
 getColDist(lon, lat, colonyLon, colonyLat)
 }
 \arguments{
-\item{lon}{A vector of latitude values.}
+\item{lon}{A vector of longitude values.}
+
+\item{lat}{A vector of latitude values.}
 
 \item{colonyLon}{Longitude of the colony (or fixed location).}
 
