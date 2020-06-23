@@ -185,6 +185,9 @@ formatDeployments <- function(deployments, species, metal_band, colour_band, dep
   # check for duplicate dep_id
   if (max(table(dep$dep_id)) > 1) stop("All dep_id values must be unique", call. = F)
 
+  # make dep_id a character variable
+  dep$dep_id <- as.character(dep$dep_id)
+
   # Make sure status_on and status_off are upper case
   dep$status_on <- toupper(as.character(dep$status_on))
   dep$status_off <- toupper(as.character(dep$status_off))
@@ -547,6 +550,8 @@ cleanGPSData <- function(data,
 #' @details
 #'
 #' Technosmart can export TDR data with the following date formats: %d-%m-%Y, %m-%d-%Y, "%Y-%m-%d, %Y-%d-%m. All the files in the inputFolder need to have the same formatting.
+#' The lowest sampling frequency for TDR data on a Technosmart unit is 1 Hz, however these data are exported along with the acceleration data, which is usually at a higher frequency.
+#' This function will resample the TDR data to 1Hz if they appear at a higher frequency in the data (i.e. exported using the 'fill missing fields setting')
 #'
 #' The function will print lists of: TDR files that contain no data, TDR files that have no matching deployments in the deployment data, and deployments that have no matching TDR files. This is intended to help you identify errors in data entry or file naming. For technosmart units, I recommend you re-export data any time you change the file name because X-Manager includes the file name as a column in the data.
 #'
@@ -643,6 +648,9 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
           # remove missing data
           temp <- subset(temp, !is.na(temp$depth) | !is.na(temp$pressure))
 
+          # convert milibars to dbars - need to check this
+          temp$pressure <- temp$pressure/100
+
           # order data and remove duplicate records
           temp <- temp[order(temp$time),]
           temp <- temp[duplicated(temp) == F,]
@@ -671,3 +679,93 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
 }
 
 # ---------------------------------------------------------------------------------------------------------------
+#' Cleans up TDR data, by clipping to deployment times
+#'
+#' @param data Name of object with formatted TDR data.
+#' @param deployments Name of object with formatted deployment data.
+#' @param tagTZ Timezone of TDR data.
+#' @param plot Should data be plotted (TRUE or FALSE).
+#'
+#' @details This function clips the TDR data to the start and end times of each TDR deployment. The link between deployment
+#' times and the TDR data is made using the 'dep_id' field. Because
+#'
+#' @return A new dataframe containing cleaned TDR data.
+
+cleanTDRData <- function(data,
+                         deployments,
+                         tagTZ = "UTC",
+                         plot = T)
+{
+
+  output <- data.frame()
+  theDeps <- unique(data$dep_id)
+
+  for (dd in 1:length(theDeps)) {
+
+    temp <- subset(data, data$dep_id == theDeps[dd])
+
+    tt <- subset(deployments, deployments$dep_id == theDeps[dd])
+
+    if (nrow(tt) > 0) {
+
+      if (is.na(tt$time_recaptured)) tt$time_recaptured <- max(temp$time, na.rm = T)
+
+      newData <- subset(temp, temp$time >= tt$time_released & temp$time <= tt$time_recaptured)
+
+      if (nrow(newData) > 5) {
+
+        if (plot) {
+
+          plotPressure <- ifelse(sum(is.na(temp$depth) == F) == 0, T, F)
+
+          ss <- min(c(temp$time[1],tt$time_released))
+          ee <- max(c(temp$time[nrow(temp)],tt$time_recaptured))
+
+          if (plotPressure == F) {
+
+            suppressMessages(
+              myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth * -1)) +
+                ggplot2::geom_line(col = "red") +
+                ggplot2::geom_line(data = newData, ggplot2::aes(x = time, y = depth * -1)) +
+                ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
+                ggplot2::xlim(ss,ee) +
+                ggplot2::theme_light() +
+                ggplot2::labs(title = paste(temp$dep_id[1]), y = 'Depth (m)', x = "Time")
+            )
+            print(myPlot)
+          }
+
+          if (plotPressure == T) {
+
+            suppressMessages(
+              myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = pressure)) +
+                ggplot2::geom_line(col = "red") +
+                ggplot2::geom_line(data = newData, ggplot2::aes(x = time, y = pressure)) +
+                ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
+                ggplot2::xlim(ss,ee) +
+                ggplot2::theme_light() +
+                ggplot2::labs(title = paste(temp$dep_id[1]), y = 'Pressure (dBar)', x = "Time")
+            )
+
+            print(myPlot)
+          }
+
+          Sys.sleep(3)
+
+          readline("Press [enter] for next plot")
+
+
+        }
+
+        output <- rbind(output, newData)
+      } else (print(paste("Less than 5 deployed locations for", tt$dep_id, "- removed")))
+    }
+  }
+
+  output
+
+  #' @export cleanTDRData
+}
+
+# -----
+

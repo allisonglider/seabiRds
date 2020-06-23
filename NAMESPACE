@@ -3,6 +3,7 @@
 export(.cleanGPSDataPlot)
 export(.matchFiles)
 export(cleanGPSData)
+export(cleanTDRData)
 export(combineFiles)
 export(filterSpeed)
 export(formatDeployments)

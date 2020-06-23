@@ -31,6 +31,8 @@ Reads in raw TDR data and sets up a standard format.
 }
 \details{
 Technosmart can export TDR data with the following date formats: %d-%m-%Y, %m-%d-%Y, "%Y-%m-%d, %Y-%d-%m. All the files in the inputFolder need to have the same formatting.
+The lowest sampling frequency for TDR data on a Technosmart unit is 1 Hz, however these data are exported along with the acceleration data, which is usually at a higher frequency.
+This function will resample the TDR data to 1Hz if they appear at a higher frequency in the data (i.e. exported using the 'fill missing fields setting')
 
 The function will print lists of: TDR files that contain no data, TDR files that have no matching deployments in the deployment data, and deployments that have no matching TDR files. This is intended to help you identify errors in data entry or file naming. For technosmart units, I recommend you re-export data any time you change the file name because X-Manager includes the file name as a column in the data.
 }
