@@ -534,3 +534,140 @@ cleanGPSData <- function(data,
   }
   #' @export .matchFiles
 }
+
+# ---------------------------------------------------------------------------------------------------------------
+#' Reads in raw TDR data and sets up a standard format.
+#'
+#' @param inputFolder Folder containing all the raw GPS files to be processed.
+#' @param deployments Name of object with deployment data.
+#' @param tagTZ Timezone of TDR data.
+#' @param tagType Type of TDR biologger used, options are "Technosmart".
+#' @param date_format POSIXct string indicating how dates are formatted in the TDR files.
+#'
+#' @details
+#'
+#' Technosmart can export TDR data with the following date formats: %d-%m-%Y, %m-%d-%Y, "%Y-%m-%d, %Y-%d-%m. All the files in the inputFolder need to have the same formatting.
+#'
+#' The function will print lists of: TDR files that contain no data, TDR files that have no matching deployments in the deployment data, and deployments that have no matching TDR files. This is intended to help you identify errors in data entry or file naming. For technosmart units, I recommend you re-export data any time you change the file name because X-Manager includes the file name as a column in the data.
+#'
+#' @return A new dataframe containing all TDR data.
+
+readTDRData <- function(inputFolder,
+                        deployments,
+                        tagTZ = "UTC",
+                        tagType = "Technosmart",
+                        date_format = "%d-%m-%Y") {
+
+  if (!(tagType %in% c("Technosmart"))){
+    warning("Supported tagTypes are: Technosmart. If you have a different biologger please contact me.")
+  }
+
+
+  if (tagType == "Technosmart") {
+    output <- readTechnosmartTDR(inputFolder = inputFolder,
+                                 deployments = deployments,
+                                 tagTZ = tagTZ,
+                                 date_format = date_format)
+  }
+
+  output
+
+  #' @export readTDRData
+}
+
+# ---------------------------------------------------------------------------------------------------------------
+
+readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
+                               deployments = depData,
+                               tagTZ = "UTC",
+                               tagType = "Technosmart",
+                               date_format = "%Y-%m-%d") {
+
+  dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
+
+  # Message for empty files
+  emptyfiles <- dd[file.size(dd) == 0]
+  if (length(emptyfiles) > 0) {
+    print("-- Files containing no data --")
+    print(emptyfiles)
+  }
+  dd <- dd[file.size(dd) > 0]
+
+  # Message for unmatched files
+  .matchFiles(files = dd, deployment_ids = deployments$dep_id)
+
+  output <- data.frame()
+
+  for (i in 1:nrow(deployments)) {
+
+    if (is.na(deployments$dep_id[i]) == F) {
+
+      # get lists of file names
+      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+
+      if (length(theFiles > 0)) {
+
+        temp <- combineFiles(files = theFiles,
+                             pattern = "csv",
+                             type = "csv",
+                             sep = ",",
+                             stringsAsFactors = F,
+                             header = T)
+
+        if (nrow(temp) > 5) {
+
+          tempNames <- names(temp)
+
+          # combine date and time into one column if they are separate
+          if ('Date' %in% tempNames & 'Time' %in% tempNames)  temp$Timestamp <- paste(temp$Date, temp$Time)
+
+          # create empty pressure or depth field if missing
+          if (('Pressure' %in% tempNames) == F)  temp$Pressure <- NA
+          if (('Depth' %in% tempNames) == F)  temp$Depth <- NA
+
+          # add fields for dep_id
+          temp$dep_id <- deployments$dep_id[i]
+          tdrCols <- c("dep_id","Timestamp","Depth","Pressure","Temp....C.","Activity")
+          temp <- temp[,tdrCols]
+
+          # set names and format date
+          names(temp) <- c("dep_id","time","depth","pressure","temperature","activity")
+          df <- paste0(date_format, " %H:%M:%OS")
+
+          # check that date format is correct
+          if (is.na(as.POSIXct(strptime(temp$time[1], df), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
+
+          # format dates
+          temp$time <- as.POSIXct(strptime(temp$time, df), tz = tagTZ)
+
+          # remove missing data
+          temp <- subset(temp, !is.na(temp$depth) | !is.na(temp$pressure))
+
+          # order data and remove duplicate records
+          temp <- temp[order(temp$time),]
+          temp <- temp[duplicated(temp) == F,]
+
+          # get sampling frequency of data
+          tt <- as.numeric(difftime(temp$time, dplyr::lag(temp$time, 1), units = 'sec'))
+          freq <- round(1/getMode(tt))
+
+          # subsample to 1 Hz if the sampling frequency was higher than 1 Hz
+          if (freq > 1) {temp <- temp[seq(1, nrow(temp), freq),]}
+
+          output <- rbind(output, temp)
+
+          (print(paste("Finished:", deployments$dep_id[i])))
+
+
+        } else (print(paste("-- Less than 5 records:", deployments$dep_id[i], "- not processed")))
+
+      }
+
+    }
+
+  }
+
+  output
+}
+
+# ---------------------------------------------------------------------------------------------------------------
