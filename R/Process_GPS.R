@@ -726,6 +726,8 @@ cleanTDRData <- function(data,
 
         if (plot) {
 
+          if (nrow(temp) > 100000) idx <- seq(1,nrow(temp), 5) else idx <- 1:nrow(temp)
+
           plotPressure <- ifelse(sum(is.na(temp$depth) == F) == 0, T, F)
 
           ss <- min(c(temp$time[1],tt$time_released))
@@ -734,9 +736,9 @@ cleanTDRData <- function(data,
           if (plotPressure == F) {
 
             suppressMessages(
-              myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth * -1)) +
+              myPlot <- ggplot2::ggplot(temp[idx,], ggplot2::aes(x = time, y = depth * -1)) +
                 ggplot2::geom_line(col = "red") +
-                ggplot2::geom_line(data = newData, ggplot2::aes(x = time, y = depth * -1)) +
+                ggplot2::geom_line(data = newData[idx,], ggplot2::aes(x = time, y = depth * -1)) +
                 ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
                 ggplot2::xlim(ss,ee) +
                 ggplot2::theme_light() +
@@ -748,9 +750,9 @@ cleanTDRData <- function(data,
           if (plotPressure == T) {
 
             suppressMessages(
-              myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = pressure)) +
+              myPlot <- ggplot2::ggplot(temp[idx,], ggplot2::aes(x = time, y = pressure)) +
                 ggplot2::geom_line(col = "red") +
-                ggplot2::geom_line(data = newData, ggplot2::aes(x = time, y = pressure)) +
+                ggplot2::geom_line(data = newData[idx,], ggplot2::aes(x = time, y = pressure)) +
                 ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
                 ggplot2::xlim(ss,ee) +
                 ggplot2::theme_light() +
@@ -760,7 +762,7 @@ cleanTDRData <- function(data,
             print(myPlot)
           }
 
-          Sys.sleep(3)
+          Sys.sleep(1)
 
           readline("Press [enter] for next plot")
 
