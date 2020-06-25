@@ -198,22 +198,22 @@ combineFiles <- function(files,
   temp <- data.frame()
 
   if (type %in% c("csv","txt")) {
-    for (ff in files) {
-      if (file.size(ff) > 0) {
-        tt <- read.csv(ff, sep = sep, header = header, stringsAsFactors = stringsAsFactors, skip = skip)
-
+    for (ff in 1:length(files)) {
+      if (file.size(files[ff]) > 0) {
+        tt <- read.csv(files[ff], sep = sep, header = header, stringsAsFactors = stringsAsFactors, skip = skip)
         if (combineColumns == F) temp <- rbind(temp, tt)
-        if (combineColumns == T) temp <- merge(temp, tt, all = T)
+        if (combineColumns == T & ff == 1) temp <- tt
+        if (combineColumns == T & ff > 1) temp <- merge(temp, tt, all = T)
       }
     }
   }
 
   if (type %in% c("xlsx")) {
-    for (ff in files) {
-      if (file.size(ff) > 0) {
-        tt <- read.xlsx(ff, sep = sep, sheetIndex = sheetIndex, stringsAsFactors = stringsAsFactors)
-        temp <- rbind(temp, tt)
-      }
+    for (ff in 1:length(files)) {
+      if (file.size(files[ff]) > 0) {
+        tt <- read.xlsx(files[ff], sep = sep, sheetIndex = sheetIndex, stringsAsFactors = stringsAsFactors)
+        if (combineColumns == T & ff == 1) temp <- tt
+        if (combineColumns == T & ff > 1) temp <- merge(temp, tt, all = T)      }
     }
   }
 
