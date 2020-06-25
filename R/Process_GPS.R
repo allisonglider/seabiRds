@@ -714,7 +714,7 @@ readLAT150 <- function(inputFolder,
                                deployments,
                                tagTZ = "UTC") {
 
-  dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
+  dd <- list.files(inputFolder, pattern = '.csv', full.names = T, recursive = T)
 
   emptyfiles <- dd[file.size(dd) == 0]
   if (length(emptyfiles) > 0) {
@@ -743,7 +743,8 @@ readLAT150 <- function(inputFolder,
                              sep = ",",
                              stringsAsFactors = F,
                              header = T,
-                             skip = 2)
+                             skip = 2,
+                             combineColumns = T)
 
         if (nrow(temp) > 5) {
 
@@ -764,7 +765,9 @@ readLAT150 <- function(inputFolder,
           temp$dep_id <- deployments$dep_id[i]
           names(temp)[grep("Temp", names(temp))] <- "temperature"
           names(temp)[grep("Pressure", names(temp))] <- "pressure"
-          names(temp)[grep("Wet", names(temp))] <- "wetdry"
+          if (length(grep("Wet", names(temp))) >0) {
+            names(temp)[grep("Wet", names(temp))] <- "wetdry"
+          } else temp$wetdry <- NA
           temp$depth <- NA
 
           temp <- temp[,c("dep_id","time","depth",'pressure','temperature','wetdry')]
