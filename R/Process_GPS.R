@@ -334,6 +334,11 @@ readTechnosmartGPS <- function(inputFolder,
           # add fields for metal_band and tag and deployment
           temp$dep_id <- deployments$dep_id[i]
           temp <- temp[,c("dep_id","time","lon","lat",names(temp)[!(names(temp) %in% c("dep_id","time","lon","lat"))])]
+
+          # add ecotone fields
+          temp$diving <- NA
+          temp$inrange <- NA
+
           output <- rbind(output, temp)
 
         } else (print(paste("-- Less than 5 locations:", deployments$dep_id[i], "- not processed")))
@@ -353,7 +358,6 @@ readEcotoneGPS <- function(inputFolder,
                            deployments,
                            tagTZ = "UTC") {
 
-
   theFiles <- list.files(inputFolder, full.names = T)
 
   output <- combineFiles(files = theFiles,
@@ -369,23 +373,36 @@ readEcotoneGPS <- function(inputFolder,
   output <- output[order(output$Logger.ID, output$time),]
 
   names(output) <- gsub("[.]","",names(output))
-  output$tag <- output$LoggerID
+  output$gps_id <- output$LoggerID
   output$lon <- output$Longitude
   output$lat <- output$Latitude
   output$gpsspeed <- output$Speed
+
+  if (c("Divdown") %in% names(output)) {
+    output$diving <- ifelse(output$Divdown == 1 | output$Divup == 1, 1, NA)
+    output$diving[is.na(output$diving)] <- 0
+  }
+
   output <- output[,names(output)[!(names(output) %in% c("LoggerID","Longitude","Latitude",
                                                          "Year","Month","Day","Hour","Minute","Second",
                                                          "Rawlatitude","RawLongitude","Speed"))]]
   names(output) <- tolower(names(output))
+  output <- subset(output, !is.na(output$lon) | output$diving == 1 | output$inrange == 1)
 
+  output <- merge(output, deployments[,c("gps_id","metal_band","dep_id","dep_lon","dep_lat")])
+  output <- output[order(output$dep_id, output$time),]
 
-  output <- merge(output, deployments[,c("tag","metal_band","dep_id")])
-  output$dep_id <- paste0(output$tag, '_', output$metal_band)
+  if ("inrange" %in% names(output)) {
+    output$inrange[is.na(output$inrange)] <- 0
+    output$lon[output$inrange == 1] <- output$dep_lon[output$inrange == 1]
+    output$lat[output$inrange == 1] <- output$dep_lat[output$inrange == 1]
+  }
 
-  output <- output[,c("metal_band","tag","dep_id","time","lon","lat",
-                      names(output)[!(names(output) %in% c("metal_band","tag","dep_id","time","lon","lat"))])]
+  output$satellites <- NA
+  output$hdop <- NA
+  output$maxsignal <- NA
 
-  output <- subset(output, !is.na(output$lon))
+  output <- output[,c("dep_id","time","lon","lat","altitude","gpsspeed","satellites","hdop","maxsignal","diving","inrange")]
 
   output
 }
@@ -425,12 +442,6 @@ cleanGPSData <- function(data,
 
       if (is.na(tt$time_recaptured)) tt$time_recaptured <- max(temp$time, na.rm = T)
 
-      if ("inrange" %in% names(temp)) {
-        temp$lon[temp$inrange == 1] <- tt$dep_lon
-        temp$lat[temp$inrange == 1] <- tt$dep_lat
-        temp <- subset(temp, is.na(temp$lon) == F)
-      }
-
       if (is.na(tt$dep_lon)) {
         temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = temp$lon[temp$time >= tt$time_released][1], colonyLat = temp$lat[temp$time >= tt$time_released][1])
         yy <- "Distance from first location (km)"
@@ -440,6 +451,7 @@ cleanGPSData <- function(data,
       }
 
       newData <- subset(temp, temp$time >= tt$time_released & temp$time <= tt$time_recaptured)
+      newData <- newData[order(newData$dep_id, newData$time),]
 
       if (nrow(newData) > 5) {
 
@@ -476,36 +488,36 @@ cleanGPSData <- function(data,
 
 .cleanGPSDataPlot <- function(temp, newData, tt, yy) {
 
-  if (max(temp$colDist) < 500) {
+  if (max(temp$colDist, na.rm = T) < 500) {
     world <- rnaturalearth::ne_countries(scale = 50, returnclass = 'sf')
   } else {
     world <- rnaturalearth::ne_countries(scale = 110, returnclass = 'sf')
   }
 
-  ss <- min(c(temp$time[1],tt$time_released))
-  ee <- max(c(temp$time[nrow(temp)],tt$time_recaptured))
+  ss <- min(c(temp$time[1],tt$time_released), na.rm = T)
+  ee <- max(c(temp$time[nrow(temp)],tt$time_recaptured), na.rm = T)
 
   suppressMessages(
-    myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = colDist)) +
+    myPlot <- ggplot2::ggplot(temp[!is.na(temp$lon),], ggplot2::aes(x = time, y = colDist)) +
       ggplot2::geom_line(col = "red") +
       ggplot2::geom_point(col = "red") +
-      ggplot2::geom_point(data = newData, ggplot2::aes(x = time, y = colDist)) +
-      ggplot2::geom_line(data = newData, ggplot2::aes(x = time, y = colDist)) +
+      ggplot2::geom_point(data = newData[!is.na(newData$lon),], ggplot2::aes(x = time, y = colDist)) +
+      ggplot2::geom_line(data = newData[!is.na(newData$lon),], ggplot2::aes(x = time, y = colDist)) +
       ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
       ggplot2::xlim(ss,ee) +
       ggplot2::theme_light() +
       ggplot2::labs(title = paste(temp$dep_id[1]), y = yy, x = "Time")
   )
-  xran <- range(temp$lon)
-  yran <- range(temp$lat)
+  xran <- range(temp$lon, na.rm = T)
+  yran <- range(temp$lat, na.rm = T)
 
   suppressMessages(
-    myMap<- ggplot2::ggplot(data = newData) +
+    myMap<- ggplot2::ggplot(data = newData[!is.na(newData$lon),]) +
       ggplot2::geom_sf(data = world) +
-      ggplot2::geom_point(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
-      ggplot2::geom_path(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
-      ggplot2::geom_point(data = newData, ggplot2::aes(x = lon, y = lat)) +
-      ggplot2::geom_path(data = newData, ggplot2::aes(x = lon, y = lat)) +
+      ggplot2::geom_point(data = temp[!is.na(temp$lon),], ggplot2::aes(x = lon, y = lat), col = 'red') +
+      ggplot2::geom_path(data = temp[!is.na(temp$lon),], ggplot2::aes(x = lon, y = lat), col = 'red') +
+      ggplot2::geom_point(data = newData[!is.na(newData$lon),], ggplot2::aes(x = lon, y = lat)) +
+      ggplot2::geom_path(data = newData[!is.na(newData$lon),], ggplot2::aes(x = lon, y = lat)) +
       #ggplot2::geom_point(data = tt, ggplot2::aes(x = tt$dep_lon, y = tt$dep_lon), fill = 'green', shape = 24, size = 3) +
       ggplot2::coord_sf(xlim = xran, ylim = yran) +
       ggplot2::theme_light() +
@@ -554,7 +566,7 @@ cleanGPSData <- function(data,
 #' @param inputFolder Folder containing all the raw GPS files to be processed.
 #' @param deployments Name of object with deployment data.
 #' @param tagTZ Timezone of TDR data.
-#' @param tagType Type of TDR biologger used, options are "Technosmart".
+#' @param tagType Type of TDR biologger used, options are "Technosmart", "LAT150.
 #' @param dateFormat POSIXct string indicating how dates are formatted in the TDR files.
 #'
 #' @details
@@ -570,10 +582,10 @@ cleanGPSData <- function(data,
 readTDRData <- function(inputFolder,
                         deployments,
                         tagTZ = "UTC",
-                        tagType = "Technosmart",
+                        tagType,
                         dateFormat = "%d-%m-%Y") {
 
-  if (!(tagType %in% c("Technosmart"))){
+  if (!(tagType %in% c("Technosmart","LAT150"))){
     warning("Supported tagTypes are: Technosmart. If you have a different biologger please contact me.")
   }
 
@@ -583,6 +595,12 @@ readTDRData <- function(inputFolder,
                                  deployments = deployments,
                                  tagTZ = tagTZ,
                                  dateFormat = dateFormat)
+  }
+
+  if (tagType == "LAT150") {
+    output = readLAT150(inputFolder = inputFolder,
+                           deployments = deployments,
+                           tagTZ = tagTZ)
   }
 
   output
@@ -642,11 +660,13 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
 
           # add fields for dep_id
           temp$dep_id <- deployments$dep_id[i]
-          tdrCols <- c("dep_id","Timestamp","Depth","Pressure","Temp....C.","Activity")
+          temp$wetdry <- NA
+
+          tdrCols <- c("dep_id","Timestamp","Depth","Pressure","Temp....C.","wetdry")
           temp <- temp[,tdrCols]
 
           # set names and format date
-          names(temp) <- c("dep_id","time","depth","pressure","temperature","activity")
+          names(temp) <- c("dep_id","time","depth","pressure","temperature","wetdry")
           df <- paste0(dateFormat, " %H:%M:%OS")
 
           # check that date format is correct
@@ -687,6 +707,80 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
 
   output
 }
+
+# ---------------------------------------------------------------------------------------------------------------
+
+readLAT150 <- function(inputFolder,
+                               deployments,
+                               tagTZ = "UTC") {
+
+  dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
+
+  emptyfiles <- dd[file.size(dd) == 0]
+  if (length(emptyfiles) > 0) {
+    print("-- Files containing no data --")
+    print(emptyfiles)
+  }
+
+  .matchFiles(files = dd, deployment_ids = deployments$dep_id)
+
+  dd <- dd[file.size(dd) > 0]
+
+  output <- data.frame()
+
+  for (i in 1:nrow(deployments)) {
+
+    if (is.na(deployments$dep_id[i]) == F) {
+
+      # get lists of file names
+      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+
+      if (length(theFiles > 0)) {
+
+        temp <- combineFiles(files = theFiles,
+                             pattern = "csv",
+                             type = "csv",
+                             sep = ",",
+                             stringsAsFactors = F,
+                             header = T,
+                             skip = 2)
+
+        if (nrow(temp) > 5) {
+
+          # Combine date and time into one variable
+          temp$time <- paste(temp$Date, temp$Time)
+
+          # check that date format is correct
+          if (is.na(as.POSIXct(temp$time[1], tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
+
+          # format dates
+          temp$time <- as.POSIXct(temp$time, tz = tagTZ)
+
+          # order data and remove duplicate records
+          temp <- temp[order(temp$time),]
+          temp <- temp[duplicated(temp) == F,]
+
+          # add fields for metal_band and tag and deployment
+          temp$dep_id <- deployments$dep_id[i]
+          names(temp)[grep("Temp", names(temp))] <- "temperature"
+          names(temp)[grep("Pressure", names(temp))] <- "pressure"
+          names(temp)[grep("Wet", names(temp))] <- "wetdry"
+          temp$depth <- NA
+
+          temp <- temp[,c("dep_id","time","depth",'pressure','temperature','wetdry')]
+          output <- rbind(output, temp)
+
+        } else (print(paste("-- Less than 5 locations:", deployments$dep_id[i], "- not processed")))
+
+      }
+
+    }
+
+  }
+
+  output
+}
+
 
 # ---------------------------------------------------------------------------------------------------------------
 #' Cleans up TDR data, by clipping to deployment times
