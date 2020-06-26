@@ -370,6 +370,7 @@ readEcotoneGPS <- function(inputFolder,
 
   output$time <- paste(output$Year, output$Month, output$Day, output$Hour, output$Minute, output$Second, sep = "-")
   output$time <- as.POSIXct(strptime(output$time, "%Y-%m-%d-%H-%M-%S"), tz = tagTZ)
+  output <- subset(output, output$time > as.POSIXct("1900-01-01", tz = tagTZ))
   output <- output[order(output$Logger.ID, output$time),]
 
   names(output) <- gsub("[.]","",names(output))
