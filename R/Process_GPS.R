@@ -195,8 +195,10 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
   dep$exclude <- as.character(dep$exclude)
 
   if (fill_dep_id == T) {
+
     if (sum(is.na(dep$metal_band[is.na(dep$dep_id)])) > 0) stop("Cannot use fill_dep_id = TRUE with missing metal_band values", call. = F)
     if (sum(is.na(dep$time_released[is.na(dep$dep_id)])) > 0) stop("Cannot use fill_dep_id = TRUE with missing time_released", call. = F)
+
     dep$dep_id[is.na(dep$dep_id)] <- paste0(dep$metal_band[is.na(dep$dep_id)],
                                             "_",
                                             gsub("-","",as.Date(dep$time_released[is.na(dep$dep_id)])))
