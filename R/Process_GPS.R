@@ -8,6 +8,7 @@
 #' @param metal_band Character string with name of the field containing the metal band number, input should be an integer with 9-10 digits.
 #' @param colour_band Character string with name of the field containing the colour band code.
 #' @param dep_id Character string with name of the field containing deployment ID (see details).
+#' @param fill_dep_id Should missing dep_id values be filled by combiing metal_band and release date, default is TRUE.
 #' @param site Character string with name of the field containing the site (e.g. Coats).
 #' @param subsite Character string with name of the field containing the subsite (e.g. Coats West). This is used if your study area has distinct units within the main site.
 #' @param nest Character string with name of the field containing the nest id.
@@ -43,7 +44,7 @@
 #' @return A new dataframe with deployment times in the same timzone as the GPS data and field names that are compatible with other functions in this package.
 
 formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz,
-                              species, metal_band, colour_band, dep_id,
+                              species, metal_band, colour_band, dep_id, fill_dep_id = T,
                               site, subsite = NA, nest = NA, dep_lon = NA, dep_lat = NA,
                               time_released, time_recaptured,
                               status_on = NA, status_off = NA, mass_on = NA, mass_off = NA, exclude = NA,
@@ -162,10 +163,6 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
   dep$time_recaptured <- lubridate::force_tz(as.POSIXct(strptime(dep$time_recaptured, dateFormat)), tz = dep_tz)
   dep$time_recaptured <- lubridate::with_tz(dep$time_recaptured, tz = 'UTC')
 
-  if (length(unique(dep$dep_id)) == 1 & is.na(unique(dep$dep_id)[1])) {
-    dep$dep_id <- paste0(dep$tag, '_', dep$metal_band)
-  }
-
   # Convert empty characters to NA
   dep$colour_band[dep$colour_band == ""] <- NA
   dep$status_on[dep$status_on == ""] <- NA
@@ -183,8 +180,7 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
   dep$hrl_id[dep$hrl_id == ""] <- NA
   dep$exclude[dep$exclude == ""] <- NA
 
-  # check for duplicate dep_id
-  if (max(table(dep$dep_id)) > 1) stop("All dep_id values must be unique", call. = F)
+
 
   # make dep_id a character variable
   dep$dep_id <- as.character(dep$dep_id)
@@ -198,6 +194,16 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
   dep$hrl_id <- as.character(dep$hrl_id)
   dep$exclude <- as.character(dep$exclude)
 
+  if (fill_dep_id == T) {
+    if (sum(is.na(dep$metal_band[is.na(dep$dep_id)])) > 0) stop("Cannot use fill_dep_id = TRUE with missing metal_band values", call. = F)
+    if (sum(is.na(dep$time_released[is.na(dep$dep_id)])) > 0) stop("Cannot use fill_dep_id = TRUE with missing time_released", call. = F)
+    dep$dep_id[is.na(dep$dep_id)] <- paste0(dep$metal_band[is.na(dep$dep_id)],
+                                            "_",
+                                            gsub("-","",as.Date(dep$time_released[is.na(dep$dep_id)])))
+  }
+
+  # check for duplicate dep_id
+  if (max(table(dep$dep_id)) > 1) stop("All dep_id values must be unique", call. = F)
   # Make sure status_on and status_off are upper case
   dep$status_on <- toupper(as.character(dep$status_on))
   dep$status_off <- toupper(as.character(dep$status_off))
