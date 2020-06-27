@@ -237,7 +237,7 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
 #' @param inputFolder Folder containing all the raw GPS files to be processed.
 #' @param deployments Name of object with deployment data.
 #' @param tagTZ Timezone of GPS data.
-#' @param tagType Type of GPS biologger used, options are "Technosmart" and "Ecotone".
+#' @param tagType Type of GPS biologger used, options are "Technosmart", "Ecotone", and "Cattrack.
 #' @param dateFormat POSIXct string indicating how dates are formatted in the GPS files.
 #'
 #' @details
@@ -254,8 +254,8 @@ readGPSData <- function(inputFolder,
                         tagType = "Technosmart",
                         dateFormat = "%d-%m-%Y") {
 
-  if (!(tagType %in% c("Technosmart","Ecotone"))){
-    warning("Supported tagTypes are: Technosmart and Ecotone. If you have a different biologger please contact me.")
+  if (!(tagType %in% c("Technosmart","Ecotone", "Cattrack"))){
+    warning("Supported tagTypes are: Technosmart, Ecotone, and Cattrack. If you have a different biologger please contact me.")
   }
 
 
@@ -270,6 +270,12 @@ readGPSData <- function(inputFolder,
     output <- readEcotoneGPS(inputFolder = inputFolder,
                              deployments = deployments,
                              tagTZ = tagTZ)
+  }
+
+  if (tagType == "Cattrack") {
+    output <- readCattrackGPS(inputFolder = inputFolder,
+                              deployments = deployments,
+                              tagTZ = tagTZ)
   }
 
 
@@ -410,6 +416,87 @@ readEcotoneGPS <- function(inputFolder,
 
   output
 }
+
+# ---------------------------------------------------------------------------------------------------------------
+
+readCattrackGPS <- function(inputFolder,
+                            deployments,
+                            tagTZ = "UTC") {
+
+  dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
+
+  emptyfiles <- dd[file.size(dd) == 0]
+  if (length(emptyfiles) > 0) {
+    print("-- Files containing no data --")
+    print(emptyfiles)
+  }
+
+  .matchFiles(files = dd, deployment_ids = deployments$dep_id)
+
+  dd <- dd[file.size(dd) > 0]
+
+  output <- data.frame()
+
+  for (i in 1:nrow(deployments)) {
+
+    if (is.na(deployments$dep_id[i]) == F) {
+
+      # get lists of file names
+      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+
+      if (length(theFiles > 0)) {
+
+        temp <- combineFiles(files = theFiles,
+                             pattern = "csv",
+                             type = "csv",
+                             sep = ",",
+                             stringsAsFactors = F,
+                             header = T)
+
+        if (nrow(temp) > 5) {
+
+          # check that date format is correct
+          if (is.na(as.POSIXct(as.POSIXct(paste(temp$Date[1], temp$Time[1])), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
+
+          # format dates
+          temp$time <- lubridate::force_tz(as.POSIXct(paste(temp$Date, temp$Time)), tz = tagTZ)
+          temp$time <- lubridate::with_tz(temp$time, tz = 'UTC')
+
+          # order data and remove duplicate records
+          temp <- temp[order(temp$time),]
+          temp <- temp[duplicated(temp) == F,]
+
+          # add fields for metal_band and tag and deployment
+          temp$dep_id <- deployments$dep_id[i]
+          if (!('Altitude' %in% names(temp))) temp$Altitude <- NA
+          if (!('Speed' %in% names(temp))) temp$Speed <- NA
+
+          temp <- temp[,c('dep_id','time','Longitude','Latitude','Altitude',"Speed")]
+          names(temp) <- c('dep_id','time','lon','lat','altitude','gpsspeed')
+          temp$gpsspeed <- temp$gpsspeed/1000
+          temp$satellites <- NA
+          temp$hdop <- NA
+          temp$maxsignal <- NA
+          temp$diving <- NA
+          temp$inrange <- NA
+
+          temp <- temp[duplicated(temp[,c('dep_id','time')]) == F,]
+
+          output <- rbind(output, temp)
+
+          output
+
+        } else (print(paste("-- Less than 5 locations:", deployments$dep_id[i], "- not processed")))
+
+      }
+
+    }
+
+  }
+
+  output
+}
+
 
 # ---------------------------------------------------------------------------------------------------------------
 #' Cleans up GPS data, by clipping to deployment times and filtering unrealistic locations.
@@ -603,8 +690,8 @@ readTDRData <- function(inputFolder,
 
   if (tagType == "LAT150") {
     output = readLAT150(inputFolder = inputFolder,
-                           deployments = deployments,
-                           tagTZ = tagTZ)
+                        deployments = deployments,
+                        tagTZ = tagTZ)
   }
 
   output
@@ -715,8 +802,8 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
 # ---------------------------------------------------------------------------------------------------------------
 
 readLAT150 <- function(inputFolder,
-                               deployments,
-                               tagTZ = "UTC") {
+                       deployments,
+                       tagTZ = "UTC") {
 
   dd <- list.files(inputFolder, pattern = '.csv', full.names = T, recursive = T)
 
