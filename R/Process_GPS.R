@@ -752,6 +752,7 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
                              header = T)
 
         if (nrow(temp) > 5) {
+          if (("Depth" %in% names(temp)) | "Pressure" %in% names(temp)){
 
           tempNames <- names(temp)
 
@@ -801,6 +802,7 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
           (print(paste("Finished:", deployments$dep_id[i])))
 
 
+          } else (print(paste("-- Missing depth or pressure:", deployments$dep_id[i], "- not processed")))
         } else (print(paste("-- Less than 5 records:", deployments$dep_id[i], "- not processed")))
 
       }
