@@ -650,7 +650,12 @@ cleanGPSData <- function(data,
     print(as.character(unmatchedFiles))
   }
 
-  unmatchedDeployments <- deployment_ids[!(deployment_ids %in% mf$match)]
+  unmatchedDeployments <- c()
+  for (dd in deployment_ids) {
+    idx <- grep(dd, files)
+    if (length(idx) <1)  unmatchedDeployments <- c(unmatchedDeployments, dd)
+  }
+
   if (length(unmatchedDeployments) > 0) {
     print("-- Deployments that have no matching files --")
     unmatchedDeployments <- unmatchedDeployments[!is.na(unmatchedDeployments)]
