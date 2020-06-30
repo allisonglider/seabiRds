@@ -584,10 +584,10 @@ cleanGPSData <- function(data,
       if (is.na(tt$time_recaptured)) tt$time_recaptured <- max(temp$time, na.rm = T)
 
       if (is.na(tt$dep_lon)) {
-        temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = temp$lon[temp$time >= tt$time_released][1], colonyLat = temp$lat[temp$time >= tt$time_released][1])
+        temp$col_dist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = temp$lon[temp$time >= tt$time_released][1], colonyLat = temp$lat[temp$time >= tt$time_released][1])
         yy <- "Distance from first location (km)"
       } else {
-        temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = tt$dep_lon, colonyLat = tt$dep_lat)
+        temp$col_dist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = tt$dep_lon, colonyLat = tt$dep_lat)
         yy <- "Distance from colony (km)"
       }
 
@@ -629,7 +629,7 @@ cleanGPSData <- function(data,
 
 .cleanGPSDataPlot <- function(temp, newData, tt, yy) {
 
-  if (max(temp$colDist, na.rm = T) < 500) {
+  if (max(temp$col_dist, na.rm = T) < 500) {
     world <- rnaturalearth::ne_countries(scale = 50, returnclass = 'sf')
   } else {
     world <- rnaturalearth::ne_countries(scale = 110, returnclass = 'sf')
@@ -639,11 +639,11 @@ cleanGPSData <- function(data,
   ee <- max(c(temp$time[nrow(temp)],tt$time_recaptured), na.rm = T)
 
   suppressMessages(
-    myPlot <- ggplot2::ggplot(temp[!is.na(temp$lon),], ggplot2::aes(x = time, y = colDist)) +
+    myPlot <- ggplot2::ggplot(temp[!is.na(temp$lon),], ggplot2::aes(x = time, y = col_dist)) +
       ggplot2::geom_line(col = "red") +
       ggplot2::geom_point(col = "red") +
-      ggplot2::geom_point(data = newData[!is.na(newData$lon),], ggplot2::aes(x = time, y = colDist)) +
-      ggplot2::geom_line(data = newData[!is.na(newData$lon),], ggplot2::aes(x = time, y = colDist)) +
+      ggplot2::geom_point(data = newData[!is.na(newData$lon),], ggplot2::aes(x = time, y = col_dist)) +
+      ggplot2::geom_line(data = newData[!is.na(newData$lon),], ggplot2::aes(x = time, y = col_dist)) +
       ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
       ggplot2::xlim(ss,ee) +
       ggplot2::theme_light() +
