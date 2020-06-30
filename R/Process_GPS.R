@@ -54,7 +54,7 @@
 #' @return A new dataframe with deployment times in UTC and field names that are compatible with other functions in this package and the lab biologging database.
 
 formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz,
-                              species, metal_band, colour_band, dep_id, fill_lon_id = T,
+                              species, metal_band, colour_band, dep_id, fill_dep_id = T,
                               site, subsite = NA, nest = NA, dep_lon = NA, dep_lat = NA,
                               time_released, time_recaptured = NA,
                               status_on = NA, status_off = NA, mass_on = NA, mass_off = NA, exclude = NA, fed_unfed = NA,

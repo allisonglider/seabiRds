@@ -12,7 +12,7 @@ formatDeployments(
   metal_band,
   colour_band,
   dep_id,
-  fill_lon_id = T,
+  fill_dep_id = T,
   site,
   subsite = NA,
   nest = NA,
@@ -50,6 +50,8 @@ formatDeployments(
 \item{colour_band}{Character string with name of the field containing the colour band code.}
 
 \item{dep_id}{Character string with name of the field containing deployment ID (see details). Each dep_id must be unique. Required.}
+
+\item{fill_dep_id}{Should missing dep_id values be filled by combining metal_band and release date, default is TRUE.}
 
 \item{site}{Character string with name of the field containing the site (e.g. Coats). Required.}
 
@@ -92,8 +94,6 @@ formatDeployments(
 \item{hrl_id}{Character string with name of the field containing the name of the hear rate logger tag deployed.}
 
 \item{keep}{List of variable names for other dpeloyment data to keep with output.}
-
-\item{fill_dep_id}{Should missing dep_id values be filled by combining metal_band and release date, default is TRUE.}
 }
 \value{
 A new dataframe with deployment times in UTC and field names that are compatible with other functions in this package and the lab biologging database.
