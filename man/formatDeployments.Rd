@@ -2,7 +2,8 @@
 % Please edit documentation in R/Process_GPS.R
 \name{formatDeployments}
 \alias{formatDeployments}
-\title{Prepares deployment data for use in clipping tracks}
+\title{This function standardizes deployment data, which is the first step in processing any tracking data. The function will create standard field names and formats for
+key data about each deployment. All deployment times will be converted to UTC, to ensure tracking data are clipped to the correct time.}
 \usage{
 formatDeployments(
   deployments,
@@ -12,19 +13,20 @@ formatDeployments(
   metal_band,
   colour_band,
   dep_id,
-  fill_dep_id = T,
+  fill_lon_id = T,
   site,
   subsite = NA,
   nest = NA,
   dep_lon = NA,
   dep_lat = NA,
   time_released,
-  time_recaptured,
+  time_recaptured = NA,
   status_on = NA,
   status_off = NA,
   mass_on = NA,
   mass_off = NA,
   exclude = NA,
+  fed_unfed = NA,
   gps_id = NA,
   tdr_id = NA,
   acc_id = NA,
@@ -38,43 +40,43 @@ formatDeployments(
 \arguments{
 \item{deployments}{A data frame with deployment data. Required.}
 
-\item{dateFormat}{Character string specifying the POSIX standard format for times.}
+\item{dateFormat}{Character string specifying the POSIX standard format for your deployment times, defaults is %Y-%m-%d %H:%M:%S. See ?strftime for other datetime formats}
 
 \item{dep_tz}{Timezone of deployment.}
 
 \item{species}{Character string with name of the field containing the 4-letter AOU species code. Required.}
 
-\item{metal_band}{Character string with name of the field containing the metal band number, input should be an integer with 9-10 digits.}
+\item{metal_band}{Character string with name of the field containing the metal band number. Values should be numeric with 9-10 digits, dashes are not allowed.}
 
 \item{colour_band}{Character string with name of the field containing the colour band code.}
 
-\item{dep_id}{Character string with name of the field containing deployment ID (see details).}
+\item{dep_id}{Character string with name of the field containing deployment ID (see details). Each dep_id must be unique. Required.}
 
-\item{fill_dep_id}{Should missing dep_id values be filled by combiing metal_band and release date, default is TRUE.}
-
-\item{site}{Character string with name of the field containing the site (e.g. Coats).}
+\item{site}{Character string with name of the field containing the site (e.g. Coats). Required.}
 
 \item{subsite}{Character string with name of the field containing the subsite (e.g. Coats West). This is used if your study area has distinct units within the main site.}
 
 \item{nest}{Character string with name of the field containing the nest id.}
 
-\item{dep_lon}{Character string with name of the field containing the longitude of colony (or nest), default is NULL.}
+\item{dep_lon}{Character string with name of the field containing the longitude of colony (or nest).}
 
-\item{dep_lat}{Character string with name of the field containing the latitude of colony (or nest), default is NULL.}
+\item{dep_lat}{Character string with name of the field containing the latitude of colony (or nest).}
 
-\item{time_released}{Character string with name of the field containing deployment start time (when birds was released with tag), must be in a POSIXct compatible format (e.g. YYYY-mm-dd HH:MM).}
+\item{time_released}{Character string with name of the field containing deployment start time (when birds was released with tag), must use date format specified with dateFormat argument. Required.}
 
-\item{time_recaptured}{Character string with name of the field containing deployment end time (when birds was recaptured with tag), must be in a POSIXct compatible format (e.g. YYYY-mm-dd HH:MM)}
+\item{time_recaptured}{Character string with name of the field containing deployment end time (when birds was recaptured with tag), must use date format specified with dateFormat argument. Required.}
 
-\item{status_on}{Breeding status at start of deployment (E: eggs, C: chicks, F: failed-breeder, N: non-breeder, P: pre-breeder, J: juvenile).}
+\item{status_on}{Breeding status at start of deployment (E: eggs, C: chicks, FB: failed-breeder, NB: non-breeder, PB: pre-breeder, J: juvenile).}
 
-\item{status_off}{Breeding status at end of deployment (E: eggs, C: chicks, F: failed-breeder, N: non-breeder, P: pre-breeder, J: juvenile).}
+\item{status_off}{Breeding status at end of deployment (E: eggs, C: chicks, FB: failed-breeder, NB: non-breeder, PB: pre-breeder, J: juvenile).}
 
 \item{mass_on}{Character string with name of the field containing the bird mass (g) at start of deployment.}
 
 \item{mass_off}{Character string with name of the field containing the bird mass (g) at end of deployment.}
 
 \item{exclude}{Character string with name of the field containing flags for deployments with a significant treatment, which could make the data unsuitable for other analysis (e.g. Fed, Handicapped, Wing-clipped).}
+
+\item{fed_unfed}{Character string with name of the field containing information about fed/unfed treatments. Used for BLKI from Middleton. Acceptable values are: fed, unfed, semi.}
 
 \item{gps_id}{Character string with name of the field containing the name of the GPS tag deployed.}
 
@@ -91,20 +93,33 @@ formatDeployments(
 \item{hrl_id}{Character string with name of the field containing the name of the hear rate logger tag deployed.}
 
 \item{keep}{List of variable names for other dpeloyment data to keep with output.}
+
+\item{fill_dep_id}{Should missing dep_id values be filled by combining metal_band and release date, default is TRUE.}
 }
 \value{
-A new dataframe with deployment times in the same timzone as the GPS data and field names that are compatible with other functions in this package.
+A new dataframe with deployment times in UTC and field names that are compatible with other functions in this package and the lab biologging database.
 }
 \description{
-Prepares deployment data for use in clipping tracks
+This function standardizes deployment data, which is the first step in processing any tracking data. The function will create standard field names and formats for
+key data about each deployment. All deployment times will be converted to UTC, to ensure tracking data are clipped to the correct time.
 }
 \details{
-dep_id is the key field for matching deployment information to the GPS data. If your GPS data has a single data file for
-each deployment (Technosmart units), then the dep_id should be consistent with the name of this file. If you have remotely
-downloaded data, where all the locations from all units are mixed together (Ecotone units), then leave this field as NA. The
-function willcreate a 'dep_id' based on the tag and metal_band from each deployment.
+dep_id is a critical field for matching deployment information to the tracking data. Every dep_id in your data must be unique. If these data will be imported into the Arctic Ecology Lab Biologging database,
+then each dep_id must be unique within the database. Using a dep_id based on the band number and deployment date will ensure that each dep_id is unique. If your tracking data has a single data file for
+each deployment (Technosmart, Cattrack, and Lotek units), then the dep_id should be consistent with the name of this file. If the dep_id is not contained within the file name,
+then the readGPSdata() or readTDRdata() function you use in the next step will not be able to find the data associated with this deployment.  If you have remotely
+downloaded data, where all the locations from all units are mixed together (Ecotone units), then you can leave this field empty use the fill_dep_id = T argument
+to automatically generate unique dep_ids.
 
 dep_tz and tagTZ are used to make sure a consistent time zone is used clip the GPS data. The output times from this function
 will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
 Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
+
+fed_unfed is specific to data from black-legged kittiwakes (BLKI) at Middleton. This field is used to indicate if the bird in the deployment was part of the fed, unfed, or semi-fed groups.
+Input values must be either fed, unfed, or semi, captilization does not matter. Other users can ignore this field.
+
+gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id are each used to store the identifier for the biologger units deployed. Because some deployments use multiple devices,
+and some devices have multiple logger types, each is recorded separately. For example, Technosmart Axy-trek units record GPS, TDR, and ACC data, so the logger id should be entered in each of these fields
+to show that all thre data types are available. If both an Ecotone GPS and a Lotek TDR were deployed at the same time on the same bird, then record the Ecotone logger ID
+in the gps_id field and the Lotek TDR logger id in the TDR field.
 }
