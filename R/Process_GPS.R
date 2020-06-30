@@ -1,25 +1,30 @@
 # ---------------------------------------------------------------------------------------------------------------
-#' Prepares deployment data for use in clipping tracks
+#' Format deployment data
+#'
+#' @description
+#' This function standardizes deployment data, which is the first step in processing any tracking data. The function will create standard field names and formats for key data about each deployment. All deployment times will be converted to UTC, to ensure tracking data are clipped to the correct time.
 #'
 #' @param deployments A data frame with deployment data. Required.
-#' @param dateFormat Character string specifying the POSIX standard format for times.
+#' @param dateFormat Character string specifying the POSIX standard format for your deployment times, defaults is Y-m-d H:M:S. See ?strftime for other datetime formats
 #' @param dep_tz Timezone of deployment.
 #' @param species Character string with name of the field containing the 4-letter AOU species code. Required.
-#' @param metal_band Character string with name of the field containing the metal band number, input should be an integer with 9-10 digits.
+#' @param metal_band Character string with name of the field containing the metal band number. Values should be numeric with 9-10 digits, dashes are not allowed.
 #' @param colour_band Character string with name of the field containing the colour band code.
-#' @param dep_id Character string with name of the field containing deployment ID (see details).
-#' @param site Character string with name of the field containing the site (e.g. Coats).
+#' @param dep_id Character string with name of the field containing deployment ID (see details). Each dep_id must be unique. Required.
+#' @param fill_dep_id Should missing dep_id values be filled by combining metal_band and release date, default is TRUE.
+#' @param site Character string with name of the field containing the site (e.g. Coats). Required.
 #' @param subsite Character string with name of the field containing the subsite (e.g. Coats West). This is used if your study area has distinct units within the main site.
 #' @param nest Character string with name of the field containing the nest id.
-#' @param time_released Character string with name of the field containing deployment start time (when birds was released with tag), must be in a POSIXct compatible format (e.g. YYYY-mm-dd HH:MM).
-#' @param time_recaptured Character string with name of the field containing deployment end time (when birds was recaptured with tag), must be in a POSIXct compatible format (e.g. YYYY-mm-dd HH:MM)
-#' @param dep_lon Character string with name of the field containing the longitude of colony (or nest), default is NULL.
-#' @param dep_lat Character string with name of the field containing the latitude of colony (or nest), default is NULL.
-#' @param status_on Breeding status at start of deployment (E: eggs, C: chicks, F: failed-breeder, N: non-breeder, P: pre-breeder, J: juvenile).
-#' @param status_off Breeding status at end of deployment (E: eggs, C: chicks, F: failed-breeder, N: non-breeder, P: pre-breeder, J: juvenile).
+#' @param time_released Character string with name of the field containing deployment start time (when birds was released with tag), must use date format specified with dateFormat argument. Required.
+#' @param time_recaptured Character string with name of the field containing deployment end time (when birds was recaptured with tag), must use date format specified with dateFormat argument. Required.
+#' @param dep_lon Character string with name of the field containing the longitude of colony (or nest).
+#' @param dep_lat Character string with name of the field containing the latitude of colony (or nest).
+#' @param status_on Breeding status at start of deployment (E: eggs, C: chicks, FB: failed-breeder, NB: non-breeder, PB: pre-breeder, J: juvenile).
+#' @param status_off Breeding status at end of deployment (E: eggs, C: chicks, FB: failed-breeder, NB: non-breeder, PB: pre-breeder, J: juvenile).
 #' @param mass_on Character string with name of the field containing the bird mass (g) at start of deployment.
 #' @param mass_off Character string with name of the field containing the bird mass (g) at end of deployment.
 #' @param exclude Character string with name of the field containing flags for deployments with a significant treatment, which could make the data unsuitable for other analysis (e.g. Fed, Handicapped, Wing-clipped).
+#' @param fed_unfed Character string with name of the field containing information about fed/unfed treatments. Used for BLKI from Middleton. Acceptable values are: fed, unfed, semi.
 #' @param gps_id Character string with name of the field containing the name of the GPS tag deployed.
 #' @param tdr_id Character string with name of the field containing the name of the TDR tag deployed.
 #' @param acc_id Character string with name of the field containing the name of the ACC tag deployed.
@@ -29,24 +34,30 @@
 #' @param hrl_id Character string with name of the field containing the name of the hear rate logger tag deployed.
 #' @param keep List of variable names for other dpeloyment data to keep with output.
 #'
-#' @details
+#' @details dep_id is a critical field for matching deployment information to the tracking data. Every dep_id in your data must be unique. If these data will be imported into the Arctic Ecology Lab Biologging database,
+#' then each dep_id must be unique within the database. Using a dep_id based on the band number and deployment date will ensure that each dep_id is unique. If your tracking data has a single data file for
+#' each deployment (Technosmart, Cattrack, and Lotek units), then the dep_id should be consistent with the name of this file. If the dep_id is not contained within the file name,
+#' then the readGPSdata() or readTDRdata() function you use in the next step will not be able to find the data associated with this deployment.  If you have remotely
+#' downloaded data, where all the locations from all units are mixed together (Ecotone units), then you can leave this field empty use the fill_dep_id = T argument
+#' to automatically generate unique dep_ids.
 #'
-#' dep_id is the key field for matching deployment information to the GPS data. If your GPS data has a single data file for
-#' each deployment (Technosmart units), then the dep_id should be consistent with the name of this file. If you have remotely
-#' downloaded data, where all the locations from all units are mixed together (Ecotone units), then leave this field as NA. The
-#' function willcreate a 'dep_id' based on the tag and metal_band from each deployment.
+#' dep_tz and tagTZ are used to make sure a consistent time zone is used clip the GPS data. The output times from this function will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones. Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
 #'
-#' dep_tz and tagTZ are used to make sure a consistent time zone is used clip the GPS data. The output times from this function
-#' will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
-#' Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
+#' fed_unfed is specific to data from black-legged kittiwakes (BLKI) at Middleton. This field is used to indicate if the bird in the deployment was part of the fed, unfed, or semi-fed groups.
+#' Input values must be either fed, unfed, or semi, captilization does not matter. Other users can ignore this field.
 #'
-#' @return A new dataframe with deployment times in the same timzone as the GPS data and field names that are compatible with other functions in this package.
+#' gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id are each used to store the identifier for the biologger units deployed. Because some deployments use multiple devices,
+#' and some devices have multiple logger types, each is recorded separately. For example, Technosmart Axy-trek units record GPS, TDR, and ACC data, so the logger id should be entered in each of these fields
+#' to show that all thre data types are available. If both an Ecotone GPS and a Lotek TDR were deployed at the same time on the same bird, then record the Ecotone logger ID
+#' in the gps_id field and the Lotek TDR logger id in the TDR field.
+#'
+#' @return A new dataframe with deployment times in UTC and field names that are compatible with other functions in this package and the lab biologging database.
 
 formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz,
-                              species, metal_band, colour_band, dep_id,
+                              species, metal_band, colour_band, dep_id, fill_dep_id = T,
                               site, subsite = NA, nest = NA, dep_lon = NA, dep_lat = NA,
-                              time_released, time_recaptured,
-                              status_on = NA, status_off = NA, mass_on = NA, mass_off = NA, exclude = NA,
+                              time_released, time_recaptured = NA,
+                              status_on = NA, status_off = NA, mass_on = NA, mass_off = NA, exclude = NA, fed_unfed = NA,
                               gps_id = NA, tdr_id = NA, acc_id = NA, gls_id = NA, mag_id = NA, cam_id = NA, hrl_id = NA,
                               keep = NULL)
 {
@@ -56,6 +67,11 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
     deployments$dep_lat <- as.numeric(NA)
     dep_lat <- "dep_lat"
     dep_lon <- "dep_lon"
+  }
+
+  if (is.na(time_recaptured)) {
+    deployments$time_recaptured <- NA
+    time_recaptured <- 'time_recaptured'
   }
 
   if (is.na(subsite)) {
@@ -92,6 +108,12 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
     deployments$exclude <- NA
     exclude <- 'exclude'
   }
+
+  if (is.na(fed_unfed)) {
+    deployments$fed_unfed <- NA
+    fed_unfed <- 'fed_unfed'
+  }
+
 
   if (is.na(gps_id)) {
     deployments$gps_id <- NA
@@ -138,33 +160,40 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
     dep <- deployments[,c(species, metal_band, colour_band, dep_id,
                           site, subsite, nest, dep_lon, dep_lat,
                           time_released, time_recaptured, status_on, status_off, mass_on, mass_off,
-                          gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id, exclude, keep)]
+                          gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id, exclude, fed_unfed, keep)]
     names(dep) <- c('species', 'metal_band', 'colour_band', 'dep_id',
                     'site', 'subsite', 'nest','dep_lon', 'dep_lat',
                     'time_released', 'time_recaptured', 'status_on', 'status_off', 'mass_on', 'mass_off',
-                    'gps_id', 'tdr_id', 'acc_id', 'gls_id', 'mag_id', 'cam_id', 'hrl_id', 'exclude', keep)
+                    'gps_id', 'tdr_id', 'acc_id', 'gls_id', 'mag_id', 'cam_id', 'hrl_id', 'exclude', 'fed_unfed', keep)
   }
 
   if (is.null(keep) == T) {
     dep <- deployments[,c(species, metal_band, colour_band, dep_id,
                           site, subsite, nest, dep_lon, dep_lat,
                           time_released, time_recaptured, status_on, status_off, mass_on, mass_off,
-                          gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id, exclude)]
+                          gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id, exclude, fed_unfed)]
     names(dep) <- c('species', 'metal_band', 'colour_band', 'dep_id',
                     'site', 'subsite', 'nest','dep_lon', 'dep_lat',
                     'time_released', 'time_recaptured', 'status_on', 'status_off', 'mass_on', 'mass_off',
-                    'gps_id', 'tdr_id', 'acc_id', 'gls_id', 'mag_id', 'cam_id', 'hrl_id', 'exclude')
+                    'gps_id', 'tdr_id', 'acc_id', 'gls_id', 'mag_id', 'cam_id', 'hrl_id', 'exclude', 'fed_unfed')
   }
 
   # Convert deployment times to GPS times
+  dep$time_released <- as.character(dep$time_released)
+  dep$time_released[dep$time_released == ""] <- NA
+  dep$time_recaptured <- as.character(dep$time_recaptured)
+  dep$time_recaptured[dep$time_recaptured == ""] <- NA
+
+  if (sum(is.na(dep$time_released)) > 0) stop("Cannot have missing values for time_released", call. = F)
   dep$time_released <- lubridate::force_tz(as.POSIXct(strptime(dep$time_released, dateFormat)), tz = dep_tz)
   dep$time_released <- lubridate::with_tz(dep$time_released, tz = 'UTC')
+  if (sum(is.na(dep$time_released)) > 0) stop("Check date formats for time_released", call. = F)
+
+  dep$time_recaptured <- as.character(dep$time_recaptured)
+  valid_recap_dates <- sum(!is.na(dep$time_recaptured))
   dep$time_recaptured <- lubridate::force_tz(as.POSIXct(strptime(dep$time_recaptured, dateFormat)), tz = dep_tz)
   dep$time_recaptured <- lubridate::with_tz(dep$time_recaptured, tz = 'UTC')
-
-  if (length(unique(dep$dep_id)) == 1 & is.na(unique(dep$dep_id)[1])) {
-    dep$dep_id <- paste0(dep$tag, '_', dep$metal_band)
-  }
+  if (sum(!is.na(dep$time_recaptured)) != valid_recap_dates) stop("Check date formats for time_recaptured", call. = F)
 
   # Convert empty characters to NA
   dep$colour_band[dep$colour_band == ""] <- NA
@@ -182,9 +211,7 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
   dep$cam_id[dep$cam_id == ""] <- NA
   dep$hrl_id[dep$hrl_id == ""] <- NA
   dep$exclude[dep$exclude == ""] <- NA
-
-  # check for duplicate dep_id
-  if (max(table(dep$dep_id)) > 1) stop("All dep_id values must be unique", call. = F)
+  dep$fed_unfed[dep$fed_unfed == ""] <- NA
 
   # make dep_id a character variable
   dep$dep_id <- as.character(dep$dep_id)
@@ -197,24 +224,47 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
   dep$cam_id <- as.character(dep$cam_id)
   dep$hrl_id <- as.character(dep$hrl_id)
   dep$exclude <- as.character(dep$exclude)
+  dep$fed_unfed <- as.character(dep$fed_unfed)
+
+  # check metal_band values
+  valid_band <- sum(!is.na(dep$metal_band))
+  dep$metal_band <- as.integer(dep$metal_band)
+  if (sum(!is.na(dep$metal_band)) != valid_band) stop('Values in metal_band must be numeric without a dash', call. = F)
+  if (min(dep$metal_band, na.rm = T) < 10000000 | max(dep$metal_band, na.rm = T) > 999999999) stop('Values in metal_band must be numeric with 8 or 9 digits', call. = F)
+
+  # Create a dep_id if fill_dep_id == T
+  if (fill_dep_id == T) {
+
+    if (sum(is.na(dep$metal_band[is.na(dep$dep_id)])) > 0) stop("Cannot use fill_dep_id = TRUE with missing metal_band values", call. = F)
+    if (sum(is.na(dep$time_released[is.na(dep$dep_id)])) > 0) stop("Cannot use fill_dep_id = TRUE with missing time_released", call. = F)
+
+    dep$dep_id[is.na(dep$dep_id)] <- paste0(dep$metal_band[is.na(dep$dep_id)],
+                                            "_",
+                                            gsub("-","",as.Date(dep$time_released[is.na(dep$dep_id)])))
+  }
+
+  # check for duplicate dep_id
+  if (max(table(dep$dep_id)) > 1) stop("All dep_id values must be unique", call. = F)
 
   # Make sure status_on and status_off are upper case
   dep$status_on <- toupper(as.character(dep$status_on))
   dep$status_off <- toupper(as.character(dep$status_off))
 
   # check all entries for status_on and status_off are valid
-  status_values <- c('E','C','F','N','P','J',NA)
-  if (sum(dep$status_on %in% status_values) != length(dep$status_on)) stop("Values in status_on can only be: E, C, F, N, P, J, or NA", call. = F)
-  if (sum(dep$status_off %in% status_values) != length(dep$status_off)) stop("Values in status_off can only be: E, C, F, N, P, J, or NA", call. = F)
+  status_values <- c('E','C','FB','NB','PB','J',NA)
+  if (sum(dep$status_on %in% status_values) != length(dep$status_on)) stop("Values in status_on can only be: E, C, FB, NB, PB, J, or NA", call. = F)
+  if (sum(dep$status_off %in% status_values) != length(dep$status_off)) stop("Values in status_off can only be: E, C, FB, NB, PB, J, or NA", call. = F)
+
+  # Make sure fed_unfed are lower case
+  dep$fed_unfed <- tolower(as.character(dep$fed_unfed))
+  fed_values <- c('fed','unfed','semi',NA)
+  if (sum(dep$fed_unfed %in% fed_values) != length(dep$fed_unfed)) stop("Values in fed_unfed can only be: fed, unfed, semi, or NA", call. = F)
 
   # check all mass values are
   if (!is.numeric(dep$mass_on)) stop('Values in mass_on must be numeric', call. = F)
   if (!is.numeric(dep$mass_off)) stop('Values in mass_off must be numeric', call. = F)
   if (min(dep$mass_on, na.rm = T) <= 0) stop('Values in mass_on must be >0 or NA', call. = F)
   if (min(dep$mass_off, na.rm = T) <= 0) stop('Values in mass_off must be >0 or NA', call. = F)
-
-  # check metal_band values
-  if (!is.integer(dep$metal_band) | min(dep$metal_band, na.rm = T) < 10000000 | max(dep$metal_band, na.rm = T) > 999999999) stop('Values in metal_band must be integers with 8 or 9 digits', call. = F)
 
   # check dep_lon values
   if (sum(is.na(dep$dep_lon)) < length(dep$dep_lon)) {
@@ -237,7 +287,7 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
 #' @param inputFolder Folder containing all the raw GPS files to be processed.
 #' @param deployments Name of object with deployment data.
 #' @param tagTZ Timezone of GPS data.
-#' @param tagType Type of GPS biologger used, options are "Technosmart" and "Ecotone".
+#' @param tagType Type of GPS biologger used, options are "Technosmart", "Ecotone", and "Cattrack.
 #' @param dateFormat POSIXct string indicating how dates are formatted in the GPS files.
 #'
 #' @details
@@ -254,8 +304,8 @@ readGPSData <- function(inputFolder,
                         tagType = "Technosmart",
                         dateFormat = "%d-%m-%Y") {
 
-  if (!(tagType %in% c("Technosmart","Ecotone"))){
-    warning("Supported tagTypes are: Technosmart and Ecotone. If you have a different biologger please contact me.")
+  if (!(tagType %in% c("Technosmart","Ecotone", "Cattrack"))){
+    warning("Supported tagTypes are: Technosmart, Ecotone, and Cattrack. If you have a different biologger please contact me.")
   }
 
 
@@ -270,6 +320,12 @@ readGPSData <- function(inputFolder,
     output <- readEcotoneGPS(inputFolder = inputFolder,
                              deployments = deployments,
                              tagTZ = tagTZ)
+  }
+
+  if (tagType == "Cattrack") {
+    output <- readCattrackGPS(inputFolder = inputFolder,
+                              deployments = deployments,
+                              tagTZ = tagTZ)
   }
 
 
@@ -334,6 +390,11 @@ readTechnosmartGPS <- function(inputFolder,
           # add fields for metal_band and tag and deployment
           temp$dep_id <- deployments$dep_id[i]
           temp <- temp[,c("dep_id","time","lon","lat",names(temp)[!(names(temp) %in% c("dep_id","time","lon","lat"))])]
+
+          # add ecotone fields
+          temp$diving <- NA
+          temp$inrange <- NA
+
           output <- rbind(output, temp)
 
         } else (print(paste("-- Less than 5 locations:", deployments$dep_id[i], "- not processed")))
@@ -353,7 +414,6 @@ readEcotoneGPS <- function(inputFolder,
                            deployments,
                            tagTZ = "UTC") {
 
-
   theFiles <- list.files(inputFolder, full.names = T)
 
   output <- combineFiles(files = theFiles,
@@ -366,29 +426,127 @@ readEcotoneGPS <- function(inputFolder,
 
   output$time <- paste(output$Year, output$Month, output$Day, output$Hour, output$Minute, output$Second, sep = "-")
   output$time <- as.POSIXct(strptime(output$time, "%Y-%m-%d-%H-%M-%S"), tz = tagTZ)
+  output <- subset(output, output$time > as.POSIXct("1900-01-01", tz = tagTZ))
+  output <- unique(output)
   output <- output[order(output$Logger.ID, output$time),]
 
   names(output) <- gsub("[.]","",names(output))
-  output$tag <- output$LoggerID
+  output$gps_id <- output$LoggerID
   output$lon <- output$Longitude
   output$lat <- output$Latitude
   output$gpsspeed <- output$Speed
+
+  if (c("Divdown") %in% names(output)) {
+    output$diving <- ifelse(output$Divdown == 1 | output$Divup == 1, 1, NA)
+    output$diving[is.na(output$diving)] <- 0
+  }
+
   output <- output[,names(output)[!(names(output) %in% c("LoggerID","Longitude","Latitude",
                                                          "Year","Month","Day","Hour","Minute","Second",
                                                          "Rawlatitude","RawLongitude","Speed"))]]
   names(output) <- tolower(names(output))
+  output <- subset(output, !is.na(output$lon) | output$diving == 1 | output$inrange == 1)
 
+  output <- merge(output, deployments[,c("gps_id","metal_band","dep_id","dep_lon","dep_lat")])
+  output <- output[order(output$dep_id, output$time),]
 
-  output <- merge(output, deployments[,c("tag","metal_band","dep_id")])
-  output$dep_id <- paste0(output$tag, '_', output$metal_band)
+  if ("inrange" %in% names(output)) {
+    output$inrange[is.na(output$inrange)] <- 0
+    output$lon[output$inrange == 1] <- output$dep_lon[output$inrange == 1]
+    output$lat[output$inrange == 1] <- output$dep_lat[output$inrange == 1]
+  }
 
-  output <- output[,c("metal_band","tag","dep_id","time","lon","lat",
-                      names(output)[!(names(output) %in% c("metal_band","tag","dep_id","time","lon","lat"))])]
+  output$satellites <- NA
+  output$hdop <- NA
+  output$maxsignal <- NA
+  output <- unique(output)
+  output <- output[!duplicated(output[c('dep_id', 'time')]),]
 
-  output <- subset(output, !is.na(output$lon))
+  output <- output[,c("dep_id","time","lon","lat","altitude","gpsspeed","satellites","hdop","maxsignal","diving","inrange")]
 
   output
 }
+
+# ---------------------------------------------------------------------------------------------------------------
+
+readCattrackGPS <- function(inputFolder,
+                            deployments,
+                            tagTZ = "UTC") {
+
+  dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
+
+  emptyfiles <- dd[file.size(dd) == 0]
+  if (length(emptyfiles) > 0) {
+    print("-- Files containing no data --")
+    print(emptyfiles)
+  }
+
+  .matchFiles(files = dd, deployment_ids = deployments$dep_id)
+
+  dd <- dd[file.size(dd) > 0]
+
+  output <- data.frame()
+
+  for (i in 1:nrow(deployments)) {
+
+    if (is.na(deployments$dep_id[i]) == F) {
+
+      # get lists of file names
+      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+
+      if (length(theFiles > 0)) {
+
+        temp <- combineFiles(files = theFiles,
+                             pattern = "csv",
+                             type = "csv",
+                             sep = ",",
+                             stringsAsFactors = F,
+                             header = T)
+
+        if (nrow(temp) > 5) {
+
+          # check that date format is correct
+          if (is.na(as.POSIXct(as.POSIXct(paste(temp$Date[1], temp$Time[1])), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
+
+          # format dates
+          temp$time <- lubridate::force_tz(as.POSIXct(paste(temp$Date, temp$Time)), tz = tagTZ)
+          temp$time <- lubridate::with_tz(temp$time, tz = 'UTC')
+
+          # order data and remove duplicate records
+          temp <- temp[order(temp$time),]
+          temp <- temp[duplicated(temp) == F,]
+
+          # add fields for metal_band and tag and deployment
+          temp$dep_id <- deployments$dep_id[i]
+          if (!('Altitude' %in% names(temp))) temp$Altitude <- NA
+          if (!('Speed' %in% names(temp))) temp$Speed <- NA
+
+          temp <- temp[,c('dep_id','time','Longitude','Latitude','Altitude',"Speed")]
+          names(temp) <- c('dep_id','time','lon','lat','altitude','gpsspeed')
+          temp$gpsspeed <- temp$gpsspeed/1000
+          temp$satellites <- NA
+          temp$hdop <- NA
+          temp$maxsignal <- NA
+          temp$diving <- NA
+          temp$inrange <- NA
+
+          temp <- temp[duplicated(temp[,c('dep_id','time')]) == F,]
+
+          output <- rbind(output, temp)
+
+          output
+
+        } else (print(paste("-- Less than 5 locations:", deployments$dep_id[i], "- not processed")))
+
+      }
+
+    }
+
+  }
+
+  output
+}
+
 
 # ---------------------------------------------------------------------------------------------------------------
 #' Cleans up GPS data, by clipping to deployment times and filtering unrealistic locations.
@@ -425,12 +583,6 @@ cleanGPSData <- function(data,
 
       if (is.na(tt$time_recaptured)) tt$time_recaptured <- max(temp$time, na.rm = T)
 
-      if ("inrange" %in% names(temp)) {
-        temp$lon[temp$inrange == 1] <- tt$dep_lon
-        temp$lat[temp$inrange == 1] <- tt$dep_lat
-        temp <- subset(temp, is.na(temp$lon) == F)
-      }
-
       if (is.na(tt$dep_lon)) {
         temp$colDist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = temp$lon[temp$time >= tt$time_released][1], colonyLat = temp$lat[temp$time >= tt$time_released][1])
         yy <- "Distance from first location (km)"
@@ -440,6 +592,7 @@ cleanGPSData <- function(data,
       }
 
       newData <- subset(temp, temp$time >= tt$time_released & temp$time <= tt$time_recaptured)
+      newData <- newData[order(newData$dep_id, newData$time),]
 
       if (nrow(newData) > 5) {
 
@@ -476,36 +629,36 @@ cleanGPSData <- function(data,
 
 .cleanGPSDataPlot <- function(temp, newData, tt, yy) {
 
-  if (max(temp$colDist) < 500) {
+  if (max(temp$colDist, na.rm = T) < 500) {
     world <- rnaturalearth::ne_countries(scale = 50, returnclass = 'sf')
   } else {
     world <- rnaturalearth::ne_countries(scale = 110, returnclass = 'sf')
   }
 
-  ss <- min(c(temp$time[1],tt$time_released))
-  ee <- max(c(temp$time[nrow(temp)],tt$time_recaptured))
+  ss <- min(c(temp$time[1],tt$time_released), na.rm = T)
+  ee <- max(c(temp$time[nrow(temp)],tt$time_recaptured), na.rm = T)
 
   suppressMessages(
-    myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = colDist)) +
+    myPlot <- ggplot2::ggplot(temp[!is.na(temp$lon),], ggplot2::aes(x = time, y = colDist)) +
       ggplot2::geom_line(col = "red") +
       ggplot2::geom_point(col = "red") +
-      ggplot2::geom_point(data = newData, ggplot2::aes(x = time, y = colDist)) +
-      ggplot2::geom_line(data = newData, ggplot2::aes(x = time, y = colDist)) +
+      ggplot2::geom_point(data = newData[!is.na(newData$lon),], ggplot2::aes(x = time, y = colDist)) +
+      ggplot2::geom_line(data = newData[!is.na(newData$lon),], ggplot2::aes(x = time, y = colDist)) +
       ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
       ggplot2::xlim(ss,ee) +
       ggplot2::theme_light() +
       ggplot2::labs(title = paste(temp$dep_id[1]), y = yy, x = "Time")
   )
-  xran <- range(temp$lon)
-  yran <- range(temp$lat)
+  xran <- range(temp$lon, na.rm = T)
+  yran <- range(temp$lat, na.rm = T)
 
   suppressMessages(
-    myMap<- ggplot2::ggplot(data = newData) +
+    myMap<- ggplot2::ggplot(data = newData[!is.na(newData$lon),]) +
       ggplot2::geom_sf(data = world) +
-      ggplot2::geom_point(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
-      ggplot2::geom_path(data = temp, ggplot2::aes(x = lon, y = lat), col = 'red') +
-      ggplot2::geom_point(data = newData, ggplot2::aes(x = lon, y = lat)) +
-      ggplot2::geom_path(data = newData, ggplot2::aes(x = lon, y = lat)) +
+      ggplot2::geom_point(data = temp[!is.na(temp$lon),], ggplot2::aes(x = lon, y = lat), col = 'red') +
+      ggplot2::geom_path(data = temp[!is.na(temp$lon),], ggplot2::aes(x = lon, y = lat), col = 'red') +
+      ggplot2::geom_point(data = newData[!is.na(newData$lon),], ggplot2::aes(x = lon, y = lat)) +
+      ggplot2::geom_path(data = newData[!is.na(newData$lon),], ggplot2::aes(x = lon, y = lat)) +
       #ggplot2::geom_point(data = tt, ggplot2::aes(x = tt$dep_lon, y = tt$dep_lon), fill = 'green', shape = 24, size = 3) +
       ggplot2::coord_sf(xlim = xran, ylim = yran) +
       ggplot2::theme_light() +
@@ -539,7 +692,12 @@ cleanGPSData <- function(data,
     print(as.character(unmatchedFiles))
   }
 
-  unmatchedDeployments <- deployment_ids[!(deployment_ids %in% mf$match)]
+  unmatchedDeployments <- c()
+  for (dd in deployment_ids) {
+    idx <- grep(dd, files)
+    if (length(idx) <1)  unmatchedDeployments <- c(unmatchedDeployments, dd)
+  }
+
   if (length(unmatchedDeployments) > 0) {
     print("-- Deployments that have no matching files --")
     unmatchedDeployments <- unmatchedDeployments[!is.na(unmatchedDeployments)]
@@ -554,7 +712,7 @@ cleanGPSData <- function(data,
 #' @param inputFolder Folder containing all the raw GPS files to be processed.
 #' @param deployments Name of object with deployment data.
 #' @param tagTZ Timezone of TDR data.
-#' @param tagType Type of TDR biologger used, options are "Technosmart".
+#' @param tagType Type of TDR biologger used, options are "Technosmart", "LAT150.
 #' @param dateFormat POSIXct string indicating how dates are formatted in the TDR files.
 #'
 #' @details
@@ -570,10 +728,10 @@ cleanGPSData <- function(data,
 readTDRData <- function(inputFolder,
                         deployments,
                         tagTZ = "UTC",
-                        tagType = "Technosmart",
+                        tagType,
                         dateFormat = "%d-%m-%Y") {
 
-  if (!(tagType %in% c("Technosmart"))){
+  if (!(tagType %in% c("Technosmart","LAT150"))){
     warning("Supported tagTypes are: Technosmart. If you have a different biologger please contact me.")
   }
 
@@ -583,6 +741,12 @@ readTDRData <- function(inputFolder,
                                  deployments = deployments,
                                  tagTZ = tagTZ,
                                  dateFormat = dateFormat)
+  }
+
+  if (tagType == "LAT150") {
+    output = readLAT150(inputFolder = inputFolder,
+                        deployments = deployments,
+                        tagTZ = tagTZ)
   }
 
   output
@@ -630,6 +794,7 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
                              header = T)
 
         if (nrow(temp) > 5) {
+          if (("Depth" %in% names(temp)) | "Pressure" %in% names(temp)){
 
           tempNames <- names(temp)
 
@@ -642,11 +807,13 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
 
           # add fields for dep_id
           temp$dep_id <- deployments$dep_id[i]
-          tdrCols <- c("dep_id","Timestamp","Depth","Pressure","Temp....C.","Activity")
+          temp$wetdry <- NA
+
+          tdrCols <- c("dep_id","Timestamp","Depth","Pressure","Temp....C.","wetdry")
           temp <- temp[,tdrCols]
 
           # set names and format date
-          names(temp) <- c("dep_id","time","depth","pressure","temperature","activity")
+          names(temp) <- c("dep_id","time","depth","pressure","temperature","wetdry")
           df <- paste0(dateFormat, " %H:%M:%OS")
 
           # check that date format is correct
@@ -677,6 +844,7 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
           (print(paste("Finished:", deployments$dep_id[i])))
 
 
+          } else (print(paste("-- Missing depth or pressure:", deployments$dep_id[i], "- not processed")))
         } else (print(paste("-- Less than 5 records:", deployments$dep_id[i], "- not processed")))
 
       }
@@ -687,6 +855,83 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
 
   output
 }
+
+# ---------------------------------------------------------------------------------------------------------------
+
+readLAT150 <- function(inputFolder,
+                       deployments,
+                       tagTZ = "UTC") {
+
+  dd <- list.files(inputFolder, pattern = '.csv', full.names = T, recursive = T)
+
+  emptyfiles <- dd[file.size(dd) == 0]
+  if (length(emptyfiles) > 0) {
+    print("-- Files containing no data --")
+    print(emptyfiles)
+  }
+
+  .matchFiles(files = dd, deployment_ids = deployments$dep_id)
+
+  dd <- dd[file.size(dd) > 0]
+
+  output <- data.frame()
+
+  for (i in 1:nrow(deployments)) {
+
+    if (is.na(deployments$dep_id[i]) == F) {
+
+      # get lists of file names
+      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+
+      if (length(theFiles > 0)) {
+
+        temp <- combineFiles(files = theFiles,
+                             pattern = "csv",
+                             type = "csv",
+                             sep = ",",
+                             stringsAsFactors = F,
+                             header = T,
+                             skip = 2,
+                             combineColumns = T)
+
+        if (nrow(temp) > 5) {
+
+          # Combine date and time into one variable
+          temp$time <- paste(temp$Date, temp$Time)
+
+          # check that date format is correct
+          if (is.na(as.POSIXct(temp$time[1], tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
+
+          # format dates
+          temp$time <- as.POSIXct(temp$time, tz = tagTZ)
+
+          # order data and remove duplicate records
+          temp <- temp[order(temp$time),]
+          temp <- temp[duplicated(temp) == F,]
+
+          # add fields for metal_band and tag and deployment
+          temp$dep_id <- deployments$dep_id[i]
+          names(temp)[grep("Temp", names(temp))] <- "temperature"
+          names(temp)[grep("Pressure", names(temp))] <- "pressure"
+          if (length(grep("Wet", names(temp))) >0) {
+            names(temp)[grep("Wet", names(temp))] <- "wetdry"
+          } else temp$wetdry <- NA
+          temp$depth <- NA
+
+          temp <- temp[,c("dep_id","time","depth",'pressure','temperature','wetdry')]
+          output <- rbind(output, temp)
+
+        } else (print(paste("-- Less than 5 locations:", deployments$dep_id[i], "- not processed")))
+
+      }
+
+    }
+
+  }
+
+  output
+}
+
 
 # ---------------------------------------------------------------------------------------------------------------
 #' Cleans up TDR data, by clipping to deployment times
@@ -726,6 +971,8 @@ cleanTDRData <- function(data,
 
         if (plot) {
 
+          if (nrow(temp) > 100000) idx <- seq(1,nrow(temp), 5) else idx <- 1:nrow(temp)
+
           plotPressure <- ifelse(sum(is.na(temp$depth) == F) == 0, T, F)
 
           ss <- min(c(temp$time[1],tt$time_released))
@@ -734,9 +981,9 @@ cleanTDRData <- function(data,
           if (plotPressure == F) {
 
             suppressMessages(
-              myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth * -1)) +
+              myPlot <- ggplot2::ggplot(subset(temp, temp$time %in% temp$time[idx]), ggplot2::aes(x = time, y = depth * -1)) +
                 ggplot2::geom_line(col = "red") +
-                ggplot2::geom_line(data = newData, ggplot2::aes(x = time, y = depth * -1)) +
+                ggplot2::geom_line(data = subset(newData, newData$time %in% temp$time[idx]), ggplot2::aes(x = time, y = depth * -1)) +
                 ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
                 ggplot2::xlim(ss,ee) +
                 ggplot2::theme_light() +
@@ -748,9 +995,9 @@ cleanTDRData <- function(data,
           if (plotPressure == T) {
 
             suppressMessages(
-              myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = pressure)) +
+              myPlot <- ggplot2::ggplot(subset(temp, temp$time %in% temp$time[idx]), ggplot2::aes(x = time, y = pressure)) +
                 ggplot2::geom_line(col = "red") +
-                ggplot2::geom_line(data = newData, ggplot2::aes(x = time, y = pressure)) +
+                ggplot2::geom_line(data = subset(newData, newData$time %in% temp$time[idx]), ggplot2::aes(x = time, y = pressure)) +
                 ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
                 ggplot2::xlim(ss,ee) +
                 ggplot2::theme_light() +
@@ -760,7 +1007,7 @@ cleanTDRData <- function(data,
             print(myPlot)
           }
 
-          Sys.sleep(3)
+          Sys.sleep(1)
 
           readline("Press [enter] for next plot")
 

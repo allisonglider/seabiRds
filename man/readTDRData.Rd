@@ -8,7 +8,7 @@ readTDRData(
   inputFolder,
   deployments,
   tagTZ = "UTC",
-  tagType = "Technosmart",
+  tagType,
   dateFormat = "\%d-\%m-\%Y"
 )
 }
@@ -19,7 +19,7 @@ readTDRData(
 
 \item{tagTZ}{Timezone of TDR data.}
 
-\item{tagType}{Type of TDR biologger used, options are "Technosmart".}
+\item{tagType}{Type of TDR biologger used, options are "Technosmart", "LAT150.}
 
 \item{dateFormat}{POSIXct string indicating how dates are formatted in the TDR files.}
 }

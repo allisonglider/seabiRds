@@ -19,7 +19,7 @@ readGPSData(
 
 \item{tagTZ}{Timezone of GPS data.}
 
-\item{tagType}{Type of GPS biologger used, options are "Technosmart" and "Ecotone".}
+\item{tagType}{Type of GPS biologger used, options are "Technosmart", "Ecotone", and "Cattrack.}
 
 \item{dateFormat}{POSIXct string indicating how dates are formatted in the GPS files.}
 }
