@@ -2,8 +2,7 @@
 % Please edit documentation in R/Process_GPS.R
 \name{formatDeployments}
 \alias{formatDeployments}
-\title{This function standardizes deployment data, which is the first step in processing any tracking data. The function will create standard field names and formats for
-key data about each deployment. All deployment times will be converted to UTC, to ensure tracking data are clipped to the correct time.}
+\title{Format deployment data}
 \usage{
 formatDeployments(
   deployments,
@@ -40,7 +39,7 @@ formatDeployments(
 \arguments{
 \item{deployments}{A data frame with deployment data. Required.}
 
-\item{dateFormat}{Character string specifying the POSIX standard format for your deployment times, defaults is %Y-%m-%d %H:%M:%S. See ?strftime for other datetime formats}
+\item{dateFormat}{Character string specifying the POSIX standard format for your deployment times, defaults is Y-m-d H:M:S. See ?strftime for other datetime formats}
 
 \item{dep_tz}{Timezone of deployment.}
 
@@ -100,8 +99,7 @@ formatDeployments(
 A new dataframe with deployment times in UTC and field names that are compatible with other functions in this package and the lab biologging database.
 }
 \description{
-This function standardizes deployment data, which is the first step in processing any tracking data. The function will create standard field names and formats for
-key data about each deployment. All deployment times will be converted to UTC, to ensure tracking data are clipped to the correct time.
+This function standardizes deployment data, which is the first step in processing any tracking data. The function will create standard field names and formats for key data about each deployment. All deployment times will be converted to UTC, to ensure tracking data are clipped to the correct time.
 }
 \details{
 dep_id is a critical field for matching deployment information to the tracking data. Every dep_id in your data must be unique. If these data will be imported into the Arctic Ecology Lab Biologging database,
@@ -111,9 +109,7 @@ then the readGPSdata() or readTDRdata() function you use in the next step will n
 downloaded data, where all the locations from all units are mixed together (Ecotone units), then you can leave this field empty use the fill_dep_id = T argument
 to automatically generate unique dep_ids.
 
-dep_tz and tagTZ are used to make sure a consistent time zone is used clip the GPS data. The output times from this function
-will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
-Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
+dep_tz and tagTZ are used to make sure a consistent time zone is used clip the GPS data. The output times from this function will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones. Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
 
 fed_unfed is specific to data from black-legged kittiwakes (BLKI) at Middleton. This field is used to indicate if the bird in the deployment was part of the fed, unfed, or semi-fed groups.
 Input values must be either fed, unfed, or semi, captilization does not matter. Other users can ignore this field.
