@@ -201,6 +201,7 @@ combineFiles <- function(files,
     for (ff in 1:length(files)) {
       if (file.size(files[ff]) > 0) {
         tt <- read.csv(files[ff], sep = sep, header = header, stringsAsFactors = stringsAsFactors, skip = skip)
+        if (ncol(tt) == 1) tt <- read.csv(files[ff], header = header, stringsAsFactors = stringsAsFactors, skip = skip)
         if (combineColumns == F) temp <- rbind(temp, tt)
         if (combineColumns == T & ff == 1) temp <- tt
         if (combineColumns == T & ff > 1) temp <- merge(temp, tt, all = T)
