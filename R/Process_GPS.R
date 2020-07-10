@@ -414,7 +414,7 @@ readEcotoneGPS <- function(inputFolder,
                            deployments,
                            tagTZ = "UTC") {
 
-  theFiles <- list.files(inputFolder, full.names = T)
+  theFiles <- list.files(inputFolder, full.names = T, pattern = 'csv')
 
   output <- combineFiles(files = theFiles,
                          pattern = "csv",
@@ -885,14 +885,23 @@ readLAT150 <- function(inputFolder,
 
       if (length(theFiles > 0)) {
 
-        temp <- combineFiles(files = theFiles,
-                             pattern = "csv",
-                             type = "csv",
-                             sep = ",",
-                             stringsAsFactors = F,
-                             header = T,
-                             skip = 2,
-                             combineColumns = T)
+        # temp <- combineFiles(files = theFiles,
+        #                      pattern = "csv",
+        #                      type = "csv",
+        #                      sep = ",",
+        #                      stringsAsFactors = F,
+        #                      header = T,
+        #                      skip = 2,
+        #                      combineColumns = T)
+        temp <- read.csv(theFiles[1], sep = ",", stringsAsFactors = F, header = T, skip = 2)
+        if (length(theFiles) > 1) {
+          temp <- temp[,2:ncol(temp)]
+          for (k in 2:length(theFiles)) {
+            tt <- read.csv(theFiles[k], sep = ",", stringsAsFactors = F, header = T, skip = 2)
+            tt <- tt[,2:ncol(tt)]
+            temp <- merge(temp, tt, all = T)
+          }
+        }
 
         if (nrow(temp) > 5) {
 
