@@ -1,6 +1,6 @@
 Package: seabiRds
 Type: Package
-Title: What the Package Does (Title Case)
+Title: Prepares biologging data for analysis and upload to the lab database
 Version: 0.1.0
 Author: Allison Patterson
 Maintainer: Allison Patterson <allison.patterson@mail.mcgill.ca>
@@ -18,4 +18,6 @@ Imports:
     rnaturalearth,
     rnaturalearthdata,
     cowplot
+VignetteBuilder: knitr
+Suggests: knitr, rmarkdown, ggplot2
 RoxygenNote: 7.1.0

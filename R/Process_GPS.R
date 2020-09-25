@@ -414,7 +414,7 @@ readEcotoneGPS <- function(inputFolder,
                            deployments,
                            tagTZ = "UTC") {
 
-  theFiles <- list.files(inputFolder, full.names = T)
+  theFiles <- list.files(inputFolder, full.names = T, pattern = 'csv')
 
   output <- combineFiles(files = theFiles,
                          pattern = "csv",
@@ -885,14 +885,23 @@ readLAT150 <- function(inputFolder,
 
       if (length(theFiles > 0)) {
 
-        temp <- combineFiles(files = theFiles,
-                             pattern = "csv",
-                             type = "csv",
-                             sep = ",",
-                             stringsAsFactors = F,
-                             header = T,
-                             skip = 2,
-                             combineColumns = T)
+        # temp <- combineFiles(files = theFiles,
+        #                      pattern = "csv",
+        #                      type = "csv",
+        #                      sep = ",",
+        #                      stringsAsFactors = F,
+        #                      header = T,
+        #                      skip = 2,
+        #                      combineColumns = T)
+        temp <- read.csv(theFiles[1], sep = ",", stringsAsFactors = F, header = T, skip = 2)
+        if (length(theFiles) > 1) {
+          temp <- temp[,2:ncol(temp)]
+          for (k in 2:length(theFiles)) {
+            tt <- read.csv(theFiles[k], sep = ",", stringsAsFactors = F, header = T, skip = 2)
+            tt <- tt[,2:ncol(tt)]
+            temp <- merge(temp, tt, all = T)
+          }
+        }
 
         if (nrow(temp) > 5) {
 
@@ -980,10 +989,13 @@ cleanTDRData <- function(data,
 
           if (plotPressure == F) {
 
+            tt <- subset(temp, temp$time %in% temp$time[idx] & !is.na(temp$depth))
+            nn <- subset(newData, newData$time %in% temp$time[idx] & !is.na(newData$pressure))
+
             suppressMessages(
-              myPlot <- ggplot2::ggplot(subset(temp, temp$time %in% temp$time[idx]), ggplot2::aes(x = time, y = depth * -1)) +
+              myPlot <- ggplot2::ggplot(tt, ggplot2::aes(x = time, y = depth * -1)) +
                 ggplot2::geom_line(col = "red") +
-                ggplot2::geom_line(data = subset(newData, newData$time %in% temp$time[idx]), ggplot2::aes(x = time, y = depth * -1)) +
+                ggplot2::geom_line(data = nn, ggplot2::aes(x = time, y = depth * -1)) +
                 ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
                 ggplot2::xlim(ss,ee) +
                 ggplot2::theme_light() +
@@ -994,10 +1006,12 @@ cleanTDRData <- function(data,
 
           if (plotPressure == T) {
 
+            pp <- subset(temp, temp$time %in% temp$time[idx] & !is.na(temp$pressure))
+            nn <- subset(newData, newData$time %in% temp$time[idx] & !is.na(newData$pressure))
             suppressMessages(
-              myPlot <- ggplot2::ggplot(subset(temp, temp$time %in% temp$time[idx]), ggplot2::aes(x = time, y = pressure)) +
+              myPlot <- ggplot2::ggplot(pp, ggplot2::aes(x = time, y = pressure)) +
                 ggplot2::geom_line(col = "red") +
-                ggplot2::geom_line(data = subset(newData, newData$time %in% temp$time[idx]), ggplot2::aes(x = time, y = pressure)) +
+                ggplot2::geom_line(data = nn, ggplot2::aes(x = time, y = pressure)) +
                 ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
                 ggplot2::xlim(ss,ee) +
                 ggplot2::theme_light() +
