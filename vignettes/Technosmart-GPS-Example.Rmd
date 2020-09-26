@@ -110,3 +110,13 @@ ts_data <- readGPSData(
 head(ts_data)
 
 ```
+
+```{r}
+
+ts_data <- cleanGPSData(data = ts_data,
+                            deployments = dep_data,
+                            speedThreshold = 150,
+                            plot =T)
+
+
+```
