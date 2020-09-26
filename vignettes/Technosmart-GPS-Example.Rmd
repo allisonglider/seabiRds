@@ -1,0 +1,112 @@
+---
+title: "Technosmart-GPS-Example"
+author: "Allison Patterson"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ecotone-GPS-Example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+## R Markdown
+
+This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+
+When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
+
+## Load example ecotone deployment data and format it
+
+```{r}
+
+library(seabiRds)
+
+# Get path to the example deployment data
+#fn <- system.file('extdata/technosmart', "technosmart_ex.csv", package = "seabiRds")
+
+# Read in data from this file
+raw_dep <- read.csv(fn, stringsAsFactors = F)
+
+# Look at head of the data
+head(raw_dep)
+
+```
+
+
+
+```{r}
+
+# Create a field called dep_id, where all values are NA
+raw_dep$RecaptureEDT <- as.POSIXct(raw_dep$RecaptureEDT, tz = 'US/Eastern')
+raw_dep$dep_id <- paste(raw_dep$GPS, raw_dep$Band, strftime(raw_dep$RecaptureEDT, '%Y%m%d'))
+
+raw_dep$Species <- 'TBMU'
+raw_dep$Colony <- 'Coats'
+raw_dep$Colour <- NA
+raw_dep$Dep_lon <- -82.01
+raw_dep$Dep_lat <- 62.95
+
+```
+
+
+
+```{r}
+
+# Run formatDeployments
+dep_data <- formatDeployments(
+  deployments = raw_dep,
+  dateFormat = "%Y-%m-%d %H:%M",
+  dep_tz = "US/Eastern",
+  species = 'Species',
+  metal_band = 'Band',
+  colour_band = 'Colour',
+  dep_id = 'dep_id',
+  fill_dep_id = T,
+  site = 'Colony',
+  dep_lon = 'Dep_lon',
+  dep_lat = 'Dep_lat',
+  time_released = 'DeploymentEDT',
+  time_recaptured = 'RecaptureEDT',
+  status_on = 'StatusOn',
+  status_off = 'StatusOff',
+  mass_on = 'MassOn',
+  mass_off = 'MassOff',
+  gps_id = 'GPS',
+  tdr_id = 'GPS',
+  acc_id = 'GPS'
+)
+
+```
+
+
+
+```{r}
+
+# Look at the results
+head(dep_data)
+
+```
+
+```{r}
+
+# Get the path to the example data stored within this package
+folder <- paste0(find.package('seabiRds'), "/extdata/technosmart/gps_data")
+
+# Run the readGPSData function for Ecotone data
+ts_data <- readGPSData(
+  inputFolder = folder, # path to the colder storing the raw GPS files
+  deployments = dep_data, # formatted deployment data
+  tagType = "Technosmart"
+)
+
+# Look at the output
+head(ts_data)
+
+```
