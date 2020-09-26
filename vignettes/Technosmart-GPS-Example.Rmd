@@ -4,7 +4,7 @@ author: "Allison Patterson"
 date: "`r Sys.Date()`"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Ecotone-GPS-Example}
+  %\VignetteIndexEntry{Technosmart-GPS-Example}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
@@ -29,7 +29,7 @@ When you click the **Knit** button a document will be generated that includes bo
 library(seabiRds)
 
 # Get path to the example deployment data
-#fn <- system.file('extdata/technosmart', "technosmart_ex.csv", package = "seabiRds")
+fn <- system.file('extdata/technosmart', "technosmart_ex.csv", package = "seabiRds", mustWork = T)
 
 # Read in data from this file
 raw_dep <- read.csv(fn, stringsAsFactors = F)
