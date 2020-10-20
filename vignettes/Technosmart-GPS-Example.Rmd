@@ -113,6 +113,8 @@ sort(dep_data$dep_id) # look at deployment IDs
 
 ```
 
+Now read in the these files with readGPSData().
+
 ```{r}
 # Run the readGPSData function for Technosmart data
 ts_data <- readGPSData(
