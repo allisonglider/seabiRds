@@ -18,11 +18,9 @@ knitr::opts_chunk$set(
 
 ## R Markdown
 
-This is an R Markdown document. Markdown is a simple formatting syntax for authoring HTML, PDF, and MS Word documents. For more details on using R Markdown see <http://rmarkdown.rstudio.com>.
+The first step in processing logging data is to get the metadata about each deployment into a standard format. Often the data recorded when putting on and removing a device will be recorded in a different way between sites and across years, so it is helpful to standardize that data. First we will read in an example of a deployment file from some technosmart logger deployments on thick-billed murres.
 
-When you click the **Knit** button a document will be generated that includes both content as well as the output of any embedded R code chunks within the document. You can embed an R code chunk like this:
-
-## Load example ecotone deployment data and format it
+## Load example technomsart deployment data and format it
 
 ```{r}
 
@@ -39,53 +37,57 @@ head(raw_dep)
 
 ```
 
+This example data was missing a few things we need for the formatDeployments() function, so we will do some pre-processing. Each deployment needs to have a unique ID that will match the file name of your raw data. I have used deployment ids that comabine the GPS id with the band number and the date of recapture. This ensures that across all of my data each deployment ID is unique, even if I happen to put the same GPS unit on the same bird at some other time. We will paste these fields together to generate the deployment IDs.These deployment IDs must appear in the file names (although the file name can be longer) of the raw data, so that we can match each deployment to the data files. We will also add some columns for species, colony, colour band, deployment longitude, and deployment latitude; these data were not recorded in the field because they were the same for all deployments, but it is required information.  
 
 
 ```{r}
 
+
 # Create a field called dep_id, where all values are NA
-raw_dep$RecaptureEDT <- as.POSIXct(raw_dep$RecaptureEDT, tz = 'US/Eastern')
 raw_dep$dep_id <- paste(raw_dep$GPS, raw_dep$Band, strftime(raw_dep$RecaptureEDT, '%Y%m%d'))
 
-raw_dep$Species <- 'TBMU'
-raw_dep$Colony <- 'Coats'
-raw_dep$Colour <- NA
-raw_dep$Dep_lon <- -82.01
-raw_dep$Dep_lat <- 62.95
+raw_dep$Species <- 'TBMU' # add species column
+raw_dep$Colony <- 'Coats' # add colony column
+raw_dep$Colour <- NA # Colour isa required field so add an empty column
+raw_dep$Dep_lon <- -82.01 # longitude of deployment
+raw_dep$Dep_lat <- 62.95 # latitude of deployment
+
+head(raw_dep)
 
 ```
 
+Now run the formatDeployments() function to standardize the data. The function requires the data frame of your raw deployments, a date format, deployment timezone, and column names in your data for any relevant fields. Because Technosmart loggers record up to 3 data types (GPS, TDR, and ACC), we will map the logger ID to gps_id, tdr_id, and acc_id so that we know there are three types of data available from this deployment. If we had also deployed an additional logger on this bird, such as a camera logger, we could include that now.
 
 
 ```{r}
 
 # Run formatDeployments
 dep_data <- formatDeployments(
-  deployments = raw_dep,
-  dateFormat = "%Y-%m-%d %H:%M",
-  dep_tz = "US/Eastern",
-  species = 'Species',
-  metal_band = 'Band',
-  colour_band = 'Colour',
-  dep_id = 'dep_id',
-  fill_dep_id = T,
+  deployments = raw_dep, # dataframe with raw data
+  dateFormat = "%Y-%m-%d %H:%M", #POSIXct format of dates
+  dep_tz = "US/Eastern", # deployment time zone
+  species = 'Species', # column name containing species
+  metal_band = 'Band', # column name containing band number
+  colour_band = 'Colour', # column name containing band colours
+  dep_id = 'dep_id', # column name containing deployment id
+  fill_dep_id = F, # If function 
   site = 'Colony',
-  dep_lon = 'Dep_lon',
-  dep_lat = 'Dep_lat',
-  time_released = 'DeploymentEDT',
-  time_recaptured = 'RecaptureEDT',
-  status_on = 'StatusOn',
-  status_off = 'StatusOff',
-  mass_on = 'MassOn',
-  mass_off = 'MassOff',
-  gps_id = 'GPS',
-  tdr_id = 'GPS',
-  acc_id = 'GPS'
+  dep_lon = 'Dep_lon', # column name containing deployment longitude
+  dep_lat = 'Dep_lat', # column name containing deployment latitude
+  time_released = 'DeploymentEDT', # column name containing initial release time
+  time_recaptured = 'RecaptureEDT', # column name containing recapture time
+  status_on = 'StatusOn', # column name containing breeding status at release
+  status_off = 'StatusOff', # column name containing breeding status at recapture
+  mass_on = 'MassOn', # column name containing mass at release
+  mass_off = 'MassOff', # column name containing mass at recapture
+  gps_id = 'GPS', # column name containing logger id
+  tdr_id = 'GPS', # column name containing logger id
+  acc_id = 'GPS' # column name containing logger id
 )
 
 ```
 
-
+Now we have our metadata in a standard format. There are some extra fields that are needed for our biologging database (e.g. exclude and fed_unfed). If you aren't enetering your data into the database, you could get rid of any fields you don't need.
 
 ```{r}
 
@@ -94,12 +96,15 @@ head(dep_data)
 
 ```
 
+The next step is to read in your raw GPS data. All of the converted data files from your loggers should be stored in a single folder. We will get the path to example data stored withi this package, then use the readGPSData() function to read that data and convert it to a standard format
+
+
 ```{r}
 
 # Get the path to the example data stored within this package
 folder <- paste0(find.package('seabiRds'), "/extdata/technosmart/gps_data")
 
-# Run the readGPSData function for Ecotone data
+# Run the readGPSData function for Technosmart data
 ts_data <- readGPSData(
   inputFolder = folder, # path to the colder storing the raw GPS files
   deployments = dep_data, # formatted deployment data
@@ -111,11 +116,15 @@ head(ts_data)
 
 ```
 
+Now we have loaded all the GPS data and matched each file to a deployment. If there are any deployments with no matching data or data with no matching deployments, the function would have printed a message warning us. This is useful for checking if there are any errors in your data or file names. 
+
+The next step will clip your GPS data to the start and end times of your deployment. This removes any data that may have been collected before the logger went on the bird or after removing the logger from the bird. The function will produce two plots for each deployment, showing distance from the deployment location over time and a map of the deployment. Any locations that are removed will show in red and locations that are retained are shown in black.This will help you identify any data issues with therelease and recapture times, or if you have an issue with timezones.
+
 ```{r}
 
 ts_data <- cleanGPSData(data = ts_data,
                             deployments = dep_data,
-                            speedThreshold = 150,
+                            speedThreshold = 150, # remove locations that require the bird to travel faster than 150 km/hr
                             plot =T)
 
 
