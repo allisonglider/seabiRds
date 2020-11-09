@@ -180,7 +180,7 @@ filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold
 #' @param header Should first row be read as file header.
 #'
 #' @return Dataframe with all files combined.
-#' @import xlsx
+#' @import openxlsx
 
 
 combineFiles <- function(files,
