@@ -28,7 +28,7 @@ getMode <- function(x) {
 #' Calculates the distance between the colony (or any fixed location) and each point in a track.
 #'
 #' @param lon A vector of longitude values.
-#' @param lon A vector of latitude values.
+#' @param lat A vector of latitude values.
 #' @param colonyLon Longitude of the colony (or fixed location).
 #' @param colonyLat Latitude of the colony (or fixed location).
 #' @return A vector of values (in km) giving the distance between each location in the track and the colony (or fixed location).
@@ -77,11 +77,11 @@ getSessions <- function(value, maxSession = Inf) {
 
 getDist <- function(lon, lat) {
 
-  if (min(lon) < -180 | max(lon) > 180) {
+  if (min(lon, na.rm = T) < -180 | max(lon, na.rm = T) > 180) {
     stop("Longitude values are not between -180 and 180")
   }
 
-  if (min(lat) < -180 | max(lat) > 90) {
+  if (min(lat, na.rm = T) < -180 | max(lat, na.rm = T) > 90) {
     stop("Longitude values are not between -180 and 180")
   }
 
@@ -148,11 +148,11 @@ filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold
     stop("time values must be in POSIXct format")
   }
 
-  if (min(data[,"lon"]) < -180 | max(data[,"lon"]) > 180) {
+  if (min(data[,"lon"], na.rm = T) < -180 | max(data[,"lon"], na.rm = T) > 180) {
     stop("Longitude values are not between -180 and 180")
   }
 
-  if (min(data[,"lat"]) < -90 | max(data[,"lat"]) > 90) {
+  if (min(data[,"lat"], na.rm = T) < -90 | max(data[,"lat"], na.rm = T) > 90) {
     stop("Longitude values are not between -180 and 180")
   }
 
@@ -178,6 +178,8 @@ filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold
 #' @param sep File delimiter, if required.
 #' @param stringAsFactors True or False if strings should be read as factors, defaults to F
 #' @param header Should first row be read as file header.
+#' @param skip Rows at the start of the file to skip.
+#' @param combineColumns Change to TRUE if you want to merge files by columns, default is FALSE which binds files by rows.
 #'
 #' @return Dataframe with all files combined.
 #' @import openxlsx
@@ -189,25 +191,30 @@ combineFiles <- function(files,
                          sep = NULL,
                          stringsAsFactors = F,
                          header = T,
-                         sheetIndex = 1) {
+                         sheetIndex = 1,
+                         skip = 0,
+                         combineColumns = F) {
 
   temp <- data.frame()
 
   if (type %in% c("csv","txt")) {
-    for (ff in files) {
-      if (file.size(ff) > 0) {
-        tt <- read.csv(ff, sep = sep, header = header, stringsAsFactors = stringsAsFactors)
-        temp <- rbind(temp, tt)
+    for (ff in 1:length(files)) {
+      if (file.size(files[ff]) > 0) {
+        tt <- read.csv(files[ff], sep = sep, header = header, stringsAsFactors = stringsAsFactors, skip = skip)
+        if (ncol(tt) == 1) tt <- read.csv(files[ff], header = header, stringsAsFactors = stringsAsFactors, skip = skip)
+        if (combineColumns == F) temp <- rbind(temp, tt)
+        if (combineColumns == T & ff == 1) temp <- tt
+        if (combineColumns == T & ff > 1) temp <- merge(temp, tt, all = T)
       }
     }
   }
 
   if (type %in% c("xlsx")) {
-    for (ff in files) {
-      if (file.size(ff) > 0) {
-        tt <- read.xlsx(ff, sep = sep, sheetIndex = sheetIndex, stringsAsFactors = stringsAsFactors)
-        temp <- rbind(temp, tt)
-      }
+    for (ff in 1:length(files)) {
+      if (file.size(files[ff]) > 0) {
+        tt <- read.xlsx(files[ff], sep = sep, sheetIndex = sheetIndex, stringsAsFactors = stringsAsFactors)
+        if (combineColumns == T & ff == 1) temp <- tt
+        if (combineColumns == T & ff > 1) temp <- merge(temp, tt, all = T)      }
     }
   }
 

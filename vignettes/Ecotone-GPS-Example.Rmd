@@ -1,0 +1,122 @@
+---
+title: "Ecotone-GPS-Example"
+author: "Allison Patterson"
+date: "`r Sys.Date()`"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Ecotone-GPS-Example}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+Ecotone GPS units have the advantage of being remotely downloadable. This creates a different file structure from most other GPS units because the data are associated with the base station and not necessarily the individual deployment. Unlike with other tag types, SeabiRds will link the GPS data to the deployment data based on the gps_id rather than the dep_id, so it is important that the gps_id in the deployment file matches the gps name in the ecotone files. 
+
+The GPS data should be exported from Ecotone's LoggerAnalyser as .csv files, but they do not need to follow any particular naming criteria. It is OK if there are replicate records within the exported files, these will be removed by the readGPSData() function. All the exported .csv files should be saved to a single folder, which cannot contain any other .csv files. The files exported from LoggerAnalyser are colon separated. If you have already re-saved these files to be comma separated the readGPSData, the readGPSData function can still import them. However, any other change to the original files (i.e. adding columns or changing column headers) is likely to cause errors.
+
+## Load example ecotone deployment data and format it
+
+```{r}
+
+library(seabiRds)
+
+# Get path to the example deployment data
+fn <- system.file("extdata/ecotone", "ecotone_ex.csv", package = "seabiRds")
+
+# Read in data from this file
+raw_dep <- read.csv(fn, stringsAsFactors = F)
+
+# Look at head of the data
+head(raw_dep)
+
+```
+
+We will add an empty field for deployment ID, named 'dep_id'. This will be passed to the formatDeployments() function, which will build a unique identified for each row based on the band number and the deployment date. If you want to use your own dep_id here, make sure that each record is unique.
+
+```{r}
+
+# Create a field called dep_id, where all values are NA
+raw_dep$dep_id <- NA
+
+```
+
+Using formatDeployments(), we map the names of the fields in the raw data with the standard field names in the function. We will use fill_dep_id = T, to create unique deployment IDs from the data. In this example we will only use GPS data, however TDR units were also used in these deployments so we will map both the GPS and TDR fields.
+
+For Ecotone data, it is important that the gps_id values in the deployment data match the logger IDs in the Ecotone data.
+
+```{r}
+
+# Run formatDeployments
+dep_data <- formatDeployments(
+  deployments = raw_dep,
+  dateFormat = "%Y-%m-%d %H:%M",
+  dep_tz = "US/Eastern",
+  species = 'Species',
+  metal_band = 'Band_num',
+  colour_band = 'Colour_band',
+  dep_id = 'dep_id',
+  fill_dep_id = T,
+  site = 'Colony',
+  dep_lon = 'Dep_lon',
+  dep_lat = 'Dep_lat',
+  time_released = 'Time_on',
+  time_recaptured = 'Time_off',
+  status_on = 'Stage_on',
+  status_off = 'Stage_off',
+  mass_on = 'Mass_on',
+  mass_off = 'Mass_off',
+  gps_id = 'GPS',
+  tdr_id = 'TDR'
+)
+
+```
+
+In the output, the dep_id field is now filled with ids for each deployment. The time_released and time_recaptured fields have been formatted as POSIXct data and converted to UTC. 
+
+The last seven fields are added for compatibility with our biologging database. If you do not need these fields, you can ignore them or delete them.
+
+```{r}
+
+# Look at the results
+head(dep_data)
+
+```
+
+## Read example Ecotone GPS data
+
+Now we will use the readGPSData() function to import and format the raw Ecotone GPS data. This data should all be saved to a single folder. There should not be any other .csv ciles in this folder. The names of these files do not matter, I prefer to leave them as they were named by the Ecotone software.
+
+```{r}
+
+# Get the path to the example data stored within this package
+folder <- paste0(find.package('seabiRds'), "/extdata/ecotone/gps_data")
+
+# Run the readGPSData function for Ecotone data
+ecotone_data <- readGPSData(
+  inputFolder = folder, # path to the colder storing the raw GPS files
+  deployments = dep_data, # formatted deployment data
+  tagType = "Ecotone"
+)
+
+# Look at the output
+head(ecotone_data)
+
+```
+
+Now the data are loaded into your R environment, we can use the cleanGPSData() function to clean the data and calculate sum movement paramters. Use the argument plot = T to check that everything looks good. This will produce two plots for each deployment: a plot of distance from colony over time and a map of the deployments. Black lines and points show the deployed movements and red lines and points show any GPS data recorded before or after the deployment. If the same Ecotone unit was deployed on multiple individuals you will see all the tracks collected by that unit, but only the locations from that deployment will be shown in black. If you used a speed threshold to remove unrealistic locations, these will also be plotted in red. Use these plots to make sure the release and recapture times match the GPS data and the deployment location is correct. This is a great way to identify data entry errors. 
+
+```{r}
+
+ecotone_data <- cleanGPSData(data = ecotone_data,
+                            deployments = dep_data,
+                            speedThreshold = 150,
+                            plot =T)
+
+
+```

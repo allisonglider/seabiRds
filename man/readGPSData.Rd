@@ -4,7 +4,13 @@
 \alias{readGPSData}
 \title{Reads in raw GPS data and sets up standard field names.}
 \usage{
-readGPSData(inputFolder, deployments, tagTZ = "UTC", tagType = "Technosmart")
+readGPSData(
+  inputFolder,
+  deployments,
+  tagTZ = "UTC",
+  tagType = "Technosmart",
+  dateFormat = "\%d-\%m-\%Y"
+)
 }
 \arguments{
 \item{inputFolder}{Folder containing all the raw GPS files to be processed.}
@@ -13,11 +19,18 @@ readGPSData(inputFolder, deployments, tagTZ = "UTC", tagType = "Technosmart")
 
 \item{tagTZ}{Timezone of GPS data.}
 
-\item{tagType}{Type of GPS biologger used, options are "Technosmart".}
+\item{tagType}{Type of GPS biologger used, options are "Technosmart", "Ecotone", and "Cattrack.}
+
+\item{dateFormat}{POSIXct string indicating how dates are formatted in the GPS files.}
 }
 \value{
 A new dataframe containing all GPS data.
 }
 \description{
 Reads in raw GPS data and sets up standard field names.
+}
+\details{
+Technosmart can export GPS data with the following date formats: %d-%m-%Y, %m-%d-%Y, "%Y-%m-%d, %Y-%d-%m. All the files in the inputFolder need to have the same formatting.
+
+The function will print lists of: GPS files that contain no data, GPS files that have no matching deployments in the deployment data, and deployments that have no matching GPS files. This is intended to help you identify errors in data entry or file naming. For technosmart units, I recommend you re-export data any time you change the file name because X-Manager includes the file name as a column in the data.
 }
