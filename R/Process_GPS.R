@@ -319,13 +319,15 @@ readGPSData <- function(inputFolder,
   if (tagType == "Ecotone") {
     output <- readEcotoneGPS(inputFolder = inputFolder,
                              deployments = deployments,
-                             tagTZ = tagTZ)
+                             tagTZ = tagTZ,
+                             dateFormat = dateFormat)
   }
 
   if (tagType == "Cattrack") {
     output <- readCattrackGPS(inputFolder = inputFolder,
                               deployments = deployments,
-                              tagTZ = tagTZ)
+                              tagTZ = tagTZ,
+                              dateFormat = dateFormat)
   }
 
 
@@ -370,6 +372,7 @@ readTechnosmartGPS <- function(inputFolder,
                              sep = "\t",
                              stringsAsFactors = F,
                              header = F)
+        temp <- temp[!is.na(temp$V2),]
 
         if (nrow(temp) > 5) {
 
@@ -412,7 +415,8 @@ readTechnosmartGPS <- function(inputFolder,
 
 readEcotoneGPS <- function(inputFolder,
                            deployments,
-                           tagTZ = "UTC") {
+                           tagTZ = "UTC",
+                           dateFormat = dateFormat) {
 
   theFiles <- list.files(inputFolder, full.names = T, pattern = 'csv')
 
@@ -471,7 +475,8 @@ readEcotoneGPS <- function(inputFolder,
 
 readCattrackGPS <- function(inputFolder,
                             deployments,
-                            tagTZ = "UTC") {
+                            tagTZ = "UTC",
+                            dateFormat = dateFormat) {
 
   dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
 
@@ -506,10 +511,10 @@ readCattrackGPS <- function(inputFolder,
         if (nrow(temp) > 5) {
 
           # check that date format is correct
-          if (is.na(as.POSIXct(as.POSIXct(paste(temp$Date[1], temp$Time[1])), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
+          if (is.na(as.POSIXct(as.POSIXct(strptime(paste(temp$Date[1], temp$Time[1]), dateFormat)), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
 
           # format dates
-          temp$time <- lubridate::force_tz(as.POSIXct(paste(temp$Date, temp$Time)), tz = tagTZ)
+          temp$time <- lubridate::force_tz(as.POSIXct(strptime(paste(temp$Date, temp$Time),dateFormat = dateFormat)), tz = tagTZ)
           temp$time <- lubridate::with_tz(temp$time, tz = 'UTC')
 
           # order data and remove duplicate records
