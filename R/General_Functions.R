@@ -252,3 +252,12 @@ combineFiles <- function(files,
 
 }
 
+# ---------------------------------------------------------------------------------------
+#' Calculates dominant sampling frequency from a list of times
+#'
+getFrequency <- function(time) {
+
+   1/signif(getMode(getDT(time, units = "sec")),2)
+
+  #' @export getFrequency
+}
