@@ -28,8 +28,12 @@ getPeaks(
 \item{sample}{Only used in fft method, only calculate paeaks at sample interval, in sec, to save processing time}
 }
 \description{
+The pracma method uses findpeaks() to count the number of peaks within each window above a specified treshold. Results are returned as
+peaks per second. This approach is faster than the fft method and can be less impacted by noise in the data.If using this approach, I recommend
+exploring different threshold values to understand how this changes the result.
+
 The fft method uses a Fast Fourier Transform to identify the peak frequency in the input data over a moving
 window defined the frequency * interval. The threshold paramter filters out peaks identified in samples with an inter-quartile range less than the threshold value.
 This helps elimnate noisy peaks with low amplitudes. This method can be slow for large data sets. Use sample to only calcualte peaks
-at a sampling interval (default is 1 sec), this can greatly speed up the algorithm
+at a sampling interval (default is 1 sec), this can greatly speed up the algorithm.
 }
