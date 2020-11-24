@@ -13,6 +13,5 @@ export(getDist)
 export(getMode)
 export(getSessions)
 export(readGPSData)
-import(openxlsx)
 export(readTDRData)
-
+import(openxlsx)

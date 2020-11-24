@@ -39,28 +39,56 @@ getColDist <- function(lon, lat, colonyLon, colonyLat) {
 }
 
 # ---------------------------------------------------------------------------------------------------------------
-#' Creates a unique ID for consecutive values in a time series. This is useful for createing a unique id for all dives or trips
+#' Creates a unique ID for consecutive matching values in a series.
+#'
 #' @param value A vector containing the values you want to create IDs for, can be any data type.
+#' @param ignore Use TRUE if there are values that should not get IDs.
+#' @param ignoreValue a singe value or list of values to ignore when assigning IDs.
 #' @param maxSession A numeric value indicating the maximum number of repeating values that should be assigned the same ID. Defaults to Inf for no limit.
-#' @return a numeric vector
+#'
+#' @description This function is useful for createing a unique id for all dives or trips.
+#'
+#' @return A numeric vector of IDs
+#'
+#' @examples
+#'
+#' # example with numeric input, that ignores 0
+#' tt <- c(0, 0, 1, 1, 1, 1, 3, 3, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 2, 2)
+#' getSessions(value = tt, maxSession = Inf, ignore = T, ignoreValue = 0)
+#'
+#' # example with text input
+#' tt <- c('fly', 'fly', 'fly', 'dive', 'dive', 'dive', 'fly', 'fly', 'fly', 'colony', 'colony', 'colony','fly','fly')
+#' getSessions(value = tt, ignore = F)
+#'
+#' # example with text input that does not assign ID to colony
+#' getSessions(value = tt, ignore = T, ignoreValue = 'colony')
 
-getSessions <- function(value, maxSession = Inf) {
+getSessions <- function(value, ignore = F, ignoreValue = NULL, maxSession = Inf) {
+
+  if (sum(is.na(value)) > 0) stop("getSessions() cannot accept NA in input", call. = F)
+  if (ignore == T & is.null(ignoreValue)) stop("ignoreValue cannot be NULL when ignore == T", call. = F)
+
   output <- 1
   j <- 1
   k <- 0
   for (i in 2:length(value)) {
     j <- ifelse(value[i] == value[i - 1], j, j + 1)
     k <- ifelse(value[i] == value[i - 1], k + 1, 0)
-    if (k >= maxSession) {
+    if (k >= maxSession ) {
       j <- j + 1
       k <- 0
     }
     output[i] <- j
   }
+
+  if (ignore == T) {
+    output[value %in% ignoreValue] <- NA
+    output <- as.numeric(as.factor(output))
+  }
+
   output
 
   #' @export getSessions
-
 }
 
 

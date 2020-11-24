@@ -2,18 +2,35 @@
 % Please edit documentation in R/General_Functions.R
 \name{getSessions}
 \alias{getSessions}
-\title{Creates a unique ID for consecutive values in a time series. This is useful for createing a unique id for all dives or trips}
+\title{Creates a unique ID for consecutive matching values in a series.}
 \usage{
-getSessions(value, maxSession = Inf)
+getSessions(value, ignore = F, ignoreValue = NULL, maxSession = Inf)
 }
 \arguments{
 \item{value}{A vector containing the values you want to create IDs for, can be any data type.}
 
+\item{ignore}{Use TRUE if there are values that should not get IDs.}
+
+\item{ignoreValue}{a singe value or list of values to ignore when assigning IDs.}
+
 \item{maxSession}{A numeric value indicating the maximum number of repeating values that should be assigned the same ID. Defaults to Inf for no limit.}
 }
 \value{
-a numeric vector
+A numeric vector of IDs
 }
 \description{
-Creates a unique ID for consecutive values in a time series. This is useful for createing a unique id for all dives or trips
+This function is useful for createing a unique id for all dives or trips.
+}
+\examples{
+
+# example with numeric input, that ignores 0
+tt <- c(0, 0, 1, 1, 1, 1, 3, 3, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 2, 2)
+getSessions(value = tt, maxSession = Inf, ignore = T, ignoreValue = 0)
+
+# example with text input
+tt <- c('fly', 'fly', 'fly', 'dive', 'dive', 'dive', 'fly', 'fly', 'fly', 'colony', 'colony', 'colony','fly','fly')
+getSessions(value = tt, ignore = F)
+
+# example with text input that does not assign ID to colony
+getSessions(value = tt, ignore = T, ignoreValue = 'colony')
 }
