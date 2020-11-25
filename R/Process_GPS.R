@@ -514,7 +514,7 @@ readCattrackGPS <- function(inputFolder,
           if (is.na(as.POSIXct(as.POSIXct(strptime(paste(temp$Date[1], temp$Time[1]), dateFormat)), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
 
           # format dates
-          temp$time <- lubridate::force_tz(as.POSIXct(strptime(paste(temp$Date, temp$Time),dateFormat = dateFormat)), tz = tagTZ)
+          temp$time <- lubridate::force_tz(as.POSIXct(strptime(paste(temp$Date, temp$Time, dateFormat = dateFormat))), tz = tagTZ)
           temp$time <- lubridate::with_tz(temp$time, tz = 'UTC')
 
           # order data and remove duplicate records

@@ -19,7 +19,7 @@
 #'This helps elimnate noisy peaks with low amplitudes. This method can be slow for large data sets. Use sample to only calcualte peaks
 #'at a sampling interval (default is 1 sec), this can greatly speed up the algorithm.
 #'
-#'@value A vector of frequencies (Hz).
+#'@return A vector of frequencies (Hz).
 
 
 # Version that accounts for unequal time intervals

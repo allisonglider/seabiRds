@@ -21,7 +21,7 @@ combineFiles(
 
 \item{pattern}{Character string of pattern in file name to select files.}
 
-\item{type}{File type suffix, supported options are "txt", "csv", and "xlsx".}
+\item{type}{File type suffix, supported options are "txt" and "csv".}
 
 \item{sep}{File delimiter, if required.}
 
