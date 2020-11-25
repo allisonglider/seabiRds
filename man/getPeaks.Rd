@@ -27,6 +27,9 @@ getPeaks(
 
 \item{sample}{Only used in fft method, only calculate paeaks at sample interval, in sec, to save processing time}
 }
+\value{
+A vector of frequencies (Hz).
+}
 \description{
 The pracma method uses findpeaks() to count the number of peaks within each window above a specified treshold. Results are returned as
 peaks per second. This approach is faster than the fft method and can be less impacted by noise in the data.If using this approach, I recommend

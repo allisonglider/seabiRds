@@ -202,7 +202,7 @@ filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold
 #'
 #' @param files a list  of file paths to the files to be combined.
 #' @param pattern Character string of pattern in file name to select files.
-#' @param type File type suffix, supported options are "txt", "csv", and "xlsx".
+#' @param type File type suffix, supported options are "txt" and "csv".
 #' @param sep File delimiter, if required.
 #' @param stringAsFactors True or False if strings should be read as factors, defaults to F
 #' @param header Should first row be read as file header.
@@ -210,7 +210,6 @@ filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold
 #' @param combineColumns Change to TRUE if you want to merge files by columns, default is FALSE which binds files by rows.
 #'
 #' @return Dataframe with all files combined.
-#' @import openxlsx
 
 
 combineFiles <- function(files,
@@ -237,14 +236,14 @@ combineFiles <- function(files,
     }
   }
 
-  if (type %in% c("xlsx")) {
-    for (ff in 1:length(files)) {
-      if (file.size(files[ff]) > 0) {
-        tt <- read.xlsx(files[ff], sep = sep, sheetIndex = sheetIndex, stringsAsFactors = stringsAsFactors)
-        if (combineColumns == T & ff == 1) temp <- tt
-        if (combineColumns == T & ff > 1) temp <- merge(temp, tt, all = T)      }
-    }
-  }
+  # if (type %in% c("xlsx")) {
+  #   for (ff in 1:length(files)) {
+  #     if (file.size(files[ff]) > 0) {
+  #       tt <- read.xlsx(files[ff], sep = sep, sheetIndex = sheetIndex, stringsAsFactors = stringsAsFactors)
+  #       if (combineColumns == T & ff == 1) temp <- tt
+  #       if (combineColumns == T & ff > 1) temp <- merge(temp, tt, all = T)      }
+  #   }
+  # }
 
   temp
 
