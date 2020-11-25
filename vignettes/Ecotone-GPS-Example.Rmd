@@ -95,7 +95,7 @@ Now we will use the readGPSData() function to import and format the raw Ecotone 
 ```{r}
 
 # Get the path to the example data stored within this package
-folder <- paste0(find.package('seabiRds'), "/inst/extdata/ecotone/gps_data")
+folder <- paste0(find.package('seabiRds'), "/extdata/ecotone/gps_data")
 
 # Run the readGPSData function for Ecotone data
 ecotone_data <- readGPSData(
@@ -116,6 +116,6 @@ Now the data are loaded into your R environment, we can use the cleanGPSData() f
 ecotone_data <- cleanGPSData(data = ecotone_data,
                             deployments = dep_data,
                             speedThreshold = 150,
-                            plot =T)
+                            plot =F)
 
 ```

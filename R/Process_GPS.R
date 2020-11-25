@@ -345,7 +345,6 @@ readTechnosmartGPS <- function(inputFolder,
 
   dateFormat <- gsub('/', '-', dateFormat)
   dd <- list.files(inputFolder, pattern = '.txt', full.names = T)
-  if (length(dd) < 1) stop("Check inputFolder path, no files found", call. = F)
 
   emptyfiles <- dd[file.size(dd) == 0]
   if (length(emptyfiles) > 0) {
@@ -482,7 +481,7 @@ readCattrackGPS <- function(inputFolder,
                             dateFormat = dateFormat) {
 
   dateFormat <- gsub("/", '-', dateFormat)
-  dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
+
   if (length(dd) < 1) stop("Check inputFolder path, no files found", call. = F)
 
   emptyfiles <- dd[file.size(dd) == 0]
@@ -777,7 +776,6 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
 
   dateFormat <- gsub('/', '-', dateFormat)
   dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
-  if (length(dd) < 1) stop("Check inputFolder path, no files found", call. = F)
 
   # Message for empty files
   emptyfiles <- dd[file.size(dd) == 0]
@@ -881,7 +879,6 @@ readLAT150 <- function(inputFolder,
                        tagTZ = "UTC") {
 
   dd <- list.files(inputFolder, pattern = '.csv', full.names = T, recursive = T)
-  if (length(dd) < 1) stop("Check inputFolder path, no files found", call. = F)
 
   emptyfiles <- dd[file.size(dd) == 0]
   if (length(emptyfiles) > 0) {
