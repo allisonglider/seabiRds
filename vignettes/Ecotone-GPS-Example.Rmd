@@ -99,7 +99,7 @@ folder <- paste0(find.package('seabiRds'), "/extdata/ecotone/gps_data")
 
 # Run the readGPSData function for Ecotone data
 ecotone_data <- readGPSData(
-  inputFolder = folder, # path to the colder storing the raw GPS files
+  inputFolder = folder, # path to the folder storing the raw GPS files
   deployments = dep_data, # formatted deployment data
   tagType = "Ecotone"
 )
@@ -117,6 +117,5 @@ ecotone_data <- cleanGPSData(data = ecotone_data,
                             deployments = dep_data,
                             speedThreshold = 150,
                             plot =T)
-
 
 ```
