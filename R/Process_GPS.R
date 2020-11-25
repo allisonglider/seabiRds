@@ -343,7 +343,9 @@ readTechnosmartGPS <- function(inputFolder,
                                tagTZ = "UTC",
                                dateFormat = dateFormat) {
 
+  dateFormat <- gsub('/', '-', dateFormat)
   dd <- list.files(inputFolder, pattern = '.txt', full.names = T)
+  if (length(dd) < 1) stop("Check inputFolder path, no files found", call. = F)
 
   emptyfiles <- dd[file.size(dd) == 0]
   if (length(emptyfiles) > 0) {
@@ -378,6 +380,7 @@ readTechnosmartGPS <- function(inputFolder,
 
           # set names and format date
           names(temp) <- c("time","lat","lon","altitude","gpsspeed","satellites","hdop","maxsignal")
+          temp$time <- gsub('/','-',temp$time)
           df <- paste0(dateFormat, ",%T")
 
           # check that date format is correct
@@ -415,8 +418,7 @@ readTechnosmartGPS <- function(inputFolder,
 
 readEcotoneGPS <- function(inputFolder,
                            deployments,
-                           tagTZ = "UTC",
-                           dateFormat = dateFormat) {
+                           tagTZ = "UTC") {
 
   theFiles <- list.files(inputFolder, full.names = T, pattern = 'csv')
 
@@ -478,7 +480,9 @@ readCattrackGPS <- function(inputFolder,
                             tagTZ = "UTC",
                             dateFormat = dateFormat) {
 
+  dateFormat <- gsub("/", '-', dateFormat)
   dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
+  if (length(dd) < 1) stop("Check inputFolder path, no files found", call. = F)
 
   emptyfiles <- dd[file.size(dd) == 0]
   if (length(emptyfiles) > 0) {
@@ -510,11 +514,13 @@ readCattrackGPS <- function(inputFolder,
 
         if (nrow(temp) > 5) {
 
+          temp$Date <- gsub("/", '-', temp$Date)
+
           # check that date format is correct
           if (is.na(as.POSIXct(as.POSIXct(strptime(paste(temp$Date[1], temp$Time[1]), dateFormat)), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
 
           # format dates
-          temp$time <- lubridate::force_tz(as.POSIXct(strptime(paste(temp$Date, temp$Time, dateFormat = dateFormat))), tz = tagTZ)
+          temp$time <- lubridate::force_tz(as.POSIXct(strptime(paste(temp$Date, temp$Time), dateFormat)), tz = tagTZ)
           temp$time <- lubridate::with_tz(temp$time, tz = 'UTC')
 
           # order data and remove duplicate records
@@ -765,9 +771,12 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
                                deployments = depData,
                                tagTZ = "UTC",
                                tagType = "Technosmart",
-                               dateFormat = "%Y-%m-%d") {
+                               dateFormat = "%Y-%m-%d")
+  {
 
+  dateFormat <- gsub('/', '-', dateFormat)
   dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
+  if (length(dd) < 1) stop("Check inputFolder path, no files found", call. = F)
 
   # Message for empty files
   emptyfiles <- dd[file.size(dd) == 0]
@@ -819,6 +828,9 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
 
           # set names and format date
           names(temp) <- c("dep_id","time","depth","pressure","temperature","wetdry")
+
+          temp <- gsub('/', '-', temp$time)
+
           df <- paste0(dateFormat, " %H:%M:%OS")
 
           # check that date format is correct
@@ -868,6 +880,7 @@ readLAT150 <- function(inputFolder,
                        tagTZ = "UTC") {
 
   dd <- list.files(inputFolder, pattern = '.csv', full.names = T, recursive = T)
+  if (length(dd) < 1) stop("Check inputFolder path, no files found", call. = F)
 
   emptyfiles <- dd[file.size(dd) == 0]
   if (length(emptyfiles) > 0) {
