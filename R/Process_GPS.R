@@ -418,8 +418,7 @@ readTechnosmartGPS <- function(inputFolder,
 
 readEcotoneGPS <- function(inputFolder,
                            deployments,
-                           tagTZ = "UTC",
-                           dateFormat = dateFormat) {
+                           tagTZ = "UTC") {
 
   theFiles <- list.files(inputFolder, full.names = T, pattern = 'csv')
 
