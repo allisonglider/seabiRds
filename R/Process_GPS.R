@@ -482,7 +482,7 @@ readCattrackGPS <- function(inputFolder,
 
   dateFormat <- gsub("/", '-', dateFormat)
 
-  dd <- list.files(inputFolder, pattern = '.txt', full.names = T)
+  dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
 
   emptyfiles <- dd[file.size(dd) == 0]
   if (length(emptyfiles) > 0) {
