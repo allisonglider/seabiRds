@@ -481,6 +481,7 @@ readCattrackGPS <- function(inputFolder,
                             dateFormat = dateFormat) {
 
   dateFormat <- gsub("/", '-', dateFormat)
+  dateFormat <- paste(dateFormat, '%T')
 
   dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
 
