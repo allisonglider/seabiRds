@@ -116,6 +116,6 @@ Now the data are loaded into your R environment, we can use the cleanGPSData() f
 ecotone_data <- cleanGPSData(data = ecotone_data,
                             deployments = dep_data,
                             speedThreshold = 150,
-                            plot =T)
+                            plot =F)
 
 ```
