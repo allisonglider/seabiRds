@@ -345,6 +345,7 @@ readTechnosmartGPS <- function(inputFolder,
 
   dateFormat <- gsub('/', '-', dateFormat)
   dd <- list.files(inputFolder, pattern = '.txt', full.names = T)
+  if (length(dd) < 1) stop("Check inputFolder path, no files found", call. = F)
 
   emptyfiles <- dd[file.size(dd) == 0]
   if (length(emptyfiles) > 0) {
@@ -417,8 +418,7 @@ readTechnosmartGPS <- function(inputFolder,
 
 readEcotoneGPS <- function(inputFolder,
                            deployments,
-                           tagTZ = "UTC",
-                           dateFormat = dateFormat) {
+                           tagTZ = "UTC") {
 
   theFiles <- list.files(inputFolder, full.names = T, pattern = 'csv')
 
@@ -482,6 +482,7 @@ readCattrackGPS <- function(inputFolder,
 
   dateFormat <- gsub("/", '-', dateFormat)
   dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
+  if (length(dd) < 1) stop("Check inputFolder path, no files found", call. = F)
 
   emptyfiles <- dd[file.size(dd) == 0]
   if (length(emptyfiles) > 0) {
@@ -770,9 +771,12 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
                                deployments = depData,
                                tagTZ = "UTC",
                                tagType = "Technosmart",
-                               dateFormat = "%Y-%m-%d") {
+                               dateFormat = "%Y-%m-%d")
+  {
 
+  dateFormat <- gsub('/', '-', dateFormat)
   dd <- list.files(inputFolder, pattern = '.csv', full.names = T)
+  if (length(dd) < 1) stop("Check inputFolder path, no files found", call. = F)
 
   # Message for empty files
   emptyfiles <- dd[file.size(dd) == 0]
@@ -824,6 +828,9 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
 
           # set names and format date
           names(temp) <- c("dep_id","time","depth","pressure","temperature","wetdry")
+
+          temp <- gsub('/', '-', temp$time)
+
           df <- paste0(dateFormat, " %H:%M:%OS")
 
           # check that date format is correct
@@ -873,6 +880,7 @@ readLAT150 <- function(inputFolder,
                        tagTZ = "UTC") {
 
   dd <- list.files(inputFolder, pattern = '.csv', full.names = T, recursive = T)
+  if (length(dd) < 1) stop("Check inputFolder path, no files found", call. = F)
 
   emptyfiles <- dd[file.size(dd) == 0]
   if (length(emptyfiles) > 0) {
