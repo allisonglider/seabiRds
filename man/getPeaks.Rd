@@ -21,7 +21,7 @@ getPeaks(
 
 \item{window}{Size of moving window for estimating peaks, in seconds}
 
-\item{frequency}{Sampling frequency of data, in Hz}
+\item{frequency}{Sampling frequency of data, in Hz, if missing the function will estimate frequency from time}
 
 \item{threshold}{Minimum amplitude to be include as a true peak, results may differ with method}
 
@@ -31,12 +31,46 @@ getPeaks(
 A vector of frequencies (Hz).
 }
 \description{
-The pracma method uses findpeaks() to count the number of peaks within each window above a specified treshold. Results are returned as
-peaks per second. This approach is faster than the fft method and can be less impacted by noise in the data.If using this approach, I recommend
+Find peak frequency
+}
+\details{
+The pracma method uses pracma::findpeaks() to count the number of peaks within each window
+above a specified treshold. Results are returned as peaks per second. This approach is faster
+than the fft method and can be less impacted by noise in the data.If using this approach, I recommend
 exploring different threshold values to understand how this changes the result.
 
-The fft method uses a Fast Fourier Transform to identify the peak frequency in the input data over a moving
-window defined the frequency * interval. The threshold paramter filters out peaks identified in samples with an inter-quartile range less than the threshold value.
-This helps elimnate noisy peaks with low amplitudes. This method can be slow for large data sets. Use sample to only calcualte peaks
-at a sampling interval (default is 1 sec), this can greatly speed up the algorithm.
+The fft method uses a Fast Fourier Transform to identify the peak frequency in the input data
+over a moving window defined the frequency * interval. The threshold paramter filters out peaks
+identified in samples with an inter-quartile range less than the threshold value. This helps eliminate
+noisy peaks with low amplitudes. This method can be slow for large data sets. Use sample to only
+calcualte peaks at a sampling interval (default is 1 sec), this can speed up the algorithm.
+}
+\examples{
+
+# generate data with a noisy sine wave in the middle
+ts <- 25 # sampling rate of 25 Hz
+time <- 500 # duration in sec
+l <- ts * time
+x <- seq(0, time - 1/25, 1/25)
+f <- 8 # frequency of 8Hz
+f <- rep(rnorm(time, f, 0.05), each = ts) # create noise to frequency
+amp <- rnorm(ts * time, 0.5, 0.1) # create noisy amplitude
+z <- amp*sin(2*pi*f*x) # generate sine wave
+# add data with no frequency to start and end
+dat <- c(rep(0, 1500) + rnorm(1500, 0, 0.02), z, rep(0, 1500) + rnorm(1500, 0, 0.04))
+tim <- seq(Sys.time(), length.out = length(dat), by = 1/ts) # generate time vector
+
+# example using pracma
+myPeaks <- getPeaks(data = dat, time = tim, method = 'pracma', window = 5, frequency = NULL, threshold = 0.1)
+par(mfrow = c(2,1))
+plot(dat ~ tim, type = 'l')
+plot(myPeaks ~ tim, type = 'l')
+par(mfrow = c(1,1))
+
+# example using fft
+myPeaks <- getPeaks(data = dat, time = tim, method = 'fft', window = 5, frequency = NULL, threshold = 0.06)
+par(mfrow = c(2,1))
+plot(dat ~ tim, type = 'l')
+plot(myPeaks ~ tim, type = 'l')
+par(mfrow = c(1,1))
 }

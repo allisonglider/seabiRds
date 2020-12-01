@@ -6,6 +6,20 @@
 \usage{
 getFrequency(time)
 }
+\arguments{
+\item{time}{vector of POSIXct time values}
+}
 \description{
 Calculates dominant sampling frequency from a list of times
+}
+\details{
+This function calculates the time difference between consecutive values and returns the mode of those differences in Hz. If your sampling frequency was >1 Hz, make sure that the POSIXct vector was formatted to include miliseconds. This can be done using the \%OS conversion specification instead of \%S, see ?strptime. When working with data at > 1Hz, it is also useful to set options(digits.secs = 6), so that your times will print with miliseconds in R.
+}
+\examples{
+options(digits.secs = 6)
+myTimes <- c("2019-07-16 17:43:52.04","2019-07-16 17:43:52.08","2019-07-16 17:43:52.12","2019-07-16 17:43:52.16", "2019-07-16 17:43:52.20","2019-07-16 17:43:52.24","2019-07-16 17:43:52.28")
+myTimes <- as.POSIXct(strptime(myTimes, '\%Y-\%m-\%d \%H:\%M:\%OS', tz = 'UTC'))
+print(myTimes)
+getFrequency(myTimes)
+
 }

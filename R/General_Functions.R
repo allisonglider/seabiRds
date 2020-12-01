@@ -254,8 +254,22 @@ combineFiles <- function(files,
 # ---------------------------------------------------------------------------------------
 #' Calculates dominant sampling frequency from a list of times
 #'
+#' @param time vector of POSIXct time values
+#'
+#' @details This function calculates the time difference between consecutive values and returns the mode of those differences in Hz. If your sampling frequency was >1 Hz, make sure that the POSIXct vector was formatted to include miliseconds. This can be done using the \%OS conversion specification instead of \%S, see ?strptime. When working with data at > 1Hz, it is also useful to set options(digits.secs = 6), so that your times will print with miliseconds in R.
+#'
+#' @examples
+#' options(digits.secs = 6)
+#' myTimes <- c("2019-07-16 17:43:52.04","2019-07-16 17:43:52.08","2019-07-16 17:43:52.12","2019-07-16 17:43:52.16", "2019-07-16 17:43:52.20","2019-07-16 17:43:52.24","2019-07-16 17:43:52.28")
+#' myTimes <- as.POSIXct(strptime(myTimes, '%Y-%m-%d %H:%M:%OS', tz = 'UTC'))
+#' print(myTimes)
+#' getFrequency(myTimes)
+#'
+
 getFrequency <- function(time) {
 
+  mt <- signif(getMode(getDT(time, units = "sec")),2)
+  if (mt == 0) stop("Dominant sampling frequency was 0, check that your POSIXct values use milliseconds: %H:%M:%OS", call. = F)
    1/signif(getMode(getDT(time, units = "sec")),2)
 
   #' @export getFrequency

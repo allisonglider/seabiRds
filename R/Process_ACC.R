@@ -3,28 +3,60 @@
 #'
 #'@param data Vector of numeric values for finding peaks
 #'@param time Vector of POSIXct times
-#'@param frequency Sampling frequency of data, in Hz
+#'@param frequency Sampling frequency of data, in Hz, if missing the function will estimate frequency from time
 #'@param window Size of moving window for estimating peaks, in seconds
 #'@param threshold Minimum amplitude to be include as a true peak, results may differ with method
 #'@param sample Only used in fft method, only calculate paeaks at sample interval, in sec, to save processing time
+#'@param maxfreq Maximum frequency of interest using the FFT method
 #'
-#'@description
+#'@details
 #'
-#'The pracma method uses findpeaks() to count the number of peaks within each window above a specified treshold. Results are returned as
-#'peaks per second. This approach is faster than the fft method and can be less impacted by noise in the data.If using this approach, I recommend
+#'The pracma method uses pracma::findpeaks() to count the number of peaks within each window
+#'above a specified treshold. Results are returned as peaks per second. This approach is faster
+#'than the fft method and can be less impacted by noise in the data.If using this approach, I recommend
 #'exploring different threshold values to understand how this changes the result.
 #'
-#'The fft method uses a Fast Fourier Transform to identify the peak frequency in the input data over a moving
-#'window defined the frequency * interval. The threshold paramter filters out peaks identified in samples with an inter-quartile range less than the threshold value.
-#'This helps elimnate noisy peaks with low amplitudes. This method can be slow for large data sets. Use sample to only calcualte peaks
-#'at a sampling interval (default is 1 sec), this can greatly speed up the algorithm.
+#'The fft method uses a Fast Fourier Transform to identify the peak frequency in the input data
+#'over a moving window defined the frequency * interval. The threshold paramter filters out peaks
+#'identified in samples with an inter-quartile range less than the threshold value. This helps eliminate
+#'noisy peaks with low amplitudes. This method can be slow for large data sets. Use sample to only
+#'calcualte peaks at a sampling interval (default is 1 sec), this can speed up the algorithm.
 #'
 #'@return A vector of frequencies (Hz).
+#'
+#'@examples
+#'
+#' # generate data with a noisy sine wave in the middle
+#' ts <- 25 # sampling rate of 25 Hz
+#' time <- 500 # duration in sec
+#' l <- ts * time
+#' x <- seq(0, time - 1/25, 1/25)
+#' f <- 8 # frequency of 8Hz
+#' f <- rep(rnorm(time, f, 0.05), each = ts) # create noise to frequency
+#' amp <- rnorm(ts * time, 0.5, 0.1) # create noisy amplitude
+#' z <- amp*sin(2*pi*f*x) # generate sine wave
+#' # add data with no frequency to start and end
+#' dat <- c(rep(0, 1500) + rnorm(1500, 0, 0.02), z, rep(0, 1500) + rnorm(1500, 0, 0.04))
+#' tim <- seq(Sys.time(), length.out = length(dat), by = 1/ts) # generate time vector
+#'
+#' # example using pracma
+#' myPeaks <- getPeaks(data = dat, time = tim, method = 'pracma', window = 5, frequency = NULL, threshold = 0.1)
+#' par(mfrow = c(2,1))
+#' plot(dat ~ tim, type = 'l')
+#' plot(myPeaks ~ tim, type = 'l')
+#' par(mfrow = c(1,1))
+#'
+#' # example using fft
+#' myPeaks <- getPeaks(data = dat, time = tim, method = 'fft', window = 5, frequency = NULL, threshold = 0.06)
+#' par(mfrow = c(2,1))
+#' plot(dat ~ tim, type = 'l')
+#' plot(myPeaks ~ tim, type = 'l')
+#' par(mfrow = c(1,1))
 
 
 # Version that accounts for unequal time intervals
-getPeaks <- function(data, time, method = c('pracma', 'fft'), window, frequency = NULL,
-                     threshold = 0.1, sample = 1) {
+getPeakFrequency <- function(data, time, method = c('pracma', 'fft'), window, frequency = NULL,
+                     threshold = 0.1, sample = 1, maxfreq = NULL) {
 
   if (is.null(frequency)) frequency <- getFrequency(time = time)
 
@@ -51,6 +83,8 @@ getPeaks <- function(data, time, method = c('pracma', 'fft'), window, frequency 
     # Track processing time
     ptm <- proc.time()
 
+    if (is.null(maxfreq)) maxfreq <- frequency
+
     # Get the length of the data and create peaks object
     lenVar <- length(data)
     peaks <- rep(NA, lenVar)
@@ -73,6 +107,8 @@ getPeaks <- function(data, time, method = c('pracma', 'fft'), window, frequency 
 
       # calculate fft
       pows <- abs(fft(ddd)[2:halfwidth])^2
+      pows <- pows[freqs < maxfreq]
+      freqs <- freqs[freqs < maxfreq]
 
       # Select maximum frequency
       val <- freqs[which(pows == max(pows))[1]]
@@ -104,6 +140,32 @@ getPeaks <- function(data, time, method = c('pracma', 'fft'), window, frequency 
   #' @export getPeaks
 }
 
+# ---------------------------------------------------------------------------------------------------------------
+#' Calculate amplitude in wing beats
+#'
+#' @param dat Vector of accelerometer X value
+#' @param time Vector of POSIXct times, should use \%H:\%M:\%OS if sampling frequency >1 Hz
+#' @param frequency Sampling frequency of data, in Hz, if missing the function will estimate
+#' frequency from time
+#' @param window Size of moving window for estimating peaks, in seconds
+#'
+#' @details Calculates inter-quartile range using a moving window of time*frequency
+
+getAmplitude <- function(dat, window, time, frequency = NULL) {
+
+
+  if (sum(is.na(dat))) stop('NA values in Z', call. = F)
+
+  if (is.null(frequency)) frequency <- getFrequency(time = time)
+
+  # Calculate IQR over a moving window
+  amp <- zoo::rollapply(dat, window * frequency, FUN = IQR, fill = NA)
+
+  return(amp)
+
+  #' @export getAmplitude
+}
+
 
 # ---------------------------------------------------------------------------------------------------------------
 #' Calculate pitch
@@ -111,8 +173,9 @@ getPeaks <- function(data, time, method = c('pracma', 'fft'), window, frequency 
 #' @param X Vector of accelerometer X value
 #' @param Y Vector of accelerometer Y value
 #' @param Z Vector of accelerometer Z value
-#' @param time Vector of POSIXct times
-#' @param frequency Sampling frequency of data, in Hz
+#' @param time Vector of POSIXct times, should use \%H:\%M:\%OS if sampling frequency >1 Hz
+#' @param frequency Sampling frequency of data, in Hz, if missing the function will estimate
+#' frequency from time
 #' @param window Size of moving window for estimating peaks, in seconds
 #' @param standVar Variable to use in standardizing pitch values, if desired
 #' @param standMin Minimum value in standVar for standarization
@@ -166,32 +229,34 @@ getPitch <- function(X, Y, Z, window, time, frequency = NULL,
 }
 
 # ---------------------------------------------------------------------------------------------------------------
-#' Calculate dynamic acceleration
+#' Calculate dynamic body acceleration
 #'
 #' @param X Vector of accelerometer X value
 #' @param Y Vector of accelerometer Y value
 #' @param Z Vector of accelerometer Z value
-#' @param time Vector of POSIXct times
-#' @param window Size of moving window for estimating peaks, in seconds
-#' @param frequency Sampling frequency of data, in Hz
+#' @param time Vector of POSIXct times, should use \%H:\%M:\%OS if sampling frequency >1 Hz
+#' @param frequency Sampling frequency of data, in Hz, if missing the function will estimate frequency from time
+#' @param partial If TRUE, calculates partial dynamic body acceleratio
 
-getODBA <- function(X, Y, Z, time, window, frequency = NULL) {
+getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) {
 
   if (sum(is.na(X))) stop('NA values in X', call. = F)
   if (sum(is.na(Y))) stop('NA values in Y', call. = F)
-  if (sum(is.na(Z))) stop('NA values in Z', call. = F)
+  if (partial == F & sum(is.na(Z))) stop('NA values in Z', call. = F)
 
   if (is.null(frequency)) frequency <- getFrequency(time = time)
 
   # Calculate mean acceleration over a moving window
   staticX <- zoo::rollmean(X, window * frequency, fill = NA)
   staticY <- zoo::rollmean(Y, window * frequency, fill = NA)
-  staticZ <- zoo::rollmean(Z, window * frequency, fill = NA)
+  if (partial == F) staticZ <- zoo::rollmean(Z, window * frequency, fill = NA)
 
   dynamicX <- X - staticX
   dynamicY <- Y - staticY
-  dynamicZ <- Z - staticZ
-  ODBA <- abs(dynamicX) + abs(dynamicY) + abs(dynamicZ)
+  if (partial == F) dynamicZ <- Z - staticZ
+  if (partial == F) ODBA <- sqrt((dynamicX^2) + (dynamicY^2) + (dynamicZ^2))
+
+  if (partial == T) ODBA <- sqrt((dynamicX^2) + (dynamicY^2))
 
   return(ODBA)
 

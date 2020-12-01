@@ -13,11 +13,9 @@ getODBA(X, Y, Z, time, window, frequency = NULL)
 
 \item{Z}{Vector of accelerometer Z value}
 
-\item{time}{Vector of POSIXct times}
+\item{time}{Vector of POSIXct times, should use \%H:\%M:\%OS if sampling frequency >1 Hz}
 
-\item{window}{Size of moving window for estimating peaks, in seconds}
-
-\item{frequency}{Sampling frequency of data, in Hz}
+\item{frequency}{Sampling frequency of data, in Hz, if missing the function will estimate frequency from time}
 }
 \description{
 Calculate dynamic acceleration

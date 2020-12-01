@@ -17,7 +17,9 @@ Imports:
     sf,
     rnaturalearth,
     rnaturalearthdata,
-    cowplot
+    cowplot,
+    pracma,
+    zoo
 VignetteBuilder: knitr
-Suggests: knitr, rmarkdown, ggplot2
+Suggests: knitr, rmarkdown
 RoxygenNote: 7.1.0
