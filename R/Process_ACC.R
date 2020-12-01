@@ -7,6 +7,7 @@
 #'@param window Size of moving window for estimating peaks, in seconds
 #'@param threshold Minimum amplitude to be include as a true peak, results may differ with method
 #'@param sample Only used in fft method, only calculate paeaks at sample interval, in sec, to save processing time
+#'@param maxfreq Maximum frequency of interest using the FFT method
 #'
 #'@details
 #'
@@ -54,8 +55,8 @@
 
 
 # Version that accounts for unequal time intervals
-getPeaks <- function(data, time, method = c('pracma', 'fft'), window, frequency = NULL,
-                     threshold = 0.1, sample = 1) {
+getPeakFrequency <- function(data, time, method = c('pracma', 'fft'), window, frequency = NULL,
+                     threshold = 0.1, sample = 1, maxfreq = NULL) {
 
   if (is.null(frequency)) frequency <- getFrequency(time = time)
 
@@ -82,6 +83,8 @@ getPeaks <- function(data, time, method = c('pracma', 'fft'), window, frequency 
     # Track processing time
     ptm <- proc.time()
 
+    if (is.null(maxfreq)) maxfreq <- frequency
+
     # Get the length of the data and create peaks object
     lenVar <- length(data)
     peaks <- rep(NA, lenVar)
@@ -104,6 +107,8 @@ getPeaks <- function(data, time, method = c('pracma', 'fft'), window, frequency 
 
       # calculate fft
       pows <- abs(fft(ddd)[2:halfwidth])^2
+      pows <- pows[freqs < maxfreq]
+      freqs <- freqs[freqs < maxfreq]
 
       # Select maximum frequency
       val <- freqs[which(pows == max(pows))[1]]
@@ -133,6 +138,32 @@ getPeaks <- function(data, time, method = c('pracma', 'fft'), window, frequency 
   return(peaks)
 
   #' @export getPeaks
+}
+
+# ---------------------------------------------------------------------------------------------------------------
+#' Calculate amplitude in wing beats
+#'
+#' @param dat Vector of accelerometer X value
+#' @param time Vector of POSIXct times, should use \%H:\%M:\%OS if sampling frequency >1 Hz
+#' @param frequency Sampling frequency of data, in Hz, if missing the function will estimate
+#' frequency from time
+#' @param window Size of moving window for estimating peaks, in seconds
+#'
+#' @details Calculates inter-quartile range using a moving window of time*frequency
+
+getAmplitude <- function(dat, window, time, frequency = NULL) {
+
+
+  if (sum(is.na(dat))) stop('NA values in Z', call. = F)
+
+  if (is.null(frequency)) frequency <- getFrequency(time = time)
+
+  # Calculate IQR over a moving window
+  amp <- zoo::rollapply(dat, window * frequency, FUN = IQR, fill = NA)
+
+  return(amp)
+
+  #' @export getAmplitude
 }
 
 
@@ -198,31 +229,34 @@ getPitch <- function(X, Y, Z, window, time, frequency = NULL,
 }
 
 # ---------------------------------------------------------------------------------------------------------------
-#' Calculate dynamic acceleration
+#' Calculate dynamic body acceleration
 #'
 #' @param X Vector of accelerometer X value
 #' @param Y Vector of accelerometer Y value
 #' @param Z Vector of accelerometer Z value
 #' @param time Vector of POSIXct times, should use \%H:\%M:\%OS if sampling frequency >1 Hz
 #' @param frequency Sampling frequency of data, in Hz, if missing the function will estimate frequency from time
+#' @param partial If TRUE, calculates partial dynamic body acceleratio
 
-getODBA <- function(X, Y, Z, time, window, frequency = NULL) {
+getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) {
 
   if (sum(is.na(X))) stop('NA values in X', call. = F)
   if (sum(is.na(Y))) stop('NA values in Y', call. = F)
-  if (sum(is.na(Z))) stop('NA values in Z', call. = F)
+  if (partial == F & sum(is.na(Z))) stop('NA values in Z', call. = F)
 
   if (is.null(frequency)) frequency <- getFrequency(time = time)
 
   # Calculate mean acceleration over a moving window
   staticX <- zoo::rollmean(X, window * frequency, fill = NA)
   staticY <- zoo::rollmean(Y, window * frequency, fill = NA)
-  staticZ <- zoo::rollmean(Z, window * frequency, fill = NA)
+  if (partial == F) staticZ <- zoo::rollmean(Z, window * frequency, fill = NA)
 
   dynamicX <- X - staticX
   dynamicY <- Y - staticY
-  dynamicZ <- Z - staticZ
-  ODBA <- abs(dynamicX) + abs(dynamicY) + abs(dynamicZ)
+  if (partial == F) dynamicZ <- Z - staticZ
+  if (partial == F) ODBA <- sqrt((dynamicX^2) + (dynamicY^2) + (dynamicZ^2))
+
+  if (partial == T) ODBA <- sqrt((dynamicX^2) + (dynamicY^2))
 
   return(ODBA)
 
