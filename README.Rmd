@@ -1,16 +1,28 @@
+---
+output: github_document
+---
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-seabiRds
-========
+
+```{r, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>",
+  fig.path = "man/figures/README-",
+  out.width = "100%"
+)
+```
+
+# seabiRds
 
 <!-- badges: start -->
 <!-- badges: end -->
+
 Tools to analyse biologger data collected in the Arctic Ecology Lab. Primarily for GPS and accelerometer data, but maybe also some geolocators and heart rate loggers. PLease add an issue to the GitHub issues page for the package if you encounter any problems, would like me to add something, or want to make a contribution to the package.
 
-Installation
-------------
+## Installation
 
-You can install this package from github with [GitHub](https://github.com/) with:
+You can install this package from github with  [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
@@ -24,8 +36,7 @@ To install the package with vignettes, showing common applications use:
 devtools::install_github("allisonglider/seabiRds", build_vignettes = T)
 ```
 
-Vignettes
----------
+## Vignettes
 
 This will take you to an example of how to process data from Ecotone GPS devices:
 
@@ -41,4 +52,7 @@ This will take you to an example of how to process data from Technosmart GPS dev
 library(seabiRds)
 
 vignette(topic = 'Technosmart-GPS-Example', package = 'seabiRds')
+
 ```
+
+
