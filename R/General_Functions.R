@@ -39,28 +39,56 @@ getColDist <- function(lon, lat, colonyLon, colonyLat) {
 }
 
 # ---------------------------------------------------------------------------------------------------------------
-#' Creates a unique ID for consecutive values in a time series. This is useful for createing a unique id for all dives or trips
+#' Creates a unique ID for consecutive matching values in a series.
+#'
 #' @param value A vector containing the values you want to create IDs for, can be any data type.
+#' @param ignore Use TRUE if there are values that should not get IDs.
+#' @param ignoreValue a singe value or list of values to ignore when assigning IDs.
 #' @param maxSession A numeric value indicating the maximum number of repeating values that should be assigned the same ID. Defaults to Inf for no limit.
-#' @return a numeric vector
+#'
+#' @description This function is useful for createing a unique id for all dives or trips.
+#'
+#' @return A numeric vector of IDs
+#'
+#' @examples
+#'
+#' # example with numeric input, that ignores 0
+#' tt <- c(0, 0, 1, 1, 1, 1, 3, 3, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 2, 2)
+#' getSessions(value = tt, maxSession = Inf, ignore = T, ignoreValue = 0)
+#'
+#' # example with text input
+#' tt <- c('fly', 'fly', 'fly', 'dive', 'dive', 'dive', 'fly', 'fly', 'fly', 'colony', 'colony', 'colony','fly','fly')
+#' getSessions(value = tt, ignore = F)
+#'
+#' # example with text input that does not assign ID to colony
+#' getSessions(value = tt, ignore = T, ignoreValue = 'colony')
 
-getSessions <- function(value, maxSession = Inf) {
+getSessions <- function(value, ignore = F, ignoreValue = NULL, maxSession = Inf) {
+
+  if (sum(is.na(value)) > 0) stop("getSessions() cannot accept NA in input", call. = F)
+  if (ignore == T & is.null(ignoreValue)) stop("ignoreValue cannot be NULL when ignore == T", call. = F)
+
   output <- 1
   j <- 1
   k <- 0
   for (i in 2:length(value)) {
     j <- ifelse(value[i] == value[i - 1], j, j + 1)
     k <- ifelse(value[i] == value[i - 1], k + 1, 0)
-    if (k >= maxSession) {
+    if (k >= maxSession ) {
       j <- j + 1
       k <- 0
     }
     output[i] <- j
   }
+
+  if (ignore == T) {
+    output[value %in% ignoreValue] <- NA
+    output <- as.numeric(as.factor(output))
+  }
+
   output
 
   #' @export getSessions
-
 }
 
 
@@ -174,7 +202,7 @@ filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold
 #'
 #' @param files a list  of file paths to the files to be combined.
 #' @param pattern Character string of pattern in file name to select files.
-#' @param type File type suffix, supported options are "txt", "csv", and "xlsx".
+#' @param type File type suffix, supported options are "txt" and "csv".
 #' @param sep File delimiter, if required.
 #' @param stringAsFactors True or False if strings should be read as factors, defaults to F
 #' @param header Should first row be read as file header.
@@ -182,7 +210,6 @@ filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold
 #' @param combineColumns Change to TRUE if you want to merge files by columns, default is FALSE which binds files by rows.
 #'
 #' @return Dataframe with all files combined.
-#' @import xlsx
 
 
 combineFiles <- function(files,
@@ -209,14 +236,14 @@ combineFiles <- function(files,
     }
   }
 
-  if (type %in% c("xlsx")) {
-    for (ff in 1:length(files)) {
-      if (file.size(files[ff]) > 0) {
-        tt <- read.xlsx(files[ff], sep = sep, sheetIndex = sheetIndex, stringsAsFactors = stringsAsFactors)
-        if (combineColumns == T & ff == 1) temp <- tt
-        if (combineColumns == T & ff > 1) temp <- merge(temp, tt, all = T)      }
-    }
-  }
+  # if (type %in% c("xlsx")) {
+  #   for (ff in 1:length(files)) {
+  #     if (file.size(files[ff]) > 0) {
+  #       tt <- read.xlsx(files[ff], sep = sep, sheetIndex = sheetIndex, stringsAsFactors = stringsAsFactors)
+  #       if (combineColumns == T & ff == 1) temp <- tt
+  #       if (combineColumns == T & ff > 1) temp <- merge(temp, tt, all = T)      }
+  #   }
+  # }
 
   temp
 
@@ -224,3 +251,26 @@ combineFiles <- function(files,
 
 }
 
+# ---------------------------------------------------------------------------------------
+#' Calculates dominant sampling frequency from a list of times
+#'
+#' @param time vector of POSIXct time values
+#'
+#' @details This function calculates the time difference between consecutive values and returns the mode of those differences in Hz. If your sampling frequency was >1 Hz, make sure that the POSIXct vector was formatted to include miliseconds. This can be done using the \%OS conversion specification instead of \%S, see ?strptime. When working with data at > 1Hz, it is also useful to set options(digits.secs = 6), so that your times will print with miliseconds in R.
+#'
+#' @examples
+#' options(digits.secs = 6)
+#' myTimes <- c("2019-07-16 17:43:52.04","2019-07-16 17:43:52.08","2019-07-16 17:43:52.12","2019-07-16 17:43:52.16", "2019-07-16 17:43:52.20","2019-07-16 17:43:52.24","2019-07-16 17:43:52.28")
+#' myTimes <- as.POSIXct(strptime(myTimes, '%Y-%m-%d %H:%M:%OS', tz = 'UTC'))
+#' print(myTimes)
+#' getFrequency(myTimes)
+#'
+
+getFrequency <- function(time) {
+
+  mt <- signif(getMode(getDT(time, units = "sec")),2)
+  if (mt == 0) stop("Dominant sampling frequency was 0, check that your POSIXct values use milliseconds: %H:%M:%OS", call. = F)
+   1/signif(getMode(getDT(time, units = "sec")),2)
+
+  #' @export getFrequency
+}
