@@ -1007,7 +1007,7 @@ cleanTDRData <- function(data,
           if (plotPressure == F) {
 
             tt <- subset(temp, temp$time %in% temp$time[idx] & !is.na(temp$depth))
-            nn <- subset(newData, newData$time %in% temp$time[idx] & !is.na(newData$pressure))
+            nn <- subset(newData, newData$time %in% temp$time[idx] & !is.na(newData$depth))
 
             suppressMessages(
               myPlot <- ggplot2::ggplot(tt, ggplot2::aes(x = time, y = depth * -1)) +
