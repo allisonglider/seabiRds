@@ -29,7 +29,7 @@ You can install this package from github with  [GitHub](https://github.com/) wit
 devtools::install_github("allisonglider/seabiRds")
 ```
 
-To install the package with vignettes, showing common applications use:
+To install the package with vignettes containing helpful examples use:
 
 ``` r
 # install.packages("devtools")
