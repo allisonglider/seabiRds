@@ -566,7 +566,7 @@ readCattrackGPS <- function(inputFolder,
 #' @param data Name of object with formatted GPS data.
 #' @param deployments Name of object with formatted deployment data.
 #' @param tagTZ Timezone of GPS data.
-#' @param speedThresold Fastest possible movement in km/hr.
+#' @param speedThreshold Fastest possible movement in km/hr.
 #' @param plot Should data be plotted (TRUE or FALSE).
 #'
 #' @details This function clips the GPS data to the start and end times of each GPS deployment. The link between deployment
@@ -910,11 +910,11 @@ readLAT150 <- function(inputFolder,
         #                      header = T,
         #                      skip = 2,
         #                      combineColumns = T)
-        temp <- read.csv(theFiles[1], sep = ",", stringsAsFactors = F, header = T, skip = 2)
+        temp <- utils::read.csv(theFiles[1], sep = ",", stringsAsFactors = F, header = T, skip = 2)
         if (length(theFiles) > 1) {
           temp <- temp[,2:ncol(temp)]
           for (k in 2:length(theFiles)) {
-            tt <- read.csv(theFiles[k], sep = ",", stringsAsFactors = F, header = T, skip = 2)
+            tt <- utils::read.csv(theFiles[k], sep = ",", stringsAsFactors = F, header = T, skip = 2)
             tt <- tt[,2:ncol(tt)]
             temp <- merge(temp, tt, all = T)
           }

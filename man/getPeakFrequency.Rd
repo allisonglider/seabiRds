@@ -20,6 +20,8 @@ getPeakFrequency(
 
 \item{time}{Vector of POSIXct times}
 
+\item{method}{Method for calculating peak frequency, options are 'pracma' or 'fft'}
+
 \item{window}{Size of moving window for estimating peaks, in seconds}
 
 \item{frequency}{Sampling frequency of data, in Hz, if missing the function will estimate frequency from time}
@@ -64,14 +66,16 @@ dat <- c(rep(0, 1500) + rnorm(1500, 0, 0.02), z, rep(0, 1500) + rnorm(1500, 0, 0
 tim <- seq(Sys.time(), length.out = length(dat), by = 1/ts) # generate time vector
 
 # example using pracma
-myPeaks <- getPeakFrequency(data = dat, time = tim, method = 'pracma', window = 5, frequency = NULL, threshold = 0.1)
+myPeaks <- getPeakFrequency(data = dat, time = tim, method = 'pracma', window = 5,
+frequency = NULL, threshold = 0.1)
 par(mfrow = c(2,1))
 plot(dat ~ tim, type = 'l')
 plot(myPeaks ~ tim, type = 'l')
 par(mfrow = c(1,1))
 
 # example using fft
-myPeaks <- getPeakFrequency(data = dat, time = tim, method = 'fft', window = 5, frequency = NULL, threshold = 0.06)
+myPeaks <- getPeakFrequency(data = dat, time = tim, method = 'fft', window = 5,
+frequency = NULL, threshold = 0.06)
 par(mfrow = c(2,1))
 plot(dat ~ tim, type = 'l')
 plot(myPeaks ~ tim, type = 'l')

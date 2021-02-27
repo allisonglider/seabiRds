@@ -54,16 +54,17 @@ getColDist <- function(lon, lat, colonyLon, colonyLat) {
 #'
 #' # example with numeric input, that ignores 0
 #' tt <- c(0, 0, 1, 1, 1, 1, 3, 3, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 2, 2)
-#' getSessions(value = tt, maxSession = Inf, ignore = T, ignoreValue = 0)
+#' getSessions(value = tt, maxSession = Inf, ignore = TRUE, ignoreValue = 0)
 #'
 #' # example with text input
-#' tt <- c('fly', 'fly', 'fly', 'dive', 'dive', 'dive', 'fly', 'fly', 'fly', 'colony', 'colony', 'colony','fly','fly')
-#' getSessions(value = tt, ignore = F)
+#' tt <- c('fly', 'fly', 'fly', 'dive', 'dive', 'dive', 'fly', 'fly', 'fly',
+#' 'colony', 'colony', 'colony','fly','fly')
+#' getSessions(value = tt, ignore = FALSE)
 #'
 #' # example with text input that does not assign ID to colony
-#' getSessions(value = tt, ignore = T, ignoreValue = 'colony')
+#' getSessions(value = tt, ignore = TRUE, ignoreValue = 'colony')
 
-getSessions <- function(value, ignore = F, ignoreValue = NULL, maxSession = Inf) {
+getSessions <- function(value, ignore = FALSE, ignoreValue = NULL, maxSession = Inf) {
 
   if (sum(is.na(value)) > 0) stop("getSessions() cannot accept NA in input", call. = F)
   if (ignore == T & is.null(ignoreValue)) stop("ignoreValue cannot be NULL when ignore == T", call. = F)
@@ -204,7 +205,7 @@ filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold
 #' @param pattern Character string of pattern in file name to select files.
 #' @param type File type suffix, supported options are "txt" and "csv".
 #' @param sep File delimiter, if required.
-#' @param stringAsFactors True or False if strings should be read as factors, defaults to F
+#' @param stringsAsFactors True or False if strings should be read as factors, defaults to F
 #' @param header Should first row be read as file header.
 #' @param skip Rows at the start of the file to skip.
 #' @param combineColumns Change to TRUE if you want to merge files by columns, default is FALSE which binds files by rows.
@@ -218,7 +219,6 @@ combineFiles <- function(files,
                          sep = NULL,
                          stringsAsFactors = F,
                          header = T,
-                         sheetIndex = 1,
                          skip = 0,
                          combineColumns = F) {
 
@@ -227,8 +227,8 @@ combineFiles <- function(files,
   if (type %in% c("csv","txt")) {
     for (ff in 1:length(files)) {
       if (file.size(files[ff]) > 0) {
-        tt <- read.csv(files[ff], sep = sep, header = header, stringsAsFactors = stringsAsFactors, skip = skip)
-        if (ncol(tt) == 1) tt <- read.csv(files[ff], header = header, stringsAsFactors = stringsAsFactors, skip = skip)
+        tt <- utils::read.csv(files[ff], sep = sep, header = header, stringsAsFactors = stringsAsFactors, skip = skip)
+        if (ncol(tt) == 1) tt <- utils::read.csv(files[ff], header = header, stringsAsFactors = stringsAsFactors, skip = skip)
         if (combineColumns == F) temp <- rbind(temp, tt)
         if (combineColumns == T & ff == 1) temp <- tt
         if (combineColumns == T & ff > 1) temp <- merge(temp, tt, all = T)
@@ -260,7 +260,9 @@ combineFiles <- function(files,
 #'
 #' @examples
 #' options(digits.secs = 6)
-#' myTimes <- c("2019-07-16 17:43:52.04","2019-07-16 17:43:52.08","2019-07-16 17:43:52.12","2019-07-16 17:43:52.16", "2019-07-16 17:43:52.20","2019-07-16 17:43:52.24","2019-07-16 17:43:52.28")
+#' myTimes <- c("2019-07-16 17:43:52.04","2019-07-16 17:43:52.08",
+#' "2019-07-16 17:43:52.12", "2019-07-16 17:43:52.16", "2019-07-16 17:43:52.20",
+#' "2019-07-16 17:43:52.24","2019-07-16 17:43:52.28")
 #' myTimes <- as.POSIXct(strptime(myTimes, '%Y-%m-%d %H:%M:%OS', tz = 'UTC'))
 #' print(myTimes)
 #' getFrequency(myTimes)

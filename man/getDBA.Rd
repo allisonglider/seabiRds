@@ -15,9 +15,11 @@ getDBA(X, Y, Z = NULL, time, window, frequency = NULL, partial = F)
 
 \item{time}{Vector of POSIXct times, should use \%H:\%M:\%OS if sampling frequency >1 Hz}
 
+\item{window}{Size of moving window for estimating peaks, in seconds}
+
 \item{frequency}{Sampling frequency of data, in Hz, if missing the function will estimate frequency from time}
 
-\item{partial}{If TRUE, calculates partial dynamic body acceleratio}
+\item{partial}{If TRUE, calculates partial dynamic body acceleration}
 }
 \description{
 Calculate dynamic body acceleration

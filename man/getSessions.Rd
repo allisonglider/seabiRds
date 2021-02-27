@@ -4,7 +4,7 @@
 \alias{getSessions}
 \title{Creates a unique ID for consecutive matching values in a series.}
 \usage{
-getSessions(value, ignore = F, ignoreValue = NULL, maxSession = Inf)
+getSessions(value, ignore = FALSE, ignoreValue = NULL, maxSession = Inf)
 }
 \arguments{
 \item{value}{A vector containing the values you want to create IDs for, can be any data type.}
@@ -25,12 +25,13 @@ This function is useful for createing a unique id for all dives or trips.
 
 # example with numeric input, that ignores 0
 tt <- c(0, 0, 1, 1, 1, 1, 3, 3, 0, 0, 0, 0, 1, 1, 1, 1, 0, 0, 0, 2, 2)
-getSessions(value = tt, maxSession = Inf, ignore = T, ignoreValue = 0)
+getSessions(value = tt, maxSession = Inf, ignore = TRUE, ignoreValue = 0)
 
 # example with text input
-tt <- c('fly', 'fly', 'fly', 'dive', 'dive', 'dive', 'fly', 'fly', 'fly', 'colony', 'colony', 'colony','fly','fly')
-getSessions(value = tt, ignore = F)
+tt <- c('fly', 'fly', 'fly', 'dive', 'dive', 'dive', 'fly', 'fly', 'fly',
+'colony', 'colony', 'colony','fly','fly')
+getSessions(value = tt, ignore = FALSE)
 
 # example with text input that does not assign ID to colony
-getSessions(value = tt, ignore = T, ignoreValue = 'colony')
+getSessions(value = tt, ignore = TRUE, ignoreValue = 'colony')
 }

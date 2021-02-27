@@ -13,9 +13,9 @@ cleanGPSData(data, deployments, tagTZ = "UTC", speedThreshold = NA, plot = T)
 
 \item{tagTZ}{Timezone of GPS data.}
 
-\item{plot}{Should data be plotted (TRUE or FALSE).}
+\item{speedThreshold}{Fastest possible movement in km/hr.}
 
-\item{speedThresold}{Fastest possible movement in km/hr.}
+\item{plot}{Should data be plotted (TRUE or FALSE).}
 }
 \value{
 A new dataframe containing cleaned GPS data.

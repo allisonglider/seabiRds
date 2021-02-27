@@ -43,9 +43,6 @@ This example data was missing a few things we need for the formatDeployments() f
 ```{r}
 
 
-# Create a field called dep_id, where all values are NA
-raw_dep$dep_id <- paste(raw_dep$GPS, raw_dep$Band, strftime(raw_dep$RecaptureEDT, '%Y%m%d'))
-
 raw_dep$Species <- 'TBMU' # add species column
 raw_dep$Colony <- 'Coats' # add colony column
 raw_dep$Colour <- NA # Colour isa required field so add an empty column
@@ -69,7 +66,7 @@ dep_data <- formatDeployments(
   species = 'Species', # column name containing species
   metal_band = 'Band', # column name containing band number
   colour_band = 'Colour', # column name containing band colours
-  dep_id = 'dep_id', # column name containing deployment id
+  dep_id = 'FileName', # column name containing deployment id
   fill_dep_id = F, # If function 
   site = 'Colony',
   dep_lon = 'Dep_lon', # column name containing deployment longitude
@@ -137,7 +134,7 @@ The next step will clip your GPS data to the start and end times of your deploym
 ts_data <- cleanGPSData(data = ts_data,
                             deployments = dep_data,
                             speedThreshold = 150, # remove locations that require the bird to travel faster than 150 km/hr
-                            plot =F)
+                            plot = F)
 
 
 ```
