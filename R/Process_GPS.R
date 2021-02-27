@@ -768,7 +768,7 @@ readTDRData <- function(inputFolder,
 
 # ---------------------------------------------------------------------------------------------------------------
 
-readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
+readTechnosmartTDR <- function(inputFolder,
                                deployments = depData,
                                tagTZ = "UTC",
                                tagType = "Technosmart",
@@ -829,7 +829,7 @@ readTechnosmartTDR <- function(inputFolder = 'E:/Biologgers/Coats/TBMU/2018',
           # set names and format date
           names(temp) <- c("dep_id","time","depth","pressure","temperature","wetdry")
 
-          temp <- gsub('/', '-', temp$time)
+          temp$time <- gsub('/', '-', temp$time)
 
           df <- paste0(dateFormat, " %H:%M:%OS")
 
