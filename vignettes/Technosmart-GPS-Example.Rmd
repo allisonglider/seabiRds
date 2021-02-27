@@ -134,7 +134,7 @@ The next step will clip your GPS data to the start and end times of your deploym
 ts_data <- cleanGPSData(data = ts_data,
                             deployments = dep_data,
                             speedThreshold = 150, # remove locations that require the bird to travel faster than 150 km/hr
-                            plot =T)
+                            plot = F)
 
 
 ```

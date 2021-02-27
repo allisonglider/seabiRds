@@ -11,7 +11,6 @@ combineFiles(
   sep = NULL,
   stringsAsFactors = F,
   header = T,
-  sheetIndex = 1,
   skip = 0,
   combineColumns = F
 )
@@ -25,13 +24,13 @@ combineFiles(
 
 \item{sep}{File delimiter, if required.}
 
+\item{stringsAsFactors}{True or False if strings should be read as factors, defaults to F}
+
 \item{header}{Should first row be read as file header.}
 
 \item{skip}{Rows at the start of the file to skip.}
 
 \item{combineColumns}{Change to TRUE if you want to merge files by columns, default is FALSE which binds files by rows.}
-
-\item{stringAsFactors}{True or False if strings should be read as factors, defaults to F}
 }
 \value{
 Dataframe with all files combined.

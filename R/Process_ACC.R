@@ -2,6 +2,7 @@
 #' Find peak frequency
 #'
 #'@param data Vector of numeric values for finding peaks
+#'@param method Method for calculating peak frequency, options are 'pracma' or 'fft'
 #'@param time Vector of POSIXct times
 #'@param frequency Sampling frequency of data, in Hz, if missing the function will estimate frequency from time
 #'@param window Size of moving window for estimating peaks, in seconds
@@ -40,14 +41,16 @@
 #' tim <- seq(Sys.time(), length.out = length(dat), by = 1/ts) # generate time vector
 #'
 #' # example using pracma
-#' myPeaks <- getPeakFrequency(data = dat, time = tim, method = 'pracma', window = 5, frequency = NULL, threshold = 0.1)
+#' myPeaks <- getPeakFrequency(data = dat, time = tim, method = 'pracma', window = 5,
+#' frequency = NULL, threshold = 0.1)
 #' par(mfrow = c(2,1))
 #' plot(dat ~ tim, type = 'l')
 #' plot(myPeaks ~ tim, type = 'l')
 #' par(mfrow = c(1,1))
 #'
 #' # example using fft
-#' myPeaks <- getPeakFrequency(data = dat, time = tim, method = 'fft', window = 5, frequency = NULL, threshold = 0.06)
+#' myPeaks <- getPeakFrequency(data = dat, time = tim, method = 'fft', window = 5,
+#' frequency = NULL, threshold = 0.06)
 #' par(mfrow = c(2,1))
 #' plot(dat ~ tim, type = 'l')
 #' plot(myPeaks ~ tim, type = 'l')
@@ -99,14 +102,14 @@ getPeakFrequency <- function(data, time, method = c('pracma', 'fft'), window, fr
       # Prepare data for fft
       sampInt<- (i-floor(windowWidth/2)):((i-floor(windowWidth/2)) + windowWidth - 1)
       ddd <- data[sampInt]
-      ddd <- ts(data = ddd, start = 1, frequency = frequency)
+      ddd <- stats::ts(data = ddd, start = 1, frequency = frequency)
 
       # Create indices for outputting the data
       halfwidth <- ceiling(length(sampInt)/2)
       freqs <- ((2:halfwidth/2)/(halfwidth))/(1/frequency)
 
       # calculate fft
-      pows <- abs(fft(ddd)[2:halfwidth])^2
+      pows <- abs(stats::fft(ddd)[2:halfwidth])^2
       pows <- pows[freqs < maxfreq]
       freqs <- freqs[freqs < maxfreq]
 
@@ -114,7 +117,7 @@ getPeakFrequency <- function(data, time, method = c('pracma', 'fft'), window, fr
       val <- freqs[which(pows == max(pows))[1]]
 
       # Exclude frequencies with very low amplitudes
-      if (IQR(ddd) < threshold) val <- 1/(frequency/2)
+      if (stats::IQR(ddd) < threshold) val <- 1/(frequency/2)
 
       # Write frequency value to output vector, filling all rows within the sample interval
       myInt <- (i - midPoint):((i - midPoint) + (sampInterval - 1))
@@ -145,8 +148,7 @@ getPeakFrequency <- function(data, time, method = c('pracma', 'fft'), window, fr
 #'
 #' @param dat Vector of accelerometer X value
 #' @param time Vector of POSIXct times, should use \%H:\%M:\%OS if sampling frequency >1 Hz
-#' @param frequency Sampling frequency of data, in Hz, if missing the function will estimate
-#' frequency from time
+#' @param frequency Sampling frequency of data, in Hz, if missing the function will estimate frequency from time
 #' @param window Size of moving window for estimating peaks, in seconds
 #'
 #' @details Calculates inter-quartile range using a moving window of time*frequency
@@ -159,7 +161,7 @@ getAmplitude <- function(dat, window, time, frequency = NULL) {
   if (is.null(frequency)) frequency <- getFrequency(time = time)
 
   # Calculate IQR over a moving window
-  amp <- zoo::rollapply(dat, window * frequency, FUN = IQR, fill = NA)
+  amp <- zoo::rollapply(dat, window * frequency, FUN = stats::IQR, fill = NA)
 
   return(amp)
 
@@ -235,8 +237,9 @@ getPitch <- function(X, Y, Z, window, time, frequency = NULL,
 #' @param Y Vector of accelerometer Y value
 #' @param Z Vector of accelerometer Z value
 #' @param time Vector of POSIXct times, should use \%H:\%M:\%OS if sampling frequency >1 Hz
+#' @param window Size of moving window for estimating peaks, in seconds
 #' @param frequency Sampling frequency of data, in Hz, if missing the function will estimate frequency from time
-#' @param partial If TRUE, calculates partial dynamic body acceleratio
+#' @param partial If TRUE, calculates partial dynamic body acceleration
 
 getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) {
 

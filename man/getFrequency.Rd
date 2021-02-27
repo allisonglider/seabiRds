@@ -17,7 +17,9 @@ This function calculates the time difference between consecutive values and retu
 }
 \examples{
 options(digits.secs = 6)
-myTimes <- c("2019-07-16 17:43:52.04","2019-07-16 17:43:52.08","2019-07-16 17:43:52.12","2019-07-16 17:43:52.16", "2019-07-16 17:43:52.20","2019-07-16 17:43:52.24","2019-07-16 17:43:52.28")
+myTimes <- c("2019-07-16 17:43:52.04","2019-07-16 17:43:52.08",
+"2019-07-16 17:43:52.12", "2019-07-16 17:43:52.16", "2019-07-16 17:43:52.20",
+"2019-07-16 17:43:52.24","2019-07-16 17:43:52.28")
 myTimes <- as.POSIXct(strptime(myTimes, '\%Y-\%m-\%d \%H:\%M:\%OS', tz = 'UTC'))
 print(myTimes)
 getFrequency(myTimes)

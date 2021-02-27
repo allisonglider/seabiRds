@@ -13,8 +13,7 @@ getAmplitude(dat, window, time, frequency = NULL)
 
 \item{time}{Vector of POSIXct times, should use \%H:\%M:\%OS if sampling frequency >1 Hz}
 
-\item{frequency}{Sampling frequency of data, in Hz, if missing the function will estimate
-frequency from time}
+\item{frequency}{Sampling frequency of data, in Hz, if missing the function will estimate frequency from time}
 }
 \description{
 Calculate amplitude in wing beats
