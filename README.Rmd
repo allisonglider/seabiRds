@@ -22,7 +22,7 @@ Tools to analyse biologger data collected in the Arctic Ecology Lab. Primarily f
 
 ## Installation
 
-You can install this package from github with  [GitHub](https://github.com/) with:
+You can install this package from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
