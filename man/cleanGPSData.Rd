@@ -4,18 +4,18 @@
 \alias{cleanGPSData}
 \title{Cleans up GPS data, by clipping to deployment times and filtering unrealistic locations.}
 \usage{
-cleanGPSData(data, deployments, tagTZ = "UTC", speedThreshold = NA, plot = T)
+cleanGPSData(data, deployments, speedThreshold = NA, plot = T)
 }
 \arguments{
 \item{data}{Name of object with formatted GPS data.}
 
 \item{deployments}{Name of object with formatted deployment data.}
 
-\item{tagTZ}{Timezone of GPS data.}
-
 \item{speedThreshold}{Fastest possible movement in km/hr.}
 
 \item{plot}{Should data be plotted (TRUE or FALSE).}
+
+\item{tagTZ}{Timezone of GPS data.}
 }
 \value{
 A new dataframe containing cleaned GPS data.

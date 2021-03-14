@@ -14,13 +14,13 @@
 #' @param fill_dep_id Should missing dep_id values be filled by combining metal_band and release date, default is TRUE.
 #' @param site Character string with name of the field containing the site (e.g. Coats). Required.
 #' @param subsite Character string with name of the field containing the subsite (e.g. Coats West). This is used if your study area has distinct units within the main site.
-#' @param nest Character string with name of the field containing the nest id.
+#' @param nest Character string with name of the field containing the nest id. Optional.
 #' @param time_released Character string with name of the field containing deployment start time (when birds was released with tag), must use date format specified with dateFormat argument. Required.
-#' @param time_recaptured Character string with name of the field containing deployment end time (when birds was recaptured with tag), must use date format specified with dateFormat argument. Required.
-#' @param dep_lon Character string with name of the field containing the longitude of colony (or nest).
-#' @param dep_lat Character string with name of the field containing the latitude of colony (or nest).
-#' @param status_on Breeding status at start of deployment (E: eggs, C: chicks, FB: failed-breeder, NB: non-breeder, PB: pre-breeder, J: juvenile).
-#' @param status_off Breeding status at end of deployment (E: eggs, C: chicks, FB: failed-breeder, NB: non-breeder, PB: pre-breeder, J: juvenile).
+#' @param time_recaptured Character string with name of the field containing deployment end time (when birds was recaptured with tag), must use date format specified with dateFormat argument.
+#' @param dep_lon Character string with name of the field containing the deployment longitude. Required.
+#' @param dep_lat Character string with name of the field containing the the deployment latitude. Required.
+#' @param status_on Breeding status at start of deployment. Values accepted: E - eggs, C - chicks, FB - failed-breeder, NB - non-breeder, PB - pre-breeder, J - juvenile.
+#' @param status_off Breeding status at end of deployment. Values accepted: E - eggs, C - chicks, FB - failed-breeder, NB - non-breeder, PB - pre-breeder, J - juvenile.
 #' @param mass_on Character string with name of the field containing the bird mass (g) at start of deployment.
 #' @param mass_off Character string with name of the field containing the bird mass (g) at end of deployment.
 #' @param exclude Character string with name of the field containing flags for deployments with a significant treatment, which could make the data unsuitable for other analysis (e.g. Fed, Handicapped, Wing-clipped).
@@ -54,20 +54,18 @@
 #' @return A new dataframe with deployment times in UTC and field names that are compatible with other functions in this package and the lab biologging database.
 
 formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz,
-                              species, metal_band, colour_band, dep_id, fill_dep_id = T,
-                              site, subsite = NA, nest = NA, dep_lon = NA, dep_lat = NA,
+                              species, metal_band, colour_band, dep_id, fill_dep_id = F,
+                              site, subsite = NA, nest = NA, dep_lon, dep_lat,
                               time_released, time_recaptured = NA,
                               status_on = NA, status_off = NA, mass_on = NA, mass_off = NA, exclude = NA, fed_unfed = NA,
                               gps_id = NA, tdr_id = NA, acc_id = NA, gls_id = NA, mag_id = NA, cam_id = NA, hrl_id = NA,
                               keep = NULL)
 {
 
-  if (is.na(dep_lon) | is.na(dep_lat)) {
-    deployments$dep_lon <- as.numeric(NA)
-    deployments$dep_lat <- as.numeric(NA)
-    dep_lat <- "dep_lat"
-    dep_lon <- "dep_lon"
-  }
+  if (sum(is.na(deployments[,dep_lon])) > 0 | sum(is.na(deployments[,dep_lat])) > 0) stop("Cannot have missing values in deployment location. Check dep_lon and dep_lat.", call. = F)
+
+  if (sum(is.na(deployments[,dep_id])) > 0 & fill_dep_id == F) stop("Cannot have missing values in dep_id. Fill in all dep_id records or use argument fill_dep_id = T.", call. = F)
+
 
   if (is.na(time_recaptured)) {
     deployments$time_recaptured <- NA
@@ -213,7 +211,7 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
   dep$exclude[dep$exclude == ""] <- NA
   dep$fed_unfed[dep$fed_unfed == ""] <- NA
 
-  # make dep_id a character variable
+  # make sure variables are character class
   dep$dep_id <- as.character(dep$dep_id)
   dep$colour_band <- as.character(dep$colour_band)
   dep$gps_id <- as.character(dep$gps_id)
@@ -260,11 +258,9 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
   fed_values <- c('fed','unfed','semi',NA)
   if (sum(dep$fed_unfed %in% fed_values) != length(dep$fed_unfed)) stop("Values in fed_unfed can only be: fed, unfed, semi, or NA", call. = F)
 
-  # check all mass values are
-  if (!is.numeric(dep$mass_on)) stop('Values in mass_on must be numeric', call. = F)
-  if (!is.numeric(dep$mass_off)) stop('Values in mass_off must be numeric', call. = F)
-  if (min(dep$mass_on, na.rm = T) <= 0) stop('Values in mass_on must be >0 or NA', call. = F)
-  if (min(dep$mass_off, na.rm = T) <= 0) stop('Values in mass_off must be >0 or NA', call. = F)
+  # # check all mass values are
+  # if (!is.numeric(dep$mass_on))  stop('Values in mass_on must be numeric', call. = F)
+  # if (!is.numeric(dep$mass_off)) stop('Values in mass_off must be numeric', call. = F)
 
   # check dep_lon values
   if (sum(is.na(dep$dep_lon)) < length(dep$dep_lon)) {
@@ -304,8 +300,8 @@ readGPSData <- function(inputFolder,
                         tagType = "Technosmart",
                         dateFormat = "%d-%m-%Y") {
 
-  if (!(tagType %in% c("Technosmart","Ecotone", "Cattrack"))){
-    warning("Supported tagTypes are: Technosmart, Ecotone, and Cattrack. If you have a different biologger please contact me.")
+  if (!(tagType %in% c("Technosmart","Ecotone", "Cattrack", "igotU"))){
+    warning("Supported tagTypes are: Technosmart, Ecotone, Cattrack, igotU. If you have a different biologger please contact me.")
   }
 
 
@@ -323,7 +319,7 @@ readGPSData <- function(inputFolder,
                              dateFormat = dateFormat)
   }
 
-  if (tagType == "Cattrack") {
+  if (tagType %in% c("Cattrack", "igotU")) {
     output <- readCattrackGPS(inputFolder = inputFolder,
                               deployments = deployments,
                               tagTZ = tagTZ,
@@ -578,7 +574,6 @@ readCattrackGPS <- function(inputFolder,
 
 cleanGPSData <- function(data,
                          deployments,
-                         tagTZ = "UTC",
                          speedThreshold = NA,
                          plot = T)
 {
@@ -664,6 +659,14 @@ cleanGPSData <- function(data,
   xran <- range(temp$lon, na.rm = T)
   yran <- range(temp$lat, na.rm = T)
 
+  coord_range <- max(c(xran[2] - xran[1], yran[2] - yran[1]))
+  coord_breaks <- 0.1
+  if (coord_range > 0.5) coord_breaks <- 0.2
+  if (coord_range >= 1) coord_breaks <- 0.5
+  if (coord_range >= 2) coord_breaks <- 1
+  if (coord_range >= 5) coord_breaks <- 2
+  if (coord_range >= 10) coord_breaks <- 5
+
   suppressMessages(
     myMap<- ggplot2::ggplot(data = newData[!is.na(newData$lon),]) +
       ggplot2::geom_sf(data = world) +
@@ -671,6 +674,8 @@ cleanGPSData <- function(data,
       ggplot2::geom_path(data = temp[!is.na(temp$lon),], ggplot2::aes(x = lon, y = lat), col = 'red') +
       ggplot2::geom_point(data = newData[!is.na(newData$lon),], ggplot2::aes(x = lon, y = lat)) +
       ggplot2::geom_path(data = newData[!is.na(newData$lon),], ggplot2::aes(x = lon, y = lat)) +
+      ggplot2::scale_x_continuous(breaks = seq(-180, 180, coord_breaks)) +
+      ggplot2::scale_y_continuous(breaks = seq(-90, 90, coord_breaks)) +
       #ggplot2::geom_point(data = tt, ggplot2::aes(x = tt$dep_lon, y = tt$dep_lon), fill = 'green', shape = 24, size = 3) +
       ggplot2::coord_sf(xlim = xran, ylim = yran) +
       ggplot2::theme_light() +
@@ -974,7 +979,6 @@ readLAT150 <- function(inputFolder,
 
 cleanTDRData <- function(data,
                          deployments,
-                         tagTZ = "UTC",
                          plot = T)
 {
 
@@ -1006,11 +1010,11 @@ cleanTDRData <- function(data,
 
           if (plotPressure == F) {
 
-            tt <- subset(temp, temp$time %in% temp$time[idx] & !is.na(temp$depth))
+            dd <- subset(temp, temp$time %in% temp$time[idx] & !is.na(temp$depth))
             nn <- subset(newData, newData$time %in% temp$time[idx] & !is.na(newData$depth))
 
             suppressMessages(
-              myPlot <- ggplot2::ggplot(tt, ggplot2::aes(x = time, y = depth * -1)) +
+              myPlot <- ggplot2::ggplot(dd, ggplot2::aes(x = time, y = depth * -1)) +
                 ggplot2::geom_line(col = "red") +
                 ggplot2::geom_line(data = nn, ggplot2::aes(x = time, y = depth * -1)) +
                 ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
