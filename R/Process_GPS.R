@@ -658,7 +658,7 @@ cleanGPSData <- function(data,
       ggplot2::geom_line(data = newData[!is.na(newData$lon),], ggplot2::aes(x = time, y = coldist)) +
       ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
       ggplot2::xlim(ss,ee) +
-      #ggplot2::theme_light() +
+      ggplot2::theme_light() +
       ggplot2::labs(title = paste(temp$dep_id[1]), y = yy, x = "Time")
   )
   xran <- range(temp$lon, na.rm = T)
@@ -673,8 +673,8 @@ cleanGPSData <- function(data,
       ggplot2::geom_path(data = newData[!is.na(newData$lon),], ggplot2::aes(x = lon, y = lat)) +
       #ggplot2::geom_point(data = tt, ggplot2::aes(x = tt$dep_lon, y = tt$dep_lon), fill = 'green', shape = 24, size = 3) +
       ggplot2::coord_sf(xlim = xran, ylim = yran) +
-      #ggplot2::theme_light() +
-      ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90)) +
+      ggplot2::theme_light() +
+      #ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90)) +
       ggplot2::labs(title = paste(temp$dep_id[1]), x = "", y = "")
   )
 
@@ -1015,7 +1015,7 @@ cleanTDRData <- function(data,
                 ggplot2::geom_line(data = nn, ggplot2::aes(x = time, y = depth * -1)) +
                 ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
                 ggplot2::xlim(ss,ee) +
-                #ggplot2::theme_light() +
+                ggplot2::theme_light() +
                 ggplot2::labs(title = paste(temp$dep_id[1]), y = 'Depth (m)', x = "Time")
             )
             print(myPlot)
@@ -1031,7 +1031,7 @@ cleanTDRData <- function(data,
                 ggplot2::geom_line(data = nn, ggplot2::aes(x = time, y = pressure)) +
                 ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
                 ggplot2::xlim(ss,ee) +
-                #ggplot2::theme_light() +
+                ggplot2::theme_light() +
                 ggplot2::labs(title = paste(temp$dep_id[1]), y = 'Pressure (dBar)', x = "Time")
             )
 
