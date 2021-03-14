@@ -4,16 +4,16 @@
 \alias{cleanTDRData}
 \title{Cleans up TDR data, by clipping to deployment times}
 \usage{
-cleanTDRData(data, deployments, tagTZ = "UTC", plot = T)
+cleanTDRData(data, deployments, plot = T)
 }
 \arguments{
 \item{data}{Name of object with formatted TDR data.}
 
 \item{deployments}{Name of object with formatted deployment data.}
 
-\item{tagTZ}{Timezone of TDR data.}
-
 \item{plot}{Should data be plotted (TRUE or FALSE).}
+
+\item{tagTZ}{Timezone of TDR data.}
 }
 \value{
 A new dataframe containing cleaned TDR data.

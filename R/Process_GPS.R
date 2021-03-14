@@ -300,8 +300,8 @@ readGPSData <- function(inputFolder,
                         tagType = "Technosmart",
                         dateFormat = "%d-%m-%Y") {
 
-  if (!(tagType %in% c("Technosmart","Ecotone", "Cattrack"))){
-    warning("Supported tagTypes are: Technosmart, Ecotone, and Cattrack. If you have a different biologger please contact me.")
+  if (!(tagType %in% c("Technosmart","Ecotone", "Cattrack", "igotU"))){
+    warning("Supported tagTypes are: Technosmart, Ecotone, Cattrack, igotU. If you have a different biologger please contact me.")
   }
 
 
@@ -319,7 +319,7 @@ readGPSData <- function(inputFolder,
                              dateFormat = dateFormat)
   }
 
-  if (tagType == "Cattrack") {
+  if (tagType %in% c("Cattrack", "igotU")) {
     output <- readCattrackGPS(inputFolder = inputFolder,
                               deployments = deployments,
                               tagTZ = tagTZ,
@@ -574,7 +574,6 @@ readCattrackGPS <- function(inputFolder,
 
 cleanGPSData <- function(data,
                          deployments,
-                         tagTZ = "UTC",
                          speedThreshold = NA,
                          plot = T)
 {
@@ -660,6 +659,14 @@ cleanGPSData <- function(data,
   xran <- range(temp$lon, na.rm = T)
   yran <- range(temp$lat, na.rm = T)
 
+  coord_range <- max(c(xran[2] - xran[1], yran[2] - yran[1]))
+  coord_breaks <- 0.1
+  if (coord_range > 0.5) coord_breaks <- 0.2
+  if (coord_range >= 1) coord_breaks <- 0.5
+  if (coord_range >= 2) coord_breaks <- 1
+  if (coord_range >= 5) coord_breaks <- 2
+  if (coord_range >= 10) coord_breaks <- 5
+
   suppressMessages(
     myMap<- ggplot2::ggplot(data = newData[!is.na(newData$lon),]) +
       ggplot2::geom_sf(data = world) +
@@ -667,6 +674,8 @@ cleanGPSData <- function(data,
       ggplot2::geom_path(data = temp[!is.na(temp$lon),], ggplot2::aes(x = lon, y = lat), col = 'red') +
       ggplot2::geom_point(data = newData[!is.na(newData$lon),], ggplot2::aes(x = lon, y = lat)) +
       ggplot2::geom_path(data = newData[!is.na(newData$lon),], ggplot2::aes(x = lon, y = lat)) +
+      ggplot2::scale_x_continuous(breaks = seq(-180, 180, coord_breaks)) +
+      ggplot2::scale_y_continuous(breaks = seq(-90, 90, coord_breaks)) +
       #ggplot2::geom_point(data = tt, ggplot2::aes(x = tt$dep_lon, y = tt$dep_lon), fill = 'green', shape = 24, size = 3) +
       ggplot2::coord_sf(xlim = xran, ylim = yran) +
       ggplot2::theme_light() +
@@ -970,7 +979,6 @@ readLAT150 <- function(inputFolder,
 
 cleanTDRData <- function(data,
                          deployments,
-                         tagTZ = "UTC",
                          plot = T)
 {
 
