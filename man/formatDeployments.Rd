@@ -12,12 +12,12 @@ formatDeployments(
   metal_band,
   colour_band,
   dep_id,
-  fill_dep_id = T,
+  fill_dep_id = F,
   site,
   subsite = NA,
   nest = NA,
-  dep_lon = NA,
-  dep_lat = NA,
+  dep_lon,
+  dep_lat,
   time_released,
   time_recaptured = NA,
   status_on = NA,
@@ -57,19 +57,19 @@ formatDeployments(
 
 \item{subsite}{Character string with name of the field containing the subsite (e.g. Coats West). This is used if your study area has distinct units within the main site.}
 
-\item{nest}{Character string with name of the field containing the nest id.}
+\item{nest}{Character string with name of the field containing the nest id. Optional.}
 
-\item{dep_lon}{Character string with name of the field containing the longitude of colony (or nest).}
+\item{dep_lon}{Character string with name of the field containing the deployment longitude. Required.}
 
-\item{dep_lat}{Character string with name of the field containing the latitude of colony (or nest).}
+\item{dep_lat}{Character string with name of the field containing the the deployment latitude. Required.}
 
 \item{time_released}{Character string with name of the field containing deployment start time (when birds was released with tag), must use date format specified with dateFormat argument. Required.}
 
-\item{time_recaptured}{Character string with name of the field containing deployment end time (when birds was recaptured with tag), must use date format specified with dateFormat argument. Required.}
+\item{time_recaptured}{Character string with name of the field containing deployment end time (when birds was recaptured with tag), must use date format specified with dateFormat argument.}
 
-\item{status_on}{Breeding status at start of deployment (E: eggs, C: chicks, FB: failed-breeder, NB: non-breeder, PB: pre-breeder, J: juvenile).}
+\item{status_on}{Breeding status at start of deployment. Values accepted: E - eggs, C - chicks, FB - failed-breeder, NB - non-breeder, PB - pre-breeder, J - juvenile.}
 
-\item{status_off}{Breeding status at end of deployment (E: eggs, C: chicks, FB: failed-breeder, NB: non-breeder, PB: pre-breeder, J: juvenile).}
+\item{status_off}{Breeding status at end of deployment. Values accepted: E - eggs, C - chicks, FB - failed-breeder, NB - non-breeder, PB - pre-breeder, J - juvenile.}
 
 \item{mass_on}{Character string with name of the field containing the bird mass (g) at start of deployment.}
 

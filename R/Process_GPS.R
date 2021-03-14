@@ -14,13 +14,13 @@
 #' @param fill_dep_id Should missing dep_id values be filled by combining metal_band and release date, default is TRUE.
 #' @param site Character string with name of the field containing the site (e.g. Coats). Required.
 #' @param subsite Character string with name of the field containing the subsite (e.g. Coats West). This is used if your study area has distinct units within the main site.
-#' @param nest Character string with name of the field containing the nest id.
+#' @param nest Character string with name of the field containing the nest id. Optional.
 #' @param time_released Character string with name of the field containing deployment start time (when birds was released with tag), must use date format specified with dateFormat argument. Required.
-#' @param time_recaptured Character string with name of the field containing deployment end time (when birds was recaptured with tag), must use date format specified with dateFormat argument. Required.
-#' @param dep_lon Character string with name of the field containing the longitude of colony (or nest).
-#' @param dep_lat Character string with name of the field containing the latitude of colony (or nest).
-#' @param status_on Breeding status at start of deployment (E: eggs, C: chicks, FB: failed-breeder, NB: non-breeder, PB: pre-breeder, J: juvenile).
-#' @param status_off Breeding status at end of deployment (E: eggs, C: chicks, FB: failed-breeder, NB: non-breeder, PB: pre-breeder, J: juvenile).
+#' @param time_recaptured Character string with name of the field containing deployment end time (when birds was recaptured with tag), must use date format specified with dateFormat argument.
+#' @param dep_lon Character string with name of the field containing the deployment longitude. Required.
+#' @param dep_lat Character string with name of the field containing the the deployment latitude. Required.
+#' @param status_on Breeding status at start of deployment. Values accepted: E - eggs, C - chicks, FB - failed-breeder, NB - non-breeder, PB - pre-breeder, J - juvenile.
+#' @param status_off Breeding status at end of deployment. Values accepted: E - eggs, C - chicks, FB - failed-breeder, NB - non-breeder, PB - pre-breeder, J - juvenile.
 #' @param mass_on Character string with name of the field containing the bird mass (g) at start of deployment.
 #' @param mass_off Character string with name of the field containing the bird mass (g) at end of deployment.
 #' @param exclude Character string with name of the field containing flags for deployments with a significant treatment, which could make the data unsuitable for other analysis (e.g. Fed, Handicapped, Wing-clipped).
@@ -54,20 +54,18 @@
 #' @return A new dataframe with deployment times in UTC and field names that are compatible with other functions in this package and the lab biologging database.
 
 formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz,
-                              species, metal_band, colour_band, dep_id, fill_dep_id = T,
-                              site, subsite = NA, nest = NA, dep_lon = NA, dep_lat = NA,
+                              species, metal_band, colour_band, dep_id, fill_dep_id = F,
+                              site, subsite = NA, nest = NA, dep_lon, dep_lat,
                               time_released, time_recaptured = NA,
                               status_on = NA, status_off = NA, mass_on = NA, mass_off = NA, exclude = NA, fed_unfed = NA,
                               gps_id = NA, tdr_id = NA, acc_id = NA, gls_id = NA, mag_id = NA, cam_id = NA, hrl_id = NA,
                               keep = NULL)
 {
 
-  if (is.na(dep_lon) | is.na(dep_lat)) {
-    deployments$dep_lon <- as.numeric(NA)
-    deployments$dep_lat <- as.numeric(NA)
-    dep_lat <- "dep_lat"
-    dep_lon <- "dep_lon"
-  }
+  if (sum(is.na(deployments[,dep_lon])) > 0 | sum(is.na(deployments[,dep_lat])) > 0) stop("Cannot have missing values in deployment location. Check dep_lon and dep_lat.", call. = F)
+
+  if (sum(is.na(deployments[,dep_id])) > 0 & fill_dep_id == F) stop("Cannot have missing values in dep_id. Fill in all dep_id records or use argument fill_dep_id = T.", call. = F)
+
 
   if (is.na(time_recaptured)) {
     deployments$time_recaptured <- NA
@@ -213,7 +211,7 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
   dep$exclude[dep$exclude == ""] <- NA
   dep$fed_unfed[dep$fed_unfed == ""] <- NA
 
-  # make dep_id a character variable
+  # make sure variables are character class
   dep$dep_id <- as.character(dep$dep_id)
   dep$colour_band <- as.character(dep$colour_band)
   dep$gps_id <- as.character(dep$gps_id)
@@ -260,11 +258,9 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
   fed_values <- c('fed','unfed','semi',NA)
   if (sum(dep$fed_unfed %in% fed_values) != length(dep$fed_unfed)) stop("Values in fed_unfed can only be: fed, unfed, semi, or NA", call. = F)
 
-  # check all mass values are
-  if (!is.numeric(dep$mass_on)) stop('Values in mass_on must be numeric', call. = F)
-  if (!is.numeric(dep$mass_off)) stop('Values in mass_off must be numeric', call. = F)
-  if (min(dep$mass_on, na.rm = T) <= 0) stop('Values in mass_on must be >0 or NA', call. = F)
-  if (min(dep$mass_off, na.rm = T) <= 0) stop('Values in mass_off must be >0 or NA', call. = F)
+  # # check all mass values are
+  # if (!is.numeric(dep$mass_on))  stop('Values in mass_on must be numeric', call. = F)
+  # if (!is.numeric(dep$mass_off)) stop('Values in mass_off must be numeric', call. = F)
 
   # check dep_lon values
   if (sum(is.na(dep$dep_lon)) < length(dep$dep_lon)) {
