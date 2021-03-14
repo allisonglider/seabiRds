@@ -674,7 +674,7 @@ cleanGPSData <- function(data,
       #ggplot2::geom_point(data = tt, ggplot2::aes(x = tt$dep_lon, y = tt$dep_lon), fill = 'green', shape = 24, size = 3) +
       ggplot2::coord_sf(xlim = xran, ylim = yran) +
       ggplot2::theme_light() +
-      ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90)) +
+      #ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90)) +
       ggplot2::labs(title = paste(temp$dep_id[1]), x = "", y = "")
   )
 
