@@ -1010,11 +1010,11 @@ cleanTDRData <- function(data,
 
           if (plotPressure == F) {
 
-            tt <- subset(temp, temp$time %in% temp$time[idx] & !is.na(temp$depth))
+            dd <- subset(temp, temp$time %in% temp$time[idx] & !is.na(temp$depth))
             nn <- subset(newData, newData$time %in% temp$time[idx] & !is.na(newData$depth))
 
             suppressMessages(
-              myPlot <- ggplot2::ggplot(tt, ggplot2::aes(x = time, y = depth * -1)) +
+              myPlot <- ggplot2::ggplot(dd, ggplot2::aes(x = time, y = depth * -1)) +
                 ggplot2::geom_line(col = "red") +
                 ggplot2::geom_line(data = nn, ggplot2::aes(x = time, y = depth * -1)) +
                 ggplot2::geom_vline(xintercept = c(tt$time_released, tt$time_recaptured), linetype = 2, col = "red") +
