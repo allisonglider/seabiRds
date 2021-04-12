@@ -1,5 +1,5 @@
 # ---------------------------------------------------------------------------------------------------------------
-#' Plot logger tracks
+#' Map logger tracks
 #'
 #' @description
 #' Creates a simple plot of logger tracks using a grouping variable for plot colours
@@ -9,7 +9,7 @@
 #' @param legend_label Title for legend
 #' @param use_legend Should the legend be plotted (TRUE/FALSE)
 
-plotGPStracks <- function(data, groups = 'dep_id', legend_label = 'Deployments', use_legend = T) {
+mapTracks <- function(data, groups = 'dep_id', legend_label = 'Deployments', use_legend = T) {
 
   if (max(data$coldist, na.rm = T) < 500) {
     world <- rnaturalearth::ne_countries(scale = 50, returnclass = 'sf')
@@ -45,4 +45,5 @@ plotGPStracks <- function(data, groups = 'dep_id', legend_label = 'Deployments',
   )
 
   myMap
+  #' @export mapTracks
 }
