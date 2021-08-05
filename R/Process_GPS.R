@@ -846,6 +846,12 @@ readTechnosmartTDR <- function(inputFolder,
 
           # remove missing data
           temp <- subset(temp, !is.na(temp$depth) | !is.na(temp$pressure))
+          # get sampling frequency of data
+          tt <- c(NA, as.numeric(difftime(temp$time[2:nrow(temp)], temp$time[1:(nrow(temp) - 1)], units = 'sec')))
+          freq <- round(1/getMode(tt))
+
+          # subsample to 1 Hz if the sampling frequency was higher than 1 Hz
+          if (freq > 1) {temp <- temp[seq(1, nrow(temp), freq),]}
 
           # convert milibars to dbars - need to check this
           temp$pressure <- temp$pressure/100
@@ -853,13 +859,6 @@ readTechnosmartTDR <- function(inputFolder,
           # order data and remove duplicate records
           temp <- temp[order(temp$time),]
           temp <- temp[duplicated(temp) == F,]
-
-          # get sampling frequency of data
-          tt <- c(NA, as.numeric(difftime(temp$time[2:nrow(temp)], temp$time[1:(nrow(temp) - 1)], units = 'sec')))
-          freq <- round(1/getMode(tt))
-
-          # subsample to 1 Hz if the sampling frequency was higher than 1 Hz
-          if (freq > 1) {temp <- temp[seq(1, nrow(temp), freq),]}
 
           output <- rbind(output, temp)
 
