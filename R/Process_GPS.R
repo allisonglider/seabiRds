@@ -443,6 +443,7 @@ readEcotoneGPS <- function(inputFolder,
     output$diving[is.na(output$diving)] <- 0
   }
 
+  names(output)[1] <- "LoggerID"
   output <- output[,names(output)[!(names(output) %in% c("LoggerID","Longitude","Latitude",
                                                          "Year","Month","Day","Hour","Minute","Second",
                                                          "Rawlatitude","RawLongitude","Speed"))]]
