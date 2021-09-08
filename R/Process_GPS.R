@@ -429,10 +429,12 @@ readEcotoneGPS <- function(inputFolder,
   output$time <- paste(output$Year, output$Month, output$Day, output$Hour, output$Minute, output$Second, sep = "-")
   output$time <- as.POSIXct(strptime(output$time, "%Y-%m-%d-%H-%M-%S"), tz = tagTZ)
   output <- subset(output, output$time > as.POSIXct("1900-01-01", tz = tagTZ))
-  output <- unique(output)
+
   output <- output[order(output$Logger.ID, output$time),]
 
   names(output) <- gsub("[.]","",names(output))
+  names(output)[1] <- "LoggerID"
+
   output$gps_id <- output$LoggerID
   output$lon <- output$Longitude
   output$lat <- output$Latitude
@@ -443,12 +445,15 @@ readEcotoneGPS <- function(inputFolder,
     output$diving[is.na(output$diving)] <- 0
   }
 
-  names(output)[1] <- "LoggerID"
   output <- output[,names(output)[!(names(output) %in% c("LoggerID","Longitude","Latitude",
                                                          "Year","Month","Day","Hour","Minute","Second",
                                                          "Rawlatitude","RawLongitude","Speed"))]]
+
+
   names(output) <- tolower(names(output))
   output <- subset(output, !is.na(output$lon) | output$diving == 1 | output$inrange == 1)
+
+  output <- unique(output)
 
   output <- merge(output, deployments[,c("gps_id","metal_band","dep_id","dep_lon","dep_lat")])
   output <- output[order(output$dep_id, output$time),]
