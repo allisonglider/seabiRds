@@ -424,7 +424,6 @@ readEcotoneGPS <- function(inputFolder,
                          sep = ";",
                          stringsAsFactors = F,
                          header = T)
-  output <- unique(output)
 
   output$time <- paste(output$Year, output$Month, output$Day, output$Hour, output$Minute, output$Second, sep = "-")
   output$time <- as.POSIXct(strptime(output$time, "%Y-%m-%d-%H-%M-%S"), tz = tagTZ)
