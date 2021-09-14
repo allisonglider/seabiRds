@@ -753,7 +753,7 @@ readTDRData <- function(inputFolder,
                         tagType,
                         dateFormat = "%d-%m-%Y") {
 
-  if (!(tagType %in% c("Technosmart","LAT150"))){
+  if (!(tagType %in% c("Technosmart","LAT150", "Ecotone"))){
     warning("Supported tagTypes are: Technosmart. If you have a different biologger please contact me.")
   }
 
@@ -770,7 +770,11 @@ readTDRData <- function(inputFolder,
                         deployments = deployments,
                         tagTZ = tagTZ)
   }
-
+if (tagType == "Ecotone") {
+    output <- readECOTONEtdr(inputFolder = inputFolder,
+                             deployments = deployments,
+                             tagTZ = tagTZ)
+  }
   output
 
   #' @export readTDRData
@@ -967,6 +971,93 @@ readLAT150 <- function(inputFolder,
   output
 }
 
+
+# ---------------------------------------------------------------------------------------------------------------
+
+readECOTONEtdr <- function(inputFolder,
+                       deployments,
+                       tagTZ = "UTC") {
+#Start the run
+theFiles <- list.files(inputFolder, full.names = T, pattern = 'csv')
+
+output <- combineFiles(files = theFiles,
+                       pattern = "csv",
+                       type = "csv",
+                       sep = ";",
+                       stringsAsFactors = F,
+                       header = T)
+
+output$time <- paste(output$Year, output$Month, output$Day, output$Hour, output$Minute, output$Second, sep = "-")
+output$time <- as.POSIXct(strptime(output$time, "%Y-%m-%d-%H-%M-%S"), tz = tagTZ)
+output <- subset(output, output$time > as.POSIXct("1900-01-01", tz = tagTZ))
+
+output <- output[order(output$Logger.ID, output$time),]
+
+names(output) <- gsub("[.]","",names(output))
+names(output)[1] <- "LoggerID"
+
+output$gps_id <- output$LoggerID
+output$lon <- output$Longitude
+output$lat <- output$Latitude
+output$gpsspeed <- output$Speed
+output <- output[,names(output)[!(names(output) %in% c("LoggerID","Longitude","Latitude",
+                                                       "Year","Month","Day","Hour","Minute","Second",
+                                                       "Rawlatitude","RawLongitude","Speed", "acc_x",
+                                                       "acc_y","acc_z", "activity_x","activity_y","activity_z" ))]]
+if (c("Divdown") %in% names(output)) {
+  output$diving <- ifelse(output$Divdown == 1 | output$Divup == 1, 1, NA)
+  output$diving[is.na(output$diving)] <- 0
+}
+
+names(output) <- tolower(names(output))
+output$pressure <- output$depth
+output$depth <- output$depth/100
+
+output$depth[is.na(output$depth)] <- 0
+
+# get sampling frequency of data
+tt <- c(NA, as.numeric(difftime(output$time[2:nrow(output)], output$time[1:(nrow(output) - 1)], units = 'sec')))
+
+freq <- round(1/getMode(tt))
+
+# subsample to 1 Hz if the sampling frequency was higher than 1 Hz
+if (freq > 1) {output <- output[seq(1, nrow(output), freq),]}
+
+test<-NULL
+output1<-NULL
+
+#looping only for those gps_ids in the dep_sheet 
+#(in case there is weird recording by the basestation)
+for (i in unique(deployments$gps_id)) {
+  #subset to one deployment
+  output1 <- subset(output, output$gps_id == i)
+  # order data and remove duplicate records
+  output1 <- output1[order(output1$time),]
+  output1 <- output1[duplicated(output1) == F,]
+  
+  output1 <- unique(output1)
+  
+  output1 <- merge(output1, deployments[,c("gps_id","metal_band","dep_id")])
+  
+  output1 <- output1[order(output1$dep_id, output1$time),]
+  output1 <- output1[!duplicated(output1[c('dep_id', 'time')]),]
+  
+  output1$satellites <- NA
+  output1$hdop <- NA
+  output1$maxsignal <- NA
+  output1$wetdry<-output1$diving
+  
+  tdrCols <- c("dep_id","time","depth","temperature","wetdry")
+  output1 <- output1[,tdrCols] 
+  
+  (print(paste("Finished:", i)))#prints the label of each device
+  (print(Sys.time()))#and the time to have an idea of duration
+  
+  test<-rbind(test,output1)
+  
+}
+  test
+}
 
 # ---------------------------------------------------------------------------------------------------------------
 #' Cleans up TDR data, by clipping to deployment times
