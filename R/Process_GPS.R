@@ -452,26 +452,30 @@ readEcotoneGPS <- function(inputFolder,
   names(output) <- tolower(names(output))
   output <- subset(output, !is.na(output$lon) | output$diving == 1 | output$inrange == 1)
 
-  output <- unique(output)
-
-  output <- merge(output, deployments[,c("gps_id","metal_band","dep_id","dep_lon","dep_lat")])
-  output <- output[order(output$dep_id, output$time),]
-
-  if ("inrange" %in% names(output)) {
-    output$inrange[is.na(output$inrange)] <- 0
-    output$lon[output$inrange == 1] <- output$dep_lon[output$inrange == 1]
-    output$lat[output$inrange == 1] <- output$dep_lat[output$inrange == 1]
+test<-NULL
+output1<-NULL
+#looping only for those gps_ids in the dep_sheet (in case there is weird recording by the basestation)
+for (i in unique(deployments$gps_id)) {
+  output1 <- subset(output, output$gps_id == i)
+  output1 <- unique(output1)
+  output1 <- merge(output1, deployments[,c("gps_id","metal_band","dep_id","dep_lon","dep_lat")])
+  
+  output1 <- output1[order(output1$dep_id, output1$time),]
+  if ("inrange" %in% names(output1)) {
+    output1$inrange[is.na(output1$inrange)] <- 0
+    output1$lon[output1$inrange == 1] <- output1$dep_lon[output1$inrange == 1]
+    output1$lat[output1$inrange == 1] <- output1$dep_lat[output1$inrange == 1]
   }
+  output1$satellites <- NA
+  output1$hdop <- NA
+  output1$maxsignal <- NA
+  output1 <- unique(output1)
+  output1 <- output1[!duplicated(output1[c('dep_id', 'time')]),]
+  output1 <- output1[,c("dep_id","time","lon","lat","altitude","gpsspeed","satellites","hdop","maxsignal","diving","inrange")]
+  test<-rbind(test,output1)
+}
 
-  output$satellites <- NA
-  output$hdop <- NA
-  output$maxsignal <- NA
-  output <- unique(output)
-  output <- output[!duplicated(output[c('dep_id', 'time')]),]
-
-  output <- output[,c("dep_id","time","lon","lat","altitude","gpsspeed","satellites","hdop","maxsignal","diving","inrange")]
-
-  output
+  output<-test #I dind't want to change the last object name to keep it consistent
 }
 
 # ---------------------------------------------------------------------------------------------------------------
