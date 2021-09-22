@@ -5,12 +5,12 @@ seabiRds
 
 <!-- badges: start -->
 <!-- badges: end -->
-Tools to analyse biologger data collected in the Arctic Ecology Lab. Primarily for GPS and accelerometer data, but maybe also some geolocators and heart rate loggers. PLease add an issue to the GitHub issues page for the package if you encounter any problems, would like me to add something, or want to make a contribution to the package.
+Tools to analyse biologger data collected in the Arctic Ecology Lab. Primarily for GPS and accelerometer data, but maybe also some geolocators and heart rate loggers. Please add an issue to the GitHub issues page for the package if you encounter any problems, would like me to add something, or want to make a contribution to the package.
 
 Installation
 ------------
 
-You can install this package from github with [GitHub](https://github.com/) with:
+You can install this package from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
