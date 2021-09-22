@@ -452,7 +452,7 @@ readEcotoneGPS <- function(inputFolder,
   names(output) <- tolower(names(output))
   output <- subset(output, !is.na(output$lon) | output$diving == 1 | output$inrange == 1)
 
-  output <- unique(output)
+  #output <- unique(output)
 
   output <- merge(output, deployments[,c("gps_id","metal_band","dep_id","dep_lon","dep_lat")])
   output <- output[order(output$dep_id, output$time),]
