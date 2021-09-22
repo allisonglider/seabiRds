@@ -72,14 +72,19 @@ getSessions <- function(value, ignore = FALSE, ignoreValue = NULL, maxSession = 
   output <- 1
   j <- 1
   k <- 0
-  for (i in 2:length(value)) {
-    j <- ifelse(value[i] == value[i - 1], j, j + 1)
-    k <- ifelse(value[i] == value[i - 1], k + 1, 0)
-    if (k >= maxSession ) {
-      j <- j + 1
-      k <- 0
+
+  if (length(value) == 1) {
+    output <- 1
+  } else{
+    for (i in 2:length(value)) {
+      j <- ifelse(value[i] == value[i - 1], j, j + 1)
+      k <- ifelse(value[i] == value[i - 1], k + 1, 0)
+      if (k >= maxSession ) {
+        j <- j + 1
+        k <- 0
+      }
+      output[i] <- j
     }
-    output[i] <- j
   }
 
   if (ignore == T) {
@@ -119,8 +124,8 @@ getDist <- function(lon, lat) {
 
   c(NA,
     raster::pointDistance(dd[2:nrow(dd),c("lon","lat")],
-                  dd[1:(nrow(dd)-1),c("lon","lat")],
-                  lonlat = T)/1000)
+                          dd[1:(nrow(dd)-1),c("lon","lat")],
+                          lonlat = T)/1000)
   #' @export getDist
 }
 
@@ -139,12 +144,12 @@ getDT <- function(time, units = "hours") {
 
   if (class(time)[1] != "POSIXct") {
     stop("time values must be in POSIXct format")
-    }
+  }
 
   tt <- c(NA,
-    as.numeric(difftime(time[2:length(time)],
-                        time[1:(length(time) - 1)],
-                        units = units)))
+          as.numeric(difftime(time[2:length(time)],
+                              time[1:(length(time) - 1)],
+                              units = units)))
 
   if (min(tt < 0, na.rm = T)) {
     stop("Negative values for time difference, data need to be in chronological order before running getDT")
@@ -272,7 +277,7 @@ getFrequency <- function(time) {
 
   mt <- signif(getMode(getDT(time, units = "sec")),2)
   if (mt == 0) stop("Dominant sampling frequency was 0, check that your POSIXct values use milliseconds: %H:%M:%OS", call. = F)
-   1/signif(getMode(getDT(time, units = "sec")),2)
+  1/signif(getMode(getDT(time, units = "sec")),2)
 
   #' @export getFrequency
 }
