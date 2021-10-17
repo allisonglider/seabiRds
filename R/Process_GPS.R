@@ -452,7 +452,7 @@ readEcotoneGPS <- function(inputFolder,
   names(output) <- tolower(names(output))
   output <- subset(output, !is.na(output$lon) | output$diving == 1 | output$inrange == 1)
 
-  output <- unique(output)
+  #output <- unique(output)
 
   output <- merge(output, deployments[,c("gps_id","metal_band","dep_id","dep_lon","dep_lat")])
   output <- output[order(output$dep_id, output$time),]
@@ -753,7 +753,7 @@ readTDRData <- function(inputFolder,
                         tagType,
                         dateFormat = "%d-%m-%Y") {
 
-  if (!(tagType %in% c("Technosmart","LAT150"))){
+  if (!(tagType %in% c("Technosmart","LAT150", "Ecotone"))){
     warning("Supported tagTypes are: Technosmart. If you have a different biologger please contact me.")
   }
 
@@ -770,7 +770,11 @@ readTDRData <- function(inputFolder,
                         deployments = deployments,
                         tagTZ = tagTZ)
   }
-
+if (tagType == "Ecotone") {
+    output <- readEcotoneTDR(inputFolder = inputFolder,
+                             deployments = deployments,
+                             tagTZ = tagTZ)
+  }
   output
 
   #' @export readTDRData
@@ -967,6 +971,55 @@ readLAT150 <- function(inputFolder,
   output
 }
 
+
+# ---------------------------------------------------------------------------------------------------------------
+
+# ---------------------------------------------------------------------------------------------------------------
+
+readEcotoneTDR <- function(inputFolder,
+                          deployments,
+                          tagTZ = "UTC") {
+  #Start the run
+  theFiles <- list.files(inputFolder, full.names = T, pattern = 'csv')
+
+  output <- combineFiles(files = theFiles,
+                         pattern = "csv",
+                         type = "csv",
+                         sep = ";",
+                         stringsAsFactors = F,
+                         header = T)
+
+  output$time <- paste(output$Year, output$Month, output$Day, output$Hour, output$Minute, output$Second, sep = "-")
+  output$time <- as.POSIXct(strptime(output$time, "%Y-%m-%d-%H-%M-%S"), tz = tagTZ)
+  output <- subset(output, output$time > as.POSIXct("1900-01-01", tz = tagTZ))
+
+  output <- output[order(output$Logger.ID, output$time),]
+
+  names(output) <- gsub("[.]","",names(output))
+  names(output)[1] <- "LoggerID"
+
+  idx <- output$Divdown == 1 & !is.na(output$Divdown)
+  output$time[idx] <- output$time[idx] - 1
+  output$Depth[output$Divup == 1 | output$Divdown == 1 |output$Inrange == 1 | !is.na(output$Longitude)] <- 0
+  output <- subset(output, !is.na(output$Latitude) | !is.na(output$Depth))
+
+  output$gps_id <- output$LoggerID
+  output$depth <- output$Depth/100
+  output$depth[output$diving == 0] <- 0
+  output$pressure <- NA
+  output$temperature <- output$Temperature
+  output$wetdry <- NA
+  output <- output[,names(output)[(names(output) %in% c("gps_id","time","depth",
+                                                        "pressure","temperature","wetdry"))]]
+  output$depth[is.na(output$depth)] <- 0
+
+  output <- merge(output, deployments[,c("gps_id","dep_id")])
+  output <- output[order(output$dep_id, output$time),]
+  output <- output[,c("dep_id","time","depth","temperature","wetdry")]
+  output <- output[!duplicated(output[c('dep_id', 'time')]),]
+
+  output
+}
 
 # ---------------------------------------------------------------------------------------------------------------
 #' Cleans up TDR data, by clipping to deployment times
