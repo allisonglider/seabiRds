@@ -17,8 +17,11 @@ mapTracks <- function(data, groups = 'dep_id', legend_label = 'Deployments', use
     world <- rnaturalearth::ne_countries(scale = 110, returnclass = 'sf')
   }
 
-  xran <- range(data$lon, na.rm = T)
-  yran <- range(data$lat, na.rm = T)
+  my_sf <- sf::st_as_sf(data[!is.na(data$lon),], coords = c('lon', 'lat'), crs = 4326)
+  my_bb <- bbox_at_zoom(locs=my_sf)
+
+  xran <- my_bb[c(1,3)]
+  yran <- my_bb[c(2,4)]
 
   coord_range <- max(c(xran[2] - xran[1], yran[2] - yran[1]))
   coord_breaks <- 0.1
