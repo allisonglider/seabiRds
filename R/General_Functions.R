@@ -281,3 +281,58 @@ getFrequency <- function(time) {
 
   #' @export getFrequency
 }
+
+
+# ------
+
+#' Check for overlapping deployments for metal band or logger id fields
+#'
+#' @param deployments data.frame with deployment data formatted using seabiRds::formatDeployments()
+#' @param variables list of variable names to check for overlapping deployments, options include:
+#' "metal_band", "gps_id", "gps_id","tdr_id","acc_id","gls_id","mag_id"
+#' @param verbose logical. Print a success message if TRUE
+#'
+#' @return
+#'
+#' Warnings and an error message are returned if overlapping deployments are found for the same band or logger_id
+#'
+#' @export
+#'
+
+
+check_overlaps <- function(deployments, variables = c("metal_band", "gps_id", "gps_id","tdr_id","acc_id","gls_id","mag_id"), verbose = FALSE) {
+
+  flag <- 0
+
+  var_names <- c("metal_band", "gps_id", "gps_id","tdr_id","acc_id","gls_id","mag_id")
+
+  for (v in variables) {
+
+    if (!(v %in% var_names)) {
+      stop(paste(v, "must be one of:", paste(var_names, collapse = ', ')))
+    }
+
+    if (!('time_released' %in% names(deployments))) stop('time_released column not found in deployments, deployments should be output from seabiRds::formatDeployments()')
+    if (!('time_recaptured' %in% names(deployments))) stop('time_recaptured column not found in deployments, deployments should be output from seabiRds::formatDeployments()')
+
+
+    mb <- na.omit(unique(deployments[,v]))
+    for (m in mb) {
+
+      temp <- subset(deployments, deployments[,v]== m)
+      if (nrow(temp) > 1) {
+        temp <- temp[order(temp$time_released),]
+        for (i in 2:nrow(temp)) {
+          idx <- which(temp$time_released[i:nrow(temp)] <= temp$time_recaptured[i - 1])
+          if (length(idx > 0)) {
+            warning(paste0('dep_id ', temp$dep_id[i - 1],' overlaps with ', temp$dep_id[idx[1]], ' for ', v, ' ', m), call. = F)
+            flag <- flag + 1
+          }
+        }
+      }
+    }
+  }
+
+  if (flag > 0) stop(paste('Overlapping deployments found. Fix deployment data before continuing. Use warnings() to see them.'), call. = FALSE)
+  if (verbose & flag == 0) print(paste0("No deployment overlaps found."))
+}
