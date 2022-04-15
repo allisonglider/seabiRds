@@ -20,7 +20,7 @@ check_overlaps(
 \item{verbose}{logical. Print a success message if TRUE}
 }
 \value{
-An error message is returned if overlapping deployments are found for the same band or logger_id
+Warnings and an error message are returned if overlapping deployments are found for the same band or logger_id
 }
 \description{
 Check for overlapping deployments for metal band or logger id fields

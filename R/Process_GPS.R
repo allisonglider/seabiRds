@@ -663,8 +663,12 @@ cleanGPSData <- function(data,
       ggplot2::theme_light() +
       ggplot2::labs(title = paste(temp$dep_id[1]), y = yy, x = "Time")
   )
-  xran <- range(temp$lon, na.rm = T)
-  yran <- range(temp$lat, na.rm = T)
+
+  my_sf <- sf::st_as_sf(newData[!is.na(newData$lon),], coords = c('lon', 'lat'), crs = 4326)
+  my_bb <- bbox_at_zoom(locs=my_sf)
+
+  xran <- my_bb[c(1,3)]
+  yran <- my_bb[c(2,4)]
 
   coord_range <- max(c(xran[2] - xran[1], yran[2] - yran[1]))
   coord_breaks <- 0.1
