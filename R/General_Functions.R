@@ -323,7 +323,7 @@ check_overlaps <- function(deployments, variables = c("metal_band", "gps_id", "g
       if (nrow(temp) > 1) {
         temp <- temp[order(temp$time_released),]
         for (i in 2:nrow(temp)) {
-          idx <- which(temp$time_released[i:nrow(temp)] <= temp$time_recaptured[i - 1])
+          idx <- which(temp$time_released[i:nrow(temp)] < temp$time_recaptured[i - 1])
           if (length(idx > 0)) {
             warning(paste0('dep_id ', temp$dep_id[i - 1],' overlaps with ', temp$dep_id[idx[1]], ' for ', v, ' ', m), call. = F)
             flag <- flag + 1
