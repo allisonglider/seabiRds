@@ -375,6 +375,9 @@ readTechnosmartGPS <- function(inputFolder,
 
         if (nrow(temp) > 5) {
 
+          if (is.na(deployments$time_recaptured[i])) warning(
+            paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = F)
+
           # set names and format date
           names(temp) <- c("time","lat","lon","altitude","gpsspeed","satellites","hdop","maxsignal")
           temp$time <- gsub('/','-',temp$time)
@@ -517,6 +520,9 @@ readCattrackGPS <- function(inputFolder,
                              header = T)
 
         if (nrow(temp) > 5) {
+
+          if (is.na(deployments$time_recaptured[i])) warning(
+            paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = F)
 
           temp$Date <- gsub("/", '-', temp$Date)
 
@@ -824,6 +830,10 @@ readTechnosmartTDR <- function(inputFolder,
                              header = T)
 
         if (nrow(temp) > 5) {
+
+          if (is.na(deployments$time_recaptured[i])) warning(
+            paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = F)
+
           if (("Depth" %in% names(temp)) | "Pressure" %in% names(temp)){
 
           tempNames <- names(temp)
@@ -936,6 +946,9 @@ readLAT150 <- function(inputFolder,
         }
 
         if (nrow(temp) > 5) {
+
+          if (is.na(deployments$time_recaptured[i])) warning(
+            paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = F)
 
           # Combine date and time into one variable
           temp$time <- paste(temp$Date, temp$Time)
