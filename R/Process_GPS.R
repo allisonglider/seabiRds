@@ -271,6 +271,8 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
     if (min(dep$dep_lat, na.rm = T) < -90 | max(dep$dep_lat, na.rm = T) > 90) stop('Values in dep_lat must be between -90 and 90', call. = F)
   }
 
+  check_overlaps(dep, verbose = F)
+
   # Return formatted deployment data
   dep
 
