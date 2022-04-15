@@ -2,6 +2,7 @@
 
 export(.cleanGPSDataPlot)
 export(.matchFiles)
+export(bbox_at_zoom)
 export(check_overlaps)
 export(cleanGPSData)
 export(cleanTDRData)

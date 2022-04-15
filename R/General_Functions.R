@@ -323,7 +323,7 @@ check_overlaps <- function(deployments, variables = c("metal_band", "gps_id", "g
       if (nrow(temp) > 1) {
         temp <- temp[order(temp$time_released),]
         for (i in 2:nrow(temp)) {
-          idx <- which(temp$time_released[i:nrow(temp)] <= temp$time_recaptured[i - 1])
+          idx <- which(temp$time_released[i:nrow(temp)] < temp$time_recaptured[i - 1])
           if (length(idx > 0)) {
             warning(paste0('dep_id ', temp$dep_id[i - 1],' overlaps with ', temp$dep_id[idx[1]], ' for ', v, ' ', m), call. = F)
             flag <- flag + 1
@@ -336,3 +336,73 @@ check_overlaps <- function(deployments, variables = c("metal_band", "gps_id", "g
   if (flag > 0) stop(paste('Overlapping deployments found. Fix deployment data before continuing. Use warnings() to see them.'), call. = FALSE)
   if (verbose & flag == 0) print(paste0("No deployment overlaps found."))
 }
+
+# -----
+
+#' Defines a bounding box at a specified zoom level around a set of coordinates, useful
+#' for making maps with a consistent aspect ratio
+#'
+#' @description This function returns a bounding box with a constant aspect ratio.
+#' By default the zoom leve is fit to the input spatial file or the zoom level
+#' can be defined by the user and centered on the center value of the input.
+#'
+#' @param locs An sf or sp object. The bounding box will be centered on the mid point value of
+#' bound box of this object.
+#' @param zoom_level Numeric. Specifies how zoomed in the bounding box should be,
+#' eg. 1 = whole world and 4 = 1/4 of world. Defaults to NULL, which will calculate the zoom level required to contain locs
+#' @references Code adapted from: https://www.r-bloggers.com/2019/04/zooming-in-on-maps-with-sf-and-ggplot2/
+#'
+#' @returns an object with class "bbox" containing four values: xmin, ymin, xmax, and ymax.
+#' Values will be in units of locs (either decimal degrees or meters).
+#' @export
+
+
+bbox_at_zoom <- function(locs, zoom_level = NULL) {
+
+  if (!(substr(class(locs)[1], 1, 7) %in% c('sf','Spatial'))) stop('locs must be an sf or sp object')
+
+  if (class(locs)[1] != 'sf') {
+    convert_sp <- T
+    locs <- as(locs, 'sf')
+  }
+  C <- 40075016.686   # ~ circumference of Earth in meters
+
+  bb <- sf::st_bbox(locs)
+
+  zoom_to <- data.frame(
+    X = ((bb$xmax - bb$xmin)/2) + bb$xmin,
+    Y = ((bb$ymax - bb$ymin)/2) + bb$ymin
+  ) %>% sf::st_as_sf(coords = c('X','Y'), crs = sf::st_crs(locs))
+
+  if (is.null(zoom_level)) {
+    if (sf::st_is_longlat(zoom_to) == T) {
+      lon_zoom <- log2(360/(bb$xmax - bb$xmin))
+      lat_zoom <- log2(180/(bb$ymax - bb$ymin))
+      zoom_level <- min(c(lon_zoom, lat_zoom))
+    } else {
+      lon_zoom <- log2(C/(bb$xmax - bb$xmin))
+      lat_zoom <- log2(C/(bb$ymax - bb$ymin))
+      zoom_level <- min(c(lon_zoom, lat_zoom))
+    }
+  }
+
+  if (sf::st_is_longlat(zoom_to) == T) {
+    lon_span <- 360/2^zoom_level
+    lat_span <- 180/2^zoom_level
+  } else {
+    lon_span <- C / 2^zoom_level
+    lat_span <- C / 2^(zoom_level)
+  }
+
+  cc <- sf::st_coordinates(zoom_to)
+
+  lon_bounds <- c(cc[,1] - lon_span / 2, cc[,1] + lon_span / 2)
+  lat_bounds <- c(cc[,2] - lat_span / 2, cc[,2] + lat_span / 2)
+
+  bb <- sf::st_bbox(c(xmin = lon_bounds[1], xmax = lon_bounds[2],
+                      ymax = lat_bounds[1], ymin = lat_bounds[2]), crs = sf::st_crs(locs))
+
+  return(bb)
+}
+
+# -----
