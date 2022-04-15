@@ -2,6 +2,7 @@
 
 export(.cleanGPSDataPlot)
 export(.matchFiles)
+export(check_overlaps)
 export(cleanGPSData)
 export(cleanTDRData)
 export(combineFiles)
