@@ -2,6 +2,10 @@
 
 export(.cleanGPSDataPlot)
 export(.matchFiles)
+export(axytrek_acc_check)
+export(axytrek_acc_to_dataset)
+export(axytrek_tdr_check)
+export(axytrek_tdr_to_dataset)
 export(bbox_at_zoom)
 export(check_overlaps)
 export(cleanGPSData)

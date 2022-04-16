@@ -376,7 +376,7 @@ readTechnosmartGPS <- function(inputFolder,
         if (nrow(temp) > 5) {
 
           if (is.na(deployments$time_recaptured[i])) warning(
-            paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = F)
+            paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = FALSE, immediate. = TRUE)
 
           # set names and format date
           names(temp) <- c("time","lat","lon","altitude","gpsspeed","satellites","hdop","maxsignal")
@@ -384,7 +384,7 @@ readTechnosmartGPS <- function(inputFolder,
           df <- paste0(dateFormat, ",%T")
 
           # check that date format is correct
-          if (is.na(as.POSIXct(strptime(temp$time[1], df), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
+          if (is.na(as.POSIXct(strptime(temp$time[1], df), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = FALSE)
 
           # format dates
           temp$time <- as.POSIXct(strptime(temp$time, df), tz = tagTZ)
@@ -522,12 +522,12 @@ readCattrackGPS <- function(inputFolder,
         if (nrow(temp) > 5) {
 
           if (is.na(deployments$time_recaptured[i])) warning(
-            paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = F)
+            paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = FALSE, immediate. = TRUE)
 
           temp$Date <- gsub("/", '-', temp$Date)
 
           # check that date format is correct
-          if (is.na(as.POSIXct(as.POSIXct(strptime(paste(temp$Date[1], temp$Time[1]), dateFormat)), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = F)
+          if (is.na(as.POSIXct(as.POSIXct(strptime(paste(temp$Date[1], temp$Time[1]), dateFormat)), tz = tagTZ))) stop(paste("Check date format is correct for", deployments$dep_id[i]), call. = FALSE)
 
           # format dates
           temp$time <- lubridate::force_tz(as.POSIXct(strptime(paste(temp$Date, temp$Time), dateFormat)), tz = tagTZ)
@@ -836,7 +836,7 @@ readTechnosmartTDR <- function(inputFolder,
         if (nrow(temp) > 5) {
 
           if (is.na(deployments$time_recaptured[i])) warning(
-            paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = F)
+            paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = FALSE, immediate. = TRUE)
 
           if (("Depth" %in% names(temp)) | "Pressure" %in% names(temp)){
 
