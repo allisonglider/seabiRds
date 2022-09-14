@@ -400,7 +400,7 @@ bbox_at_zoom <- function(locs, zoom_level = NULL) {
   lat_bounds <- c(cc[,2] - lat_span / 2, cc[,2] + lat_span / 2)
 
   bb <- sf::st_bbox(c(xmin = lon_bounds[1], xmax = lon_bounds[2],
-                      ymax = lat_bounds[1], ymin = lat_bounds[2]), crs = sf::st_crs(locs))
+                      ymin = lat_bounds[1], ymax = lat_bounds[2]), crs = sf::st_crs(locs))
 
   return(bb)
 }
