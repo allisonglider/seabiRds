@@ -8,12 +8,10 @@
 #' @param date_format Date format used in .csv files, default is '%Y-%m-%d %H:%M:%OS'
 #' @param timezone Timezone of raw data, default is UTC
 #'
-#' @return Code checks that data meet formatting requirements. Produces a plot
+#' @returns This function checks that data meet formatting requirements. Produces a plot
 #' showing a time series of x-axis data from the accelerometer. Deployed data are shown in black,
 #' undeployed data are shown in red, and deployment start/end times are shown with
-#' dashed vertical bluse lines.
-#'
-#' Output is saved to an arrow dataset at the location indicated by output_dataset.
+#' dashed vertical blue lines. Output is saved to an arrow dataset at the location indicated by output_dataset.
 #'
 #' @export
 #'
@@ -84,7 +82,7 @@ axytrek_acc_to_dataset <- function(files,
 
 # -----
 
-#' Reads axytrek accelerometer data and adds it to an arrow dataset
+#' Reads axytrek tdr data and adds it to an arrow dataset
 #'
 #' @param files List of axytrek .csv files, file names must include the dep_id in deployments
 #' @param deployments Deployment data formatted using seabiRds::formatDeployments()
@@ -150,7 +148,7 @@ axytrek_tdr_to_dataset <- function(files,
       temp <- dat[seq(1, nrow(dat), 30 * getFrequency(dat$time)),]
 
       p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth_m)) +
-        ggplot2::geom_line(size = 0.1, col = 'red', size = 0.1) +
+        ggplot2::geom_line(col = 'red', size = 0.1) +
         ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = depth_m), size = 0.1, col = 'black') +
         ggplot2::geom_vline(xintercept = dd, linetype = 2, col = 'blue', size = 0.5) +
         ggplot2::labs(title = dat$dep_id[1], x = 'Time', y = 'Depth (m)') +
@@ -159,7 +157,7 @@ axytrek_tdr_to_dataset <- function(files,
       print(p)
 
       dat %>%
-        arrow::write_dataset("E:/test-arrow/biologging", format = "parquet",
+        arrow::write_dataset(output_dataset, format = "parquet",
                       existing_data_behavior = 'delete_matching')
 
       print(paste0('Finished [',i,']: ', deployments$dep_id[i]))
@@ -181,9 +179,7 @@ axytrek_tdr_to_dataset <- function(files,
 #'
 #' @export
 #'
-#' @examples
-#'
-#'
+
 
 axytrek_acc_check <- function(file,
                                   date_format = '%Y-%m-%d %H:%M:%OS',
@@ -216,8 +212,6 @@ axytrek_acc_check <- function(file,
 #' @return Ends dataset importing if file names or date formats do not meet checks
 #'
 #' @export
-#'
-#' @examples
 #'
 
 axytrek_tdr_check <- function(file,

@@ -23,7 +23,3 @@ Ends dataset importing if file names or date formats do not meet checks
 \description{
 Runs checks on axytrek accelerometer data
 }
-\examples{
-
-
-}

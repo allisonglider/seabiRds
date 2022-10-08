@@ -13,7 +13,7 @@ axytrek_acc_to_dataset(
 )
 }
 \arguments{
-\item{files}{List of axytrek accelerometer .csv files, file names must include the dep_id in deployments}
+\item{files}{List of axytrek .csv files, file names must include the dep_id in deployments}
 
 \item{deployments}{Deployment data formatted using seabiRds::formatDeployments()}
 
@@ -24,10 +24,10 @@ axytrek_acc_to_dataset(
 \item{timezone}{Timezone of raw data, default is UTC}
 }
 \value{
-Code checks that data meet formatting requirements. Produces a plot
+return Code checks that data meet formatting requirements. Produces a plot
 showing a time series of x-axis data from the accelerometer. Deployed data are shown in black,
 undeployed data are shown in red, and deployment start/end times are shown with
-dashed vertical bluse lines.
+dashed vertical blue lines.
 
 Output is saved to an arrow dataset at the location indicated by output_dataset.
 }

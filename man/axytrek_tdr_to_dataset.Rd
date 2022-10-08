@@ -2,7 +2,7 @@
 % Please edit documentation in R/Axytrek_to_Arrow.R
 \name{axytrek_tdr_to_dataset}
 \alias{axytrek_tdr_to_dataset}
-\title{Reads axytrek accelerometer data and adds it to an arrow dataset}
+\title{Reads axytrek tdr data and adds it to an arrow dataset}
 \usage{
 axytrek_tdr_to_dataset(
   files,
@@ -32,5 +32,5 @@ dashed vertical bluse lines.
 Output is saved to an arrow dataset at the location indicated by output_dataset.
 }
 \description{
-Reads axytrek accelerometer data and adds it to an arrow dataset
+Reads axytrek tdr data and adds it to an arrow dataset
 }
