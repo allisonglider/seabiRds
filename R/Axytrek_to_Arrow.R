@@ -71,13 +71,16 @@ axytrek_tdr_to_dataset <- function(data,
                                    timezone = 'UTC') {
 
   data <- data %>%
-    mutate(light = NA) %>%
+    dplyr::filter(!is.na(Depth)) %>%
+    tidyr::separate(Activity, into = c('active', 'wet'), sep = '/') %>%
+    mutate(
+      wet = ifelse(wet == 'Wet', 1, 0)
+      ) %>%
     rename(temperature_c = dplyr::starts_with('Temp')) %>%
     dplyr::rename(time = Timestamp, depth_m = Depth) %>%
-    dplyr::filter(!is.na(depth_m)) %>%
     dplyr::inner_join(deployments[, c('dep_id', 'metal_band', 'species', 'site', 'subsite')], by = 'dep_id') %>%
     dplyr::select(site, subsite, species, year,
-                  metal_band, dep_id, time, temperature_c, depth_m, light, deployed) %>%
+                  metal_band, dep_id, time, temperature_c, depth_m, wet, deployed) %>%
     dplyr::group_by(site, subsite, species, year, metal_band, dep_id, deployed) %>%
     dplyr::arrange(time) %>%
     dplyr::filter(duplicated(time) == F)
@@ -98,7 +101,6 @@ axytrek_tdr_to_dataset <- function(data,
   data %>%
     arrow::write_dataset(paste0(output_dataset,'/tdr'), format = "parquet",
                          existing_data_behavior = 'delete_matching')
-
 
 }
 
