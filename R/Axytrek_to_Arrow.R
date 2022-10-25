@@ -70,13 +70,15 @@ axytrek_tdr_to_dataset <- function(data,
                                    date_format = '%Y-%m-%d %H:%M:%OS',
                                    timezone = 'UTC') {
 
+  if (!('Depth') %in% names(data)) {data$Depth <- NA}
+
   data <- data %>%
-    dplyr::filter(!is.na(Depth)) %>%
+    rename(temperature_c = dplyr::starts_with('Temp')) %>%
+    dplyr::filter(!is.na(temperature_c)) %>%
     tidyr::separate(Activity, into = c('active', 'wet'), sep = '/') %>%
     mutate(
       wet = ifelse(wet == 'Wet', 1, 0)
       ) %>%
-    rename(temperature_c = dplyr::starts_with('Temp')) %>%
     dplyr::rename(time = Timestamp, depth_m = Depth) %>%
     dplyr::inner_join(deployments[, c('dep_id', 'metal_band', 'species', 'site', 'subsite')], by = 'dep_id') %>%
     dplyr::select(site, subsite, species, year,
@@ -88,22 +90,21 @@ axytrek_tdr_to_dataset <- function(data,
   dd <- na.omit(c(deployments$time_released, deployments$time_recaptured))
   temp <- data[seq(1, nrow(data), 30 * getFrequency(data$time)),]
 
-  suppressMessages(p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth_m)) +
+  p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth_m)) +
     ggplot2::geom_line(col = 'red', size = 0.1) +
     ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = depth_m), size = 0.1, col = 'black') +
     ggplot2::geom_vline(xintercept = dd, linetype = 2, col = 'blue', size = 0.5) +
     ggplot2::labs(title = data$dep_id[1], x = 'Time', y = 'Depth (m)') +
     ggplot2::scale_y_reverse() +
     ggplot2::theme_light()
-  )
-  print(p)
+
+  suppressWarnings(print(p))
 
   data %>%
     arrow::write_dataset(paste0(output_dataset,'/tdr'), format = "parquet",
                          existing_data_behavior = 'delete_matching')
 
 }
-
 
 # -----
 
@@ -225,9 +226,13 @@ axytrek_tdr_check <- function(file,
   tt <- read.csv(file = file, stringsAsFactors = F, nrows = 1)
   names(tt)[grep('Temp', names(tt))] <- 'Temperature'
 
-  check_names <- c('Timestamp', 'Depth', 'Temperature') %in% names(tt)
+  check_depth <- c('Depth') %in% names(tt)
 
-  if (sum(check_names) != 3) stop(paste0(file, 'does not contain columns named Timestamp, Depth, and Temp...C'))
+  if (sum(check_depth) != 1) warning(paste0(file, ' is missing Depth data'), call. = F)
+
+  check_names <- c('Timestamp', 'Temperature', 'Activity') %in% names(tt)
+
+  if (sum(check_names) != 3) stop(paste0(file, ' does not contain columns named Timestamp, Activity, and Temp...C'))
 
   date_error <- paste0(' --- Date format test failed for: ', file, ' \nCheck that the date format',
                        tt$Timestamp, ' matches the date_format string: ', date_format, '. \n\n See ?strptime for help with POSIX string formats')
