@@ -1,19 +1,4 @@
 
-
-#' @description Reads axytrek accelerometer data and adds it to an arrow dataset
-#'
-#' @param data List of axytrek .csv files, file names must include the dep_id in deployments
-#' @param deployments Deployment data formatted using seabiRds::formatDeployments()
-#' @param output_dataset Path where arrow dataset should be saved
-#' @param date_format Date format used in .csv files, default is '%Y-%m-%d %H:%M:%OS'
-#' @param timezone Timezone of raw data, default is UTC
-#'
-#' @returns This function checks that data meet formatting requirements. Produces a plot
-#' showing a time series of x-axis data from the accelerometer. Deployed data are shown in black,
-#' undeployed data are shown in red, and deployment start/end times are shown with
-#' dashed vertical blue lines. Output is saved to an arrow dataset at the location indicated by output_dataset.
-#'
-#'
 axytrek_acc_to_dataset <- function(data,
                                    deployments,
                                    output_dataset,
@@ -49,21 +34,6 @@ axytrek_acc_to_dataset <- function(data,
 
 # -----
 
-#' @description Reads axytrek tdr data and adds it to an arrow dataset
-#'
-#' @param data List of axytrek .csv files, file names must include the dep_id in deployments
-#' @param deployments Deployment data formatted using seabiRds::formatDeployments()
-#' @param output_dataset Path where arrow dataset should be saved
-#' @param date_format Date format used in .csv files, default is '%Y-%m-%d %H:%M:%OS'
-#' @param timezone Timezone of raw data, default is UTC
-#'
-#' @return Code checks that data meet formatting requirements. Produces a plot
-#' showing a time series of depth data from the tdr. Deployed data are shown in black,
-#' undeployed data are shown in red, and deployment start/end times are shown with
-#' dashed vertical blue lines.
-#'
-#' Output is saved to an arrow dataset at the location indicated by output_dataset.
-#'
 axytrek_tdr_to_dataset <- function(data,
                                    deployments,
                                    output_dataset,
@@ -108,22 +78,6 @@ axytrek_tdr_to_dataset <- function(data,
 
 # -----
 
-#' @description Reads axytrek gps data and adds it to an arrow dataset
-#'
-#' @param data List of axytrek .csv files, file names must include the dep_id in deployments
-#' @param deployments Deployment data formatted using seabiRds::formatDeployments()
-#' @param output_dataset Path where arrow dataset should be saved
-#' @param date_format Date format used in .csv files, default is '%Y-%m-%d %H:%M:%OS'
-#' @param timezone Timezone of raw data, default is UTC
-#'
-#' @return Code checks that data meet formatting requirements. Produces a plot
-#' showing a time series of depth data from the tdr. Deployed data are shown in black,
-#' undeployed data are shown in red, and deployment start/end times are shown with
-#' dashed vertical bluse lines.
-#'
-#' Output is saved to an arrow dataset at the location indicated by output_dataset.
-#'
-#'
 axytrek_gps_to_dataset <- function(data,
                                    deployments,
                                    output_dataset,
@@ -176,17 +130,6 @@ axytrek_gps_to_dataset <- function(data,
 
 # -----
 
-
-#' @description Runs checks on axytrek accelerometer data
-#'
-#' @param files List of axytrek .csv files, file names must include the dep_id in deployments
-#' @param date_format Date format used in .csv files, default is '%Y-%m-%d %H:%M:%OS'
-#' @param timezone Timezone of raw data, default is UTC
-#'
-#' @return Ends dataset importing if file names or date formats do not meet checks
-#'
-
-
 axytrek_acc_check <- function(file,
                               date_format = '%Y-%m-%d %H:%M:%OS',
                               timezone = 'UTC'){
@@ -208,16 +151,6 @@ axytrek_acc_check <- function(file,
 }
 
 # -----
-
-#' @description Runs checks on axytrek tdr data
-#'
-#' @param files List of axytrek .csv files, file names must include the dep_id in deployments
-#' @param date_format Date format used in .csv files, default is '%Y-%m-%d %H:%M:%OS'
-#' @param timezone Timezone of raw data, default is UTC
-#'
-#' @return Ends dataset importing if file names or date formats do not meet checks
-#'
-
 
 axytrek_tdr_check <- function(file,
                               date_format = '%Y-%m-%d %H:%M:%OS',
@@ -246,16 +179,6 @@ axytrek_tdr_check <- function(file,
 
 # -----
 
-#' @description Runs checks on axytrek gps data
-#'
-#' @param files List of axytrek .csv files, file names must include the dep_id in deployments
-#' @param date_format Date format used in .csv files, default is '%Y-%m-%d %H:%M:%OS'
-#' @param timezone Timezone of raw data, default is UTC
-#'
-#' @return Ends dataset importing if file names or date formats do not meet checks
-#'
-
-
 axytrek_gps_check <- function(file,
                               date_format = '%Y-%m-%d %H:%M:%OS',
                               timezone = 'UTC'){
@@ -280,14 +203,14 @@ axytrek_gps_check <- function(file,
 }
 
 # -----
-#' @description Reads axytrek biologger data and parses it into three arrow datasets for GPS, TDR, and ACC
-#'
-#' @param files List of axytrek .csv files, file names must include the dep_id in deployments
+#' @title Convert Axytrek biologger data to Arrow dataset
+#' @description Reads Axytrek biologger data and parses it into three arrow datasets for ACC, GPS, and TDR data
+#' @param files List of Axytrek .csv files, data must have file names taht are a partial match to the dep_id in deployment data
 #' @param deployments Deployment data formatted using seabiRds::formatDeployments()
 #' @param output_dataset Path where arrow dataset should be saved
-#' @param date_format Date format used in .csv files, default is '%Y-%m-%d %H:%M:%OS'
+#' @param date_format The POSIXct date format used in .csv files
 #' @param timezone Timezone of raw data, default is UTC
-#'
+#' @param plot Should plot of data be generated, TRUE or FALSE?
 #' @export
 
 axytrek_to_dataset <- function(files,
