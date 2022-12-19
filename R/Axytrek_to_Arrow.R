@@ -217,7 +217,10 @@ axytrek_to_dataset <- function(files,
                                deployments,
                                output_dataset,
                                date_format = '%Y-%m-%d %H:%M:%OS',
-                               timezone = 'UTC') {
+                               timezone = 'UTC',
+                               acc = T,
+                               tdr = T,
+                               gps = T) {
 
   check_filetype <- grep('.csv', files)
   if (length(check_filetype) != length(files)) stop('All files must be .csv format')
@@ -231,15 +234,15 @@ axytrek_to_dataset <- function(files,
       if (is.na(deployments$time_recaptured[i])) warning(
         paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = FALSE, immediate. = TRUE)
 
-      axytrek_acc_check(file = files[idx[1]],
+      if (acc == TRUE) axytrek_acc_check(file = files[idx[1]],
                         date_format = date_format,
                         timezone = timezone)
 
-      axytrek_tdr_check(file = files[idx[1]],
+      if (tdr == TRUE) axytrek_tdr_check(file = files[idx[1]],
                         date_format = date_format,
                         timezone = timezone)
 
-      axytrek_gps_check(file = files[idx[1]],
+      if (gps == TRUE) axytrek_gps_check(file = files[idx[1]],
                         date_format = date_format,
                         timezone = timezone)
 
@@ -254,19 +257,19 @@ axytrek_to_dataset <- function(files,
                               Timestamp <= min(c(deployments$time_recaptured[i],max(Timestamp)), na.rm = T), 1, 0),
         )
 
-      axytrek_acc_to_dataset(data = dat,
+      if (acc == TRUE) axytrek_acc_to_dataset(data = dat,
                              deployments = deployments[i,],
                              output_dataset = output_dataset,
                              date_format = date_format,
                              timezone = timezone)
 
-      axytrek_tdr_to_dataset(data = dat,
+      if (tdr == TRUE) axytrek_tdr_to_dataset(data = dat,
                              deployments = deployments[i,],
                              output_dataset = output_dataset,
                              date_format = date_format,
                              timezone = timezone)
 
-      axytrek_gps_to_dataset(data = dat,
+      if (gps == TRUE) axytrek_gps_to_dataset(data = dat,
                              deployments = deployments[i,],
                              output_dataset = output_dataset,
                              date_format = date_format,
