@@ -3,7 +3,8 @@ axytrek_acc_to_dataset <- function(data,
                                    deployments,
                                    output_dataset,
                                    date_format = '%Y-%m-%d %H:%M:%OS',
-                                   timezone = 'UTC') {
+                                   timezone = 'UTC',
+                                   plot = T) {
 
   data <- data %>%
     dplyr::rename(time = Timestamp, x = X, y = Y, z = Z) %>%
@@ -17,14 +18,16 @@ axytrek_acc_to_dataset <- function(data,
   dd <- na.omit(c(deployments$time_released, deployments$time_recaptured))
   temp <- data[seq(1, nrow(data), 30 * getFrequency(data$time)),]
 
-  suppressMessages(p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = x)) +
-    ggplot2::geom_line(size = 0.1, col = 'red') +
-    ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = x), size = 0.1, col = 'black') +
-    ggplot2::geom_vline(xintercept = dd, linetype = 2, col = 'blue', size = 0.5) +
-    ggplot2::labs(title = data$dep_id[1], x = 'Time', y = 'x-axis (g)') +
-    ggplot2::theme_light()
-  )
-  print(p)
+  if (plot == T) {
+    suppressMessages(p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = x)) +
+                       ggplot2::geom_line(size = 0.1, col = 'red') +
+                       ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = x), size = 0.1, col = 'black') +
+                       ggplot2::geom_vline(xintercept = dd, linetype = 2, col = 'blue', size = 0.5) +
+                       ggplot2::labs(title = data$dep_id[1], x = 'Time', y = 'x-axis (g)') +
+                       ggplot2::theme_light()
+    )
+    print(p)
+  }
 
   data %>%
     arrow::write_dataset(paste0(output_dataset,'/acc'), format = "parquet",
@@ -38,7 +41,8 @@ axytrek_tdr_to_dataset <- function(data,
                                    deployments,
                                    output_dataset,
                                    date_format = '%Y-%m-%d %H:%M:%OS',
-                                   timezone = 'UTC') {
+                                   timezone = 'UTC',
+                                   plot = T) {
 
   if (!('Depth') %in% names(data)) {data$Depth <- NA}
 
@@ -60,15 +64,17 @@ axytrek_tdr_to_dataset <- function(data,
   dd <- na.omit(c(deployments$time_released, deployments$time_recaptured))
   temp <- data[seq(1, nrow(data), 30 * getFrequency(data$time)),]
 
-  p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth_m)) +
-    ggplot2::geom_line(col = 'red', size = 0.1) +
-    ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = depth_m), size = 0.1, col = 'black') +
-    ggplot2::geom_vline(xintercept = dd, linetype = 2, col = 'blue', size = 0.5) +
-    ggplot2::labs(title = data$dep_id[1], x = 'Time', y = 'Depth (m)') +
-    ggplot2::scale_y_reverse() +
-    ggplot2::theme_light()
+  if (plot == T) {
+    p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth_m)) +
+      ggplot2::geom_line(col = 'red', size = 0.1) +
+      ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = depth_m), size = 0.1, col = 'black') +
+      ggplot2::geom_vline(xintercept = dd, linetype = 2, col = 'blue', size = 0.5) +
+      ggplot2::labs(title = data$dep_id[1], x = 'Time', y = 'Depth (m)') +
+      ggplot2::scale_y_reverse() +
+      ggplot2::theme_light()
 
-  suppressWarnings(print(p))
+    suppressWarnings(print(p))
+  }
 
   data %>%
     arrow::write_dataset(paste0(output_dataset,'/tdr'), format = "parquet",
@@ -82,7 +88,8 @@ axytrek_gps_to_dataset <- function(data,
                                    deployments,
                                    output_dataset,
                                    date_format = '%Y-%m-%d %H:%M:%OS',
-                                   timezone = 'UTC') {
+                                   timezone = 'UTC',
+                                   plot = T) {
 
   data <- data %>%
     dplyr::mutate(
@@ -107,20 +114,22 @@ axytrek_gps_to_dataset <- function(data,
   temp <- data %>%
     mutate(coldist = getColDist(lon, lat, colonyLon = deployments$dep_lon, colonyLat = deployments$dep_lat))
 
-  suppressMessages(
-    myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = coldist)) +
-      ggplot2::geom_line(col = "red") +
-      ggplot2::geom_point(col = "red") +
-      ggplot2::geom_point(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = coldist)) +
-      ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = coldist)) +
-      ggplot2::geom_vline(xintercept = c(deployments$time_released, deployments$time_recaptured), linetype = 2, col = "red") +
-      ggplot2::xlim(ss,ee) +
-      ggplot2::theme_light() +
-      ggplot2::labs(title = paste(deployments$dep_id),
-                    y = 'Distance from deployment location (km)',
-                    x = "Time")
-  )
-  print(myPlot)
+  if (plot == T) {
+    suppressMessages(
+      myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = coldist)) +
+        ggplot2::geom_line(col = "red") +
+        ggplot2::geom_point(col = "red") +
+        ggplot2::geom_point(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = coldist)) +
+        ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = coldist)) +
+        ggplot2::geom_vline(xintercept = c(deployments$time_released, deployments$time_recaptured), linetype = 2, col = "red") +
+        ggplot2::xlim(ss,ee) +
+        ggplot2::theme_light() +
+        ggplot2::labs(title = paste(deployments$dep_id),
+                      y = 'Distance from deployment location (km)',
+                      x = "Time")
+    )
+    print(myPlot)
+  }
 
   data %>%
     arrow::write_dataset(paste0(output_dataset,'/gps'), format = "parquet",
@@ -220,7 +229,8 @@ axytrek_to_dataset <- function(files,
                                timezone = 'UTC',
                                acc = T,
                                tdr = T,
-                               gps = T) {
+                               gps = T,
+                               plot = T) {
 
   check_filetype <- grep('.csv', files)
   if (length(check_filetype) != length(files)) stop('All files must be .csv format')
