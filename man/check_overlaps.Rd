@@ -6,8 +6,7 @@
 \usage{
 check_overlaps(
   deployments,
-  variables = c("metal_band", "gps_id", "gps_id", "tdr_id", "acc_id", "gls_id",
-    "mag_id"),
+  variables = c("metal_band", "gps_id", "gps_id", "tdr_id", "acc_id", "gls_id", "mag_id"),
   verbose = FALSE
 )
 }
