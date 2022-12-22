@@ -20,7 +20,7 @@ axytrek_acc_to_dataset <- function(data,
 
   if (plot == T) {
     suppressMessages(p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = x)) +
-                       ggplot2::geom_line(size = 0.1, col = 'red') +
+                       ggplot2::geom_line(linewidth = 0.1, col = 'red') +
                        ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = x), size = 0.1, col = 'black') +
                        ggplot2::geom_vline(xintercept = dd, linetype = 2, col = 'blue', size = 0.5) +
                        ggplot2::labs(title = data$dep_id[1], x = 'Time', y = 'x-axis (g)') +
@@ -66,7 +66,7 @@ axytrek_tdr_to_dataset <- function(data,
 
   if (plot == T) {
     p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth_m)) +
-      ggplot2::geom_line(col = 'red', size = 0.1) +
+      ggplot2::geom_line(col = 'red', linewidth = 0.1) +
       ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = depth_m), size = 0.1, col = 'black') +
       ggplot2::geom_vline(xintercept = dd, linetype = 2, col = 'blue', size = 0.5) +
       ggplot2::labs(title = data$dep_id[1], x = 'Time', y = 'Depth (m)') +
@@ -271,19 +271,22 @@ axytrek_to_dataset <- function(files,
                              deployments = deployments[i,],
                              output_dataset = output_dataset,
                              date_format = date_format,
-                             timezone = timezone)
+                             timezone = timezone,
+                             plot = plot)
 
       if (tdr == TRUE) axytrek_tdr_to_dataset(data = dat,
                              deployments = deployments[i,],
                              output_dataset = output_dataset,
                              date_format = date_format,
-                             timezone = timezone)
+                             timezone = timezone,
+                             plot = plot)
 
-      if (gps == TRUE) axytrek_gps_to_dataset(data = dat,
+      if (gps == TRUE & length(!is.na(dat$lon)) > 0) axytrek_gps_to_dataset(data = dat,
                              deployments = deployments[i,],
                              output_dataset = output_dataset,
                              date_format = date_format,
-                             timezone = timezone)
+                             timezone = timezone,
+                             plot = plot)
 
       print(paste0('Finished [',i,']: ', deployments$dep_id[i]))
 
