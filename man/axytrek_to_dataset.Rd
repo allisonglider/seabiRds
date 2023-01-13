@@ -9,7 +9,11 @@ axytrek_to_dataset(
   deployments,
   output_dataset,
   date_format = "\%Y-\%m-\%d \%H:\%M:\%OS",
-  timezone = "UTC"
+  timezone = "UTC",
+  acc = T,
+  tdr = T,
+  gps = T,
+  plot = T
 )
 }
 \arguments{
