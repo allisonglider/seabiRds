@@ -12,7 +12,8 @@ axytrek_to_dataset(
   timezone = "UTC",
   acc = T,
   tdr = T,
-  gps = T
+  gps = T,
+  plot = T
 )
 }
 \arguments{
