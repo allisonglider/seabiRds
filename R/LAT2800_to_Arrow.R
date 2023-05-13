@@ -41,6 +41,9 @@ lat2800_to_dataset <- function(files,
                               Timestamp <= min(c(deployments$time_recaptured[i],max(Timestamp)), na.rm = T), 1, 0),
         )
 
+      if (!('WetDryState' %in% names(dat))) dat$WetDryState <- NA
+
+
       lat2800_tdr_to_dataset(data = dat,
                              deployments = deployments[i,],
                              output_dataset = output_dataset,
