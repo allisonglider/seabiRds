@@ -17,9 +17,9 @@
 #'
 #'
 cattrack_gps_to_dataset <- function(data,
-                                   deployments,
-                                   output_dataset,
-                                   plot = T) {
+                                    deployments,
+                                    output_dataset,
+                                    plot = T) {
 
   data <- data %>%
     dplyr::mutate(
@@ -59,10 +59,11 @@ cattrack_gps_to_dataset <- function(data,
 #' @export
 
 cattrack_to_dataset <- function(files,
-                               deployments,
-                               output_dataset,
-                               timezone = 'UTC',
-                               plot = T) {
+                                deployments,
+                                output_dataset,
+                                timezone = 'UTC',
+                                dateFormat,
+                                plot = T) {
 
   check_filetype <- grep('.csv', files)
   if (length(check_filetype) != length(files)) stop('All files must be .csv format')
@@ -73,55 +74,55 @@ cattrack_to_dataset <- function(files,
 
     if (length(idx) > 0) {
 
-    output <- combineFiles(files = idx,
-                           pattern = "csv",
-                           type = "csv",
-                           sep = ";",
-                           stringsAsFactors = F,
-                           header = T)
+      output <- combineFiles(files = idx,
+                             pattern = "csv",
+                             type = "csv",
+                             sep = ";",
+                             stringsAsFactors = F,
+                             header = T)
 
-    output <- output %>%
-      dplyr::mutate(
-        time = paste(Date, Time, sep = ' '),
-        time = as.POSIXct(time, format = "%Y/%m/%d %H:%M:%S", tz = timezone),
-        dep_id = deployments$dep_id[i],
-      ) %>%
-      dplyr::filter(time > as.POSIXct("1900-01-01", tz = timezone))
-
-    dat <- output
-
-    if (nrow(dat) > 0 & is.na(deployments$time_recaptured[i])) {
-      deployments$time_recaptured[i] <- max(dat$time)
-      warning(
-        paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = FALSE, immediate. = TRUE)
-    }
-
-    if (nrow(dat) > 0) {
-
-      dd <- deployments %>%
-        filter(gps_id == deployments$gps_id[i]) %>%
-        arrange(time_released)
-      idx <- which(dd$dep_id == deployments$dep_id[i])
-      if (idx > 1) start_time <- mean(c(dd$time_recaptured[idx - 1], deployments$time_released[i])) else start_time <- min(dat$time)
-      if (idx < nrow(dd)) end_time <- mean(c(dd$time_released[idx + 1], deployments$time_recaptured[i])) else end_time <- max(dat$time)
-
-      dat <- dat %>%
+      output <- output %>%
         dplyr::mutate(
+          time = paste(Date, Time, sep = ' '),
+          time = as.POSIXct(time, format = paste(dateFormat, "%H:%M:%S"), tz = timezone),
           dep_id = deployments$dep_id[i],
-          year = as.integer(strftime(time, '%Y')),
-          deployed = ifelse(time >= deployments$time_released[i] &
-                              time <= deployments$time_recaptured[i], 1, 0),
-        )
+        ) %>%
+        dplyr::filter(time > as.POSIXct("1900-01-01", tz = timezone))
 
-      cattrack_gps_to_dataset(data = dat,
-                             deployments = deployments[i,],
-                             output_dataset = output_dataset,
-                             plot = plot)
+      dat <- output
 
-      print(paste0('Finished [',i,']: ', deployments$dep_id[i]))
+      if (nrow(dat) > 0 & is.na(deployments$time_recaptured[i])) {
+        deployments$time_recaptured[i] <- max(dat$time)
+        warning(
+          paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = FALSE, immediate. = TRUE)
+      }
 
-    }
-    }
-    else {print(paste0('No matching data [',i,']: ', deployments$dep_id[i]))}
+      if (nrow(dat) > 0) {
+
+        dd <- deployments %>%
+          filter(gps_id == deployments$gps_id[i]) %>%
+          arrange(time_released)
+        idx <- which(dd$dep_id == deployments$dep_id[i])
+        if (idx > 1) start_time <- mean(c(dd$time_recaptured[idx - 1], deployments$time_released[i])) else start_time <- min(dat$time)
+        if (idx < nrow(dd)) end_time <- mean(c(dd$time_released[idx + 1], deployments$time_recaptured[i])) else end_time <- max(dat$time)
+
+        dat <- dat %>%
+          dplyr::mutate(
+            dep_id = deployments$dep_id[i],
+            year = as.integer(strftime(time, '%Y')),
+            deployed = ifelse(time >= deployments$time_released[i] &
+                                time <= deployments$time_recaptured[i], 1, 0),
+          )
+
+        cattrack_gps_to_dataset(data = dat,
+                                deployments = deployments[i,],
+                                output_dataset = output_dataset,
+                                plot = plot)
+
+        print(paste0('Finished [',i,']: ', deployments$dep_id[i]))
+
+      }  else print(paste0('No matching data [',i,']: ', deployments$dep_id[i]))
+    }  else print(paste0('No matching data [',i,']: ', deployments$dep_id[i]))
   }
 }
+
