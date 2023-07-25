@@ -18,7 +18,8 @@ Imports:
     rnaturalearthdata,
     cowplot,
     pracma,
-    zoo
+    zoo,
+    terra
 VignetteBuilder: knitr
 Suggests: knitr, rmarkdown
 RoxygenNote: 7.2.2
