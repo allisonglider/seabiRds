@@ -39,6 +39,25 @@ getColDist <- function(lon, lat, colonyLon, colonyLat) {
 }
 
 # ---------------------------------------------------------------------------------------------------------------
+#' NEW with terra package: Calculates the distance between the colony (or any fixed location) and each point in a track.
+#'
+#' @param lon A vector of longitude values.
+#' @param lat A vector of latitude values.
+#' @param colonyLon Longitude of the colony (or fixed location).
+#' @param colonyLat Latitude of the colony (or fixed location).
+#' @return A vector of values (in km) giving the distance between each location in the track and the colony (or fixed location).
+
+getColDist2 <- function(lon, lat, colonyLon, colonyLat) {
+  d <- terra::distance(matrix(c(lon, lat), ncol = 2, nrow = nrow(dplyr::cur_data())),
+                       matrix(c(colonyLon, colonyLat),
+                              ncol = 2, nrow =1),
+                       lonlat = T)/1000 #distance from colony in km
+
+  d<-c(d)
+}
+#' @export getColDist2
+
+# ---------------------------------------------------------------------------------------------------------------
 #' Creates a unique ID for consecutive matching values in a series.
 #'
 #' @param value A vector containing the values you want to create IDs for, can be any data type.
