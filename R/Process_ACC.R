@@ -160,8 +160,12 @@ getAmplitude <- function(dat, window, time, frequency = NULL) {
 
   if (is.null(frequency)) frequency <- getFrequency(time = time)
 
+  print(paste("Started Amplitude calculations at", format(Sys.time(), "%T")))
+
   # Calculate IQR over a moving window
   amp <- zoo::rollapply(dat, window * frequency, FUN = stats::IQR, fill = NA)
+
+  print(paste("Finished Amplitude calculations at", format(Sys.time(), "%T")))
 
   return(amp)
 
@@ -190,6 +194,8 @@ getPitch <- function(X, Y, Z, window, time, frequency = NULL,
   if (sum(is.na(Y))) stop('NA values in Y', call. = F)
   if (sum(is.na(Z))) stop('NA values in Z', call. = F)
   if (!is.null(standVar) & (is.null(standMin) | is.null(standMax))) stop('standMin and standMax cannot be NULL is standVar is used', call. = F)
+
+  print(paste("Started Pitch calculations at", format(Sys.time(), "%T")))
 
   if (is.null(frequency)) frequency <- getFrequency(time = time)
 
@@ -225,6 +231,8 @@ getPitch <- function(X, Y, Z, window, time, frequency = NULL,
     pitch <- atan(staticX/(sqrt((staticY^2)+(staticZ^2))))*(180/pi)
   }
 
+  print(paste("Finished Pitch calculations at", format(Sys.time(), "%T")))
+
   return(pitch)
 
   #' @export getPitch
@@ -247,6 +255,8 @@ getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) 
   if (sum(is.na(Y))) stop('NA values in Y', call. = F)
   if (partial == F & sum(is.na(Z))) stop('NA values in Z', call. = F)
 
+  print(paste("Started DBA calculations at", format(Sys.time(), "%T")))
+
   if (is.null(frequency)) frequency <- getFrequency(time = time)
 
   # Calculate mean acceleration over a moving window
@@ -260,6 +270,8 @@ getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) 
   if (partial == F) ODBA <- sqrt((dynamicX^2) + (dynamicY^2) + (dynamicZ^2))
 
   if (partial == T) ODBA <- sqrt((dynamicX^2) + (dynamicY^2))
+
+  print(paste("Finished DBA calculations at", format(Sys.time(), "%T")))
 
   return(ODBA)
 
