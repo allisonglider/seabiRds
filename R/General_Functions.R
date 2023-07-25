@@ -56,7 +56,7 @@ getColDist2 <- function(lon, lat, colonyLon, colonyLat) {
 
   d<-c(d)
 }
-
+#' @export getColDist2
 
 # ---------------------------------------------------------------------------------------------------------------
 #' Creates a unique ID for consecutive matching values in a series.
@@ -115,6 +115,38 @@ getSessions <- function(value, ignore = FALSE, ignoreValue = NULL, maxSession = 
   output
 
   #' @export getSessions
+}
+
+
+# --------------------------------------------------------------------------------------------------------------
+#' NEW with terra package: Calculates the distance between the current location and the previous location in a track.
+#'
+#' @param lon A vector of longitude values.
+#' @param lat A vector of latitude values.
+#' @return A vector of values (in km) giving the distance between each location in the track and the previous location.
+#'
+#' @section Warning:
+#' This function assumes that longitude and latitude values are in chronological order and all values are from a single individual.
+#' Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
+
+getDist2 <- function(lon, lat) {
+
+  if (min(lon, na.rm = T) < -180 | max(lon, na.rm = T) > 180) {
+    stop("Longitude values are not between -180 and 180")
+  }
+
+  if (min(lat, na.rm = T) < -180 | max(lat, na.rm = T) > 90) {
+    stop("Longitude values are not between -180 and 180")
+  }
+
+  dd <- data.frame(lon = lon, lat = lat)
+
+  dd <- as.matrix(dd)
+
+  c(    terra::distance(dd, sequential =TRUE,
+                        lonlat = TRUE)/1000)
+
+  #' @export getDist2
 }
 
 
