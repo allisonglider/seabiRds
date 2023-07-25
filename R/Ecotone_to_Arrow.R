@@ -138,6 +138,9 @@ ecotone_to_dataset <- function(files,
     dplyr::filter(time > as.POSIXct("1900-01-01", tz = timezone)) %>%
     dplyr::rename(gps_id = Logger.ID)
 
+  if (!('HDOP' %in% names(output))) output$HDOP <- NA
+  if (!('Sat..Count' %in% names(output))) output$`Sat..Count` <- NA
+
   for (i in 1:nrow(deployments)) {
 
     dat <- output %>%
