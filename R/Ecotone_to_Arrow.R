@@ -53,6 +53,53 @@ ecotone_tdr_to_dataset <- function(data,
 }
 
 # -----
+
+#' @title Convert Ecotone dive summary data to Arrow dataset
+
+#' @description Reads Ecotone dive summary data and adds it to an arrow dataset
+#'
+#' @param data Data passed from seabiRds::ecotone_to_dataset()
+#' @param deployments Deployment data formatted using seabiRds::formatDeployments()
+#' @param output_dataset Path where arrow dataset should be saved
+
+#'
+#' @return Code checks that data meet formatting requirements. Dive summary data
+#' (start, end, duration) is extracted from tracking data.
+#'
+#' Output is saved to an arrow dataset at the location indicated by output_dataset.
+#'
+ecotone_dive_to_dataset <- function(data,
+                                   deployments,
+                                   output_dataset) {
+
+  #if (!('Depth') %in% names(data)) {data$Depth <- NA}
+
+  data <- data |>
+    dplyr::filter(Div.up == 1) |>
+    dplyr::select(dep_id, time, Diving.duration, deployed) |>
+    dplyr::mutate(dive_start = time - Diving.duration,
+           dive_end = time,
+           dive_duration_s = Diving.duration,
+           max_depth_m = NA) |>
+    dplyr::select(dep_id, dive_start, dive_end, dive_duration_s, max_depth_m, deployed) |>
+    dplyr::filter(!is.na(dive_duration_s)) |>
+    dplyr::inner_join(deployments[, c('dep_id','metal_band', 'species', 'site', 'subsite')], by = c('dep_id')) %>%
+    dplyr::mutate(year = strftime(dive_start, '%Y')) |>
+    dplyr::select(site, subsite, species, year,
+                  metal_band, dep_id, dive_start, dive_end, dive_duration_s, max_depth_m, deployed) %>%
+    dplyr::group_by(site, subsite, species, year, metal_band, dep_id, deployed) %>%
+    dplyr::arrange(dive_start) %>%
+    dplyr::filter(duplicated(dive_start) == F)
+
+  if (nrow(data) > 0) {
+    data %>%
+      arrow::write_dataset(paste0(output_dataset,'/dive'), format = "parquet",
+                           existing_data_behavior = 'delete_matching')
+  }
+
+}
+
+# -----
 #' @title Convert Ecotone GPS data to Arrow dataset
 
 #' @description Reads Ecotone GPS data and adds it to an arrow dataset
@@ -133,7 +180,7 @@ ecotone_to_dataset <- function(files,
     dplyr::mutate(
       time = paste(Year, Month, Day, Hour, Minute, Second, sep = '-'),
       time = as.POSIXct(time, format = "%Y-%m-%d-%H-%M-%S", tz = timezone),
-      tdr_id = Logger.ID
+      tdr_id = Logger.ID,
     ) %>%
     dplyr::filter(time > as.POSIXct("1900-01-01", tz = timezone)) %>%
     dplyr::rename(gps_id = Logger.ID)
@@ -182,6 +229,12 @@ ecotone_to_dataset <- function(files,
                                deployments = deployments[i,],
                                output_dataset = output_dataset,
                                plot = plot)
+      }
+
+      if ('Div.down' %in% names(dat) & !'Depth' %in% names(dat)) {
+        ecotone_dive_to_dataset(data = dat,
+                               deployments = deployments[i,],
+                               output_dataset = output_dataset)
       }
 
       print(paste0('Finished [',i,']: ', deployments$dep_id[i]))
