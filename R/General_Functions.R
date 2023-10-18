@@ -372,7 +372,7 @@ bbox_at_zoom <- function(locs, zoom_level = NULL) {
   zoom_to <- data.frame(
     X = ((bb$xmax - bb$xmin)/2) + bb$xmin,
     Y = ((bb$ymax - bb$ymin)/2) + bb$ymin
-  ) %>% sf::st_as_sf(coords = c('X','Y'), crs = sf::st_crs(locs))
+  ) |>  sf::st_as_sf(coords = c('X','Y'), crs = sf::st_crs(locs))
 
   if (is.null(zoom_level)) {
     if (sf::st_is_longlat(zoom_to) == T) {
