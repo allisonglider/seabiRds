@@ -362,7 +362,6 @@ bbox_at_zoom <- function(locs, zoom_level = NULL) {
   if (!(substr(class(locs)[1], 1, 7) %in% c('sf','Spatial'))) stop('locs must be an sf or sp object')
 
   if (class(locs)[1] != 'sf') {
-    convert_sp <- T
     locs <- as(locs, 'sf')
   }
   C <- 40075016.686   # ~ circumference of Earth in meters
