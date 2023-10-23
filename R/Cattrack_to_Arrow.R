@@ -21,19 +21,19 @@ cattrack_gps_to_dataset <- function(data,
                                     output_dataset,
                                     plot = T) {
 
-  data <- data %>%
+  data <- data |>
     dplyr::mutate(
       hdop = NA,
       satellites = NA,
       inrange = NA
-    ) %>%
-    dplyr::rename(lat = Latitude , lon = Longitude , altitude_m = Altitude) %>%
-    dplyr::filter(!is.na(lon)) %>%
-    dplyr::inner_join(deployments[, c('dep_id','metal_band', 'species', 'site', 'subsite')], by = 'dep_id') %>%
+    ) |>
+    dplyr::rename(lat = Latitude , lon = Longitude , altitude_m = Altitude) |>
+    dplyr::filter(!is.na(lon)) |>
+    dplyr::inner_join(deployments[, c('dep_id','metal_band', 'species', 'site', 'subsite')], by = 'dep_id') |>
     dplyr::select(site, subsite, species, year,
-                  metal_band, dep_id, time, lon, lat, altitude_m, satellites, hdop, inrange, deployed) %>%
-    dplyr::group_by(site, subsite, species, year, metal_band, dep_id, deployed) %>%
-    dplyr::arrange(time) %>%
+                  metal_band, dep_id, time, lon, lat, altitude_m, satellites, hdop, inrange, deployed) |>
+    dplyr::group_by(site, subsite, species, year, metal_band, dep_id, deployed) |>
+    dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
 
   cleanGPSData(data = data,
@@ -41,7 +41,7 @@ cattrack_gps_to_dataset <- function(data,
                speedThreshold = NA,
                plot = plot)
 
-  data %>%
+  data |>
     arrow::write_dataset(paste0(output_dataset,'/gps'), format = "parquet",
                          existing_data_behavior = 'delete_matching')
 
@@ -81,12 +81,12 @@ cattrack_to_dataset <- function(files,
                              stringsAsFactors = F,
                              header = T)
 
-      output <- output %>%
+      output <- output |>
         dplyr::mutate(
           time = paste(Date, Time, sep = ' '),
           time = as.POSIXct(time, format = paste(dateFormat, "%H:%M:%S"), tz = timezone),
           dep_id = deployments$dep_id[i],
-        ) %>%
+        ) |>
         dplyr::filter(time > as.POSIXct("1900-01-01", tz = timezone))
 
       dat <- output
@@ -99,14 +99,14 @@ cattrack_to_dataset <- function(files,
 
       if (nrow(dat) > 0) {
 
-        dd <- deployments %>%
-          filter(gps_id == deployments$gps_id[i]) %>%
+        dd <- deployments |>
+          filter(gps_id == deployments$gps_id[i]) |>
           arrange(time_released)
         idx <- which(dd$dep_id == deployments$dep_id[i])
         if (idx > 1) start_time <- mean(c(dd$time_recaptured[idx - 1], deployments$time_released[i])) else start_time <- min(dat$time)
         if (idx < nrow(dd)) end_time <- mean(c(dd$time_released[idx + 1], deployments$time_recaptured[i])) else end_time <- max(dat$time)
 
-        dat <- dat %>%
+        dat <- dat |>
           dplyr::mutate(
             dep_id = deployments$dep_id[i],
             year = as.integer(strftime(time, '%Y')),

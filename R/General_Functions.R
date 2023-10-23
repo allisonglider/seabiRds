@@ -381,7 +381,6 @@ bbox_at_zoom <- function(locs, zoom_level = NULL) {
   if (!(substr(class(locs)[1], 1, 7) %in% c('sf','Spatial'))) stop('locs must be an sf or sp object')
 
   if (class(locs)[1] != 'sf') {
-    convert_sp <- T
     locs <- as(locs, 'sf')
   }
   C <- 40075016.686   # ~ circumference of Earth in meters
@@ -391,7 +390,7 @@ bbox_at_zoom <- function(locs, zoom_level = NULL) {
   zoom_to <- data.frame(
     X = ((bb$xmax - bb$xmin)/2) + bb$xmin,
     Y = ((bb$ymax - bb$ymin)/2) + bb$ymin
-  ) %>% sf::st_as_sf(coords = c('X','Y'), crs = sf::st_crs(locs))
+  ) |>  sf::st_as_sf(coords = c('X','Y'), crs = sf::st_crs(locs))
 
   if (is.null(zoom_level)) {
     if (sf::st_is_longlat(zoom_to) == T) {
@@ -413,13 +412,13 @@ bbox_at_zoom <- function(locs, zoom_level = NULL) {
     lat_span <- C / 2^(zoom_level)
   }
 
-  cc <- sf::st_coordinates(zoom_to)
+  cc <- as.vector(sf::st_coordinates(zoom_to))
 
-  lon_bounds <- c(cc[,1] - lon_span / 2, cc[,1] + lon_span / 2)
-  lat_bounds <- c(cc[,2] - lat_span / 2, cc[,2] + lat_span / 2)
+  lon_bounds <- c(cc[1] - lon_span / 2, cc[1] + lon_span / 2)
+  lat_bounds <- c(cc[2] - lat_span / 2, cc[2] + lat_span / 2)
 
-  bb <- sf::st_bbox(c(xmin = lon_bounds[1], xmax = lon_bounds[2],
-                      ymin = lat_bounds[1], ymax = lat_bounds[2]), crs = sf::st_crs(locs))
+  bb <- sf::st_bbox(c(xmin = min(lon_bounds), xmax = max(lon_bounds),
+                      ymax = min(lat_bounds), ymin = max(lat_bounds)), crs = sf::st_crs(locs))
 
   return(bb)
 }
