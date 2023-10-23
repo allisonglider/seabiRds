@@ -393,13 +393,13 @@ bbox_at_zoom <- function(locs, zoom_level = NULL) {
     lat_span <- C / 2^(zoom_level)
   }
 
-  cc <- sf::st_coordinates(zoom_to)
+  cc <- as.vector(sf::st_coordinates(zoom_to))
 
-  lon_bounds <- c(cc[,1] - lon_span / 2, cc[,1] + lon_span / 2)
-  lat_bounds <- c(cc[,2] - lat_span / 2, cc[,2] + lat_span / 2)
+  lon_bounds <- c(cc[1] - lon_span / 2, cc[1] + lon_span / 2)
+  lat_bounds <- c(cc[2] - lat_span / 2, cc[2] + lat_span / 2)
 
-  bb <- sf::st_bbox(c(xmin = lon_bounds[1], xmax = lon_bounds[2],
-                      ymax = lat_bounds[1], ymin = lat_bounds[2]), crs = sf::st_crs(locs))
+  bb <- sf::st_bbox(c(xmin = min(lon_bounds), xmax = max(lon_bounds),
+                      ymax = min(lat_bounds), ymin = max(lat_bounds)), crs = sf::st_crs(locs))
 
   return(bb)
 }
