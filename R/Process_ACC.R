@@ -241,6 +241,7 @@ getPitch <- function(X, Y, Z, window, time, frequency = NULL,
 #' @param frequency Sampling frequency of data, in Hz, if missing the function will estimate frequency from time
 #' @param partial If TRUE, calculates partial dynamic body acceleration
 
+
 getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) {
 
   if (sum(is.na(X))) stop('NA values in X', call. = F)
@@ -266,3 +267,44 @@ getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) 
   #' @export getDBA
 }
 
+# ---------------------------------------------------------------------------------------------------------------
+#' Detect and correct switched X and Y axes
+#'
+#' @param data Vector of accelerometer X value
+#' @param fix If TRUE, function will flip the x and y axes if they appear flipped
+#' @param force If TRUE, function will flip the x and y axes whether or not they appear flipped
+#'
+#' @details Different models of accelerometers can have the x and y channels flipped. This is particularly
+#' an issue between different configurations of Technosmart AxyTrek units. This functions takes formatted
+#' accelerometer data, calculates pitch and roll, then checks if the standard deviation in pitch is higher
+#' than the standard deviation in roll. If this is the case, then it is likely that the axes are switched. By default
+#' the function will only warn give a warning.
+#'
+#' If fix is set to true, then the function will return the original dataframe with the x and y axes re-labelled, so that
+#' the x axis is the surge and the y axis is the sway.
+#'
+
+checkAxes <- function(data, fix = F, force = F) {
+
+  if (!('time' %in% names(data)))   stop('data must contain a field named time', call. = F)
+  if (class(data$time)[1] != 'POSIXct')   stop('time must be formatted as POSIXct', call. = F)
+  if (!('x' %in% names(data)))   stop('data must contain a field named x', call. = F)
+  if (!('y' %in% names(data)))   stop('data must contain a field named y', call. = F)
+  if (!('z' %in% names(data)))   stop('data must contain a field named z', call. = F)
+  if (!('dep_id' %in% names(data)))   stop('data must contain a field named dep_id', call. = F)
+
+
+  pp <- seabiRds::getPitch(X = data$x, Y = data$y, Z = data$z, time = data$time, window = 1)
+  rr <- seabiRds::getPitch(X = data$y, Y = data$x, Z = data$z, time = data$time, window = 1)
+  if (sd(pp, na.rm = T) < sd(rr, na.rm = T)) {
+    warning(paste('X and Y axes in', data$dep_id[1], 'appear to be flipped'), call. = F)
+    if (fix == T | force == T) {
+      warning(paste('Fixing X and Y axes in',data$dep_id[1]), call. = F)
+        temp <- data$x
+        data$x <- data$y
+        data$y <- temp
+    }
+  }
+    return(data)
+    #' @export checkAxes
+}
