@@ -281,7 +281,7 @@ axytrek_to_dataset <- function(files,
                              timezone = timezone,
                              plot = plot)
 
-      if (gps == TRUE & sum(!is.na(dat$location.lon)) > 0) axytrek_gps_to_dataset(data = dat,
+      if (gps == TRUE & sum(!is.na(dat$location.lon)) > 0)  axytrek_gps_to_dataset(data = dat,
                              deployments = deployments[i,],
                              output_dataset = output_dataset,
                              date_format = date_format,
