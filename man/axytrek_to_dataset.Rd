@@ -13,7 +13,9 @@ axytrek_to_dataset(
   acc = T,
   tdr = T,
   gps = T,
-  plot = T
+  plot = T,
+  fix_axes = F,
+  force_axes = F
 )
 }
 \arguments{

@@ -30,8 +30,8 @@ lat2800_to_dataset <- function(files,
       if (is.na(deployments$time_recaptured[i])) warning(
         paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = FALSE, immediate. = TRUE)
 
-      dat <- files[idx] %>%
-        purrr::map_df(~read.csv(file = ., stringsAsFactors = F, nrows = max_rows, skip = 2)) %>%
+      dat <- files[idx] |>
+        purrr::map_df(~read.csv(file = ., stringsAsFactors = F, nrows = max_rows, skip = 2)) |>
         dplyr::mutate(
           Timestamp = as.POSIXct(paste(Date, Time), format = date_format, tz = timezone),
           Timestamp = lubridate::with_tz(Timestamp, tzone = 'UTC'),
@@ -63,25 +63,25 @@ lat2800_tdr_to_dataset <- function(data,
                                    output_dataset,
                                    plot) {
 
-  data <- data %>%
+  data <- data |>
     rename(temperature_c = dplyr::starts_with('IntTemp'),
            depth_m = dplyr::starts_with('Pressure'),
            wet = WetDryState,
-           time = Timestamp) %>%
+           time = Timestamp) |>
     mutate(
       wet = ifelse(wet == 0, 1, 0)
-    ) %>%
-    dplyr::inner_join(deployments[, c('dep_id', 'metal_band', 'species', 'site', 'subsite')], by = 'dep_id') %>%
+    ) |>
+    dplyr::inner_join(deployments[, c('dep_id', 'metal_band', 'species', 'site', 'subsite')], by = 'dep_id') |>
     dplyr::select(site, subsite, species, year,
-                  metal_band, dep_id, time, temperature_c, depth_m, wet, deployed) %>%
-    dplyr::group_by(site, subsite, species, year, metal_band, dep_id, deployed) %>%
-    dplyr::arrange(time) %>%
+                  metal_band, dep_id, time, temperature_c, depth_m, wet, deployed) |>
+    dplyr::group_by(site, subsite, species, year, metal_band, dep_id, deployed) |>
+    dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
 
-  seabiRds::cleanTDRData(data = data %>% dplyr::rename(depth = depth_m) %>% dplyr::filter(!is.na(depth)),
+  seabiRds::cleanTDRData(data = data |> dplyr::rename(depth = depth_m) |> dplyr::filter(!is.na(depth)),
                          deployments = deployments, plot = plot)
 
-  data %>%
+  data |>
     arrow::write_dataset(paste0(output_dataset,'/tdr'), format = "parquet",
                          existing_data_behavior = 'delete_matching')
 

@@ -9,6 +9,7 @@ cattrack_to_dataset(
   deployments,
   output_dataset,
   timezone = "UTC",
+  dateFormat,
   plot = T
 )
 }

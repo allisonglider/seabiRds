@@ -4,16 +4,20 @@ axytrek_acc_to_dataset <- function(data,
                                    output_dataset,
                                    date_format = '%Y-%m-%d %H:%M:%OS',
                                    timezone = 'UTC',
-                                   plot = T) {
+                                   plot = T,
+                                   ask = F,
+                                   force = F) {
 
-  data <- data %>%
-    dplyr::rename(time = Timestamp, x = X, y = Y, z = Z) %>%
-    dplyr::inner_join(deployments[, c('dep_id', 'metal_band', 'species', 'site', 'subsite')], by = 'dep_id') %>%
+  data <- data |>
+    dplyr::rename(time = Timestamp, x = X, y = Y, z = Z) |>
+    dplyr::inner_join(deployments[, c('dep_id', 'metal_band', 'species', 'site', 'subsite')], by = 'dep_id') |>
     dplyr::select(site, subsite, species, year,
-                  metal_band, dep_id, time, x, y, z, deployed) %>%
-    dplyr::group_by(site, subsite, species, year, metal_band, dep_id, deployed)%>%
-    dplyr::arrange(time) %>%
+                  metal_band, dep_id, time, x, y, z, deployed) |>
+    dplyr::group_by(site, subsite, species, year, metal_band, dep_id, deployed)|>
+    dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
+
+  data <- checkAxes(data, ask = ask, force = force)
 
   dd <- na.omit(c(deployments$time_released, deployments$time_recaptured))
   temp <- data[seq(1, nrow(data), 30 * getFrequency(data$time)),]
@@ -29,7 +33,7 @@ axytrek_acc_to_dataset <- function(data,
     print(p)
   }
 
-  data %>%
+  data |>
     arrow::write_dataset(paste0(output_dataset,'/acc'), format = "parquet",
                          existing_data_behavior = 'delete_matching')
 
@@ -46,19 +50,19 @@ axytrek_tdr_to_dataset <- function(data,
 
   if (!('Depth') %in% names(data)) {data$Depth <- NA}
 
-  data <- data %>%
-    rename(temperature_c = dplyr::starts_with('Temp')) %>%
-    dplyr::filter(!is.na(temperature_c)) %>%
-    tidyr::separate(Activity, into = c('active', 'wet'), sep = '/') %>%
+  data <- data |>
+    rename(temperature_c = dplyr::starts_with('Temp')) |>
+    dplyr::filter(!is.na(temperature_c)) |>
+    tidyr::separate(Activity, into = c('active', 'wet'), sep = '/') |>
     mutate(
       wet = ifelse(wet == 'Wet', 1, 0)
-      ) %>%
-    dplyr::rename(time = Timestamp, depth_m = Depth) %>%
-    dplyr::inner_join(deployments[, c('dep_id', 'metal_band', 'species', 'site', 'subsite')], by = 'dep_id') %>%
+      ) |>
+    dplyr::rename(time = Timestamp, depth_m = Depth) |>
+    dplyr::inner_join(deployments[, c('dep_id', 'metal_band', 'species', 'site', 'subsite')], by = 'dep_id') |>
     dplyr::select(site, subsite, species, year,
-                  metal_band, dep_id, time, temperature_c, depth_m, wet, deployed) %>%
-    dplyr::group_by(site, subsite, species, year, metal_band, dep_id, deployed) %>%
-    dplyr::arrange(time) %>%
+                  metal_band, dep_id, time, temperature_c, depth_m, wet, deployed) |>
+    dplyr::group_by(site, subsite, species, year, metal_band, dep_id, deployed) |>
+    dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
 
   dd <- na.omit(c(deployments$time_released, deployments$time_recaptured))
@@ -76,7 +80,7 @@ axytrek_tdr_to_dataset <- function(data,
     suppressWarnings(print(p))
   }
 
-  data %>%
+  data |>
     arrow::write_dataset(paste0(output_dataset,'/tdr'), format = "parquet",
                          existing_data_behavior = 'delete_matching')
 
@@ -91,17 +95,17 @@ axytrek_gps_to_dataset <- function(data,
                                    timezone = 'UTC',
                                    plot = T) {
 
-  data <- data %>%
+  data <- data |>
     dplyr::mutate(
       inrange = NA
-    ) %>%
-    dplyr::rename(time = Timestamp, lat = location.lat, lon = location.lon, altitude_m = height.msl) %>%
-    dplyr::filter(!is.na(lon)) %>%
-    dplyr::inner_join(deployments[, c('dep_id', 'metal_band', 'species', 'site', 'subsite')], by = 'dep_id') %>%
+    ) |>
+    dplyr::rename(time = Timestamp, lat = location.lat, lon = location.lon, altitude_m = height.msl) |>
+    dplyr::filter(!is.na(lon)) |>
+    dplyr::inner_join(deployments[, c('dep_id', 'metal_band', 'species', 'site', 'subsite')], by = 'dep_id') |>
     dplyr::select(site, subsite, species, year,
-                  metal_band, dep_id, time, lon, lat, altitude_m, satellites, hdop, inrange, deployed) %>%
-    dplyr::group_by(site, subsite, species, year, metal_band, dep_id, deployed) %>%
-    dplyr::arrange(time) %>%
+                  metal_band, dep_id, time, lon, lat, altitude_m, satellites, hdop, inrange, deployed) |>
+    dplyr::group_by(site, subsite, species, year, metal_band, dep_id, deployed) |>
+    dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
 
   cleanGPSData(data = data,
@@ -111,7 +115,7 @@ axytrek_gps_to_dataset <- function(data,
 
   ss <- min(c(data$time[1],deployments$time_released), na.rm = T)
   ee <- max(c(data$time[nrow(data)],deployments$time_recaptured), na.rm = T)
-  temp <- data %>%
+  temp <- data |>
     mutate(coldist = getColDist(lon, lat, colonyLon = deployments$dep_lon, colonyLat = deployments$dep_lat))
 
   if (plot == T) {
@@ -131,7 +135,7 @@ axytrek_gps_to_dataset <- function(data,
     print(myPlot)
   }
 
-  data %>%
+  data |>
     arrow::write_dataset(paste0(output_dataset,'/gps'), format = "parquet",
                          existing_data_behavior = 'delete_matching')
 
@@ -230,7 +234,9 @@ axytrek_to_dataset <- function(files,
                                acc = T,
                                tdr = T,
                                gps = T,
-                               plot = T) {
+                               plot = T,
+                               fix_axes = F,
+                               force_axes = F) {
 
   check_filetype <- grep('.csv', files)
   if (length(check_filetype) != length(files)) stop('All files must be .csv format')
@@ -256,8 +262,8 @@ axytrek_to_dataset <- function(files,
                         date_format = date_format,
                         timezone = timezone)
 
-      dat <- files[idx] %>%
-        purrr::map_df(~read.csv(file = ., stringsAsFactors = F))%>%
+      dat <- files[idx] |>
+        purrr::map_df(~read.csv(file = ., stringsAsFactors = F))|>
         dplyr::mutate(
           Timestamp = as.POSIXct(Timestamp, format = date_format, tz = timezone),
           Timestamp = lubridate::with_tz(Timestamp, tzone = 'UTC'),
@@ -272,7 +278,9 @@ axytrek_to_dataset <- function(files,
                              output_dataset = output_dataset,
                              date_format = date_format,
                              timezone = timezone,
-                             plot = plot)
+                             plot = plot,
+                             ask = fix_axes,
+                             force = force_axes)
 
       if (tdr == TRUE) axytrek_tdr_to_dataset(data = dat,
                              deployments = deployments[i,],
@@ -281,7 +289,7 @@ axytrek_to_dataset <- function(files,
                              timezone = timezone,
                              plot = plot)
 
-      if (gps == TRUE & length(!is.na(dat$location.lon)) > 0) axytrek_gps_to_dataset(data = dat,
+      if (gps == TRUE & sum(!is.na(dat$location.lon)) > 0)  axytrek_gps_to_dataset(data = dat,
                              deployments = deployments[i,],
                              output_dataset = output_dataset,
                              date_format = date_format,
