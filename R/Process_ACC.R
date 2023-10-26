@@ -271,20 +271,22 @@ getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) 
 #' Detect and correct switched X and Y axes
 #'
 #' @param data Vector of accelerometer X value
-#' @param fix If TRUE, function will flip the x and y axes if they appear flipped
-#' @param force If TRUE, function will flip the x and y axes whether or not they appear flipped
+#' @param ask If TRUE, function will plot roll and pitch then ask if axes should be flipped
+#' @param force If TRUE, function will always flip the x and y axes whether or not they appear flipped
 #'
 #' @details Different models of accelerometers can have the x and y channels flipped. This is particularly
-#' an issue between different configurations of Technosmart AxyTrek units. This functions takes formatted
-#' accelerometer data, calculates pitch and roll, then checks if the standard deviation in pitch is higher
-#' than the standard deviation in roll. If this is the case, then it is likely that the axes are switched. By default
-#' the function will only warn give a warning.
+#' an issue between different configurations of Technosmart AxyTrek units. This functions provides two options for
+#' switching these axes back.
 #'
-#' If fix is set to true, then the function will return the original dataframe with the x and y axes re-labelled, so that
-#' the x axis is the surge and the y axis is the sway.
+#' If force is set to true, then the function will automatically flip the axes, this option should only be used
+#' if you know that all of your data have this issue.
 #'
+#' If ask is set to true, then the function will plot pitch and roll using the data, and ask the user if they want to
+#' flip the axes. On most seabirds there hould be more variability in the pitch than in the roll. If the
+#' roll plot appears more variable, then the axes should be flipped.
 
-checkAxes <- function(data, fix = F, force = F) {
+
+checkAxes <- function(data, ask = T, force = F) {
 
   if (!('time' %in% names(data)))   stop('data must contain a field named time', call. = F)
   if (class(data$time)[1] != 'POSIXct')   stop('time must be formatted as POSIXct', call. = F)
@@ -293,18 +295,53 @@ checkAxes <- function(data, fix = F, force = F) {
   if (!('z' %in% names(data)))   stop('data must contain a field named z', call. = F)
   if (!('dep_id' %in% names(data)))   stop('data must contain a field named dep_id', call. = F)
 
+  if (force == T) ask <- F
 
-  pp <- seabiRds::getPitch(X = data$x, Y = data$y, Z = data$z, time = data$time, window = 1)
-  rr <- seabiRds::getPitch(X = data$y, Y = data$x, Z = data$z, time = data$time, window = 1)
-  if (sd(pp, na.rm = T) < sd(rr, na.rm = T)) {
-    warning(paste('X and Y axes in', data$dep_id[1], 'appear to be flipped'), call. = F)
-    if (fix == T | force == T) {
-      warning(paste('Fixing X and Y axes in',data$dep_id[1]), call. = F)
-        temp <- data$x
-        data$x <- data$y
-        data$y <- temp
-    }
+  if (ask == T) {
+
+    pp <- seabiRds::getPitch(X = data$x, Y = data$y, Z = data$z, time = data$time, window = 1)
+    rr <- seabiRds::getPitch(X = data$y, Y = data$x, Z = data$z, time = data$time, window = 1)
+
+    par(mfrow = c(2,1))
+    idx <- seq(1, nrow(data), getFrequency(data$time))
+    plot(pp[idx] ~ data$time[idx], type = 'l', xlab = '', ylab = 'Pitch', main = data$dep_id[1])
+    plot(rr[idx] ~ data$time[idx], type = 'l', xlab = '', ylab = 'Roll', main = data$dep_id[1])
+    par(mfrow = c(1,1))
+
+    flip <- readline("Should axes be flipped(1: yes, 2: no) ?")
+    if (flip == 1) force <- T
   }
-    return(data)
-    #' @export checkAxes
+
+  if (force == T) {
+    data <- fixAxes(data)
+  }
+
+  return(data)
+  #' @export checkAxes
+}
+
+# ---------------------------------------------------------------------------------------------------------------
+#' Correct switched X and Y axes
+#'
+#' @param data A formatted dateframe of accelerometer data, including fields: x, y, z, dep_id
+#'
+#' @details Different models of accelerometers can have the x and y channels flipped. This is particularly
+#' an issue between different configurations of Technosmart AxyTrek units. This functions takes formatted
+#' accelerometer data, swaps the x and y axes and multiplies the original x-axis by -1. This makes the x, y, and z
+#' fields consistent with other acceleromters.
+
+fixAxes <- function(data) {
+
+  if (!('x' %in% names(data)))   stop('data must contain a field named x', call. = F)
+  if (!('y' %in% names(data)))   stop('data must contain a field named y', call. = F)
+  if (!('z' %in% names(data)))   stop('data must contain a field named z', call. = F)
+  if (!('dep_id' %in% names(data)))   stop('data must contain a field named dep_id', call. = F)
+
+  print(paste('Fixing X and Y axes in',data$dep_id[1]))
+  temp <- data$x
+  data$x <- data$y
+  data$y <- temp * -1
+
+  return(data)
+  #' @export fixAxes
 }

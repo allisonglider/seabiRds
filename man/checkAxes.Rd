@@ -4,25 +4,27 @@
 \alias{checkAxes}
 \title{Detect and correct switched X and Y axes}
 \usage{
-checkAxes(data, fix = F, force = F)
+checkAxes(data, ask = T, force = F)
 }
 \arguments{
 \item{data}{Vector of accelerometer X value}
 
-\item{fix}{If TRUE, function will flip the x and y axes if they appear flipped}
+\item{ask}{If TRUE, function will plot roll and pitch then ask if axes should be flipped}
 
-\item{force}{If TRUE, function will flip the x and y axes whether or not they appear flipped}
+\item{force}{If TRUE, function will always flip the x and y axes whether or not they appear flipped}
 }
 \description{
 Detect and correct switched X and Y axes
 }
 \details{
 Different models of accelerometers can have the x and y channels flipped. This is particularly
-an issue between different configurations of Technosmart AxyTrek units. This functions takes formatted
-accelerometer data, calculates pitch and roll, then checks if the standard deviation in pitch is higher
-than the standard deviation in roll. If this is the case, then it is likely that the axes are switched. By default
-the function will only warn give a warning.
+an issue between different configurations of Technosmart AxyTrek units. This functions provides two options for
+switching these axes back.
 
-If fix is set to true, then the function will return the original dataframe with the x and y axes re-labelled, so that
-the x axis is the surge and the y axis is the sway.
+If force is set to true, then the function will automatically flip the axes, this option should only be used
+if you know that all of your data have this issue.
+
+If ask is set to true, then the function will plot pitch and roll using the data, and ask the user if they want to
+flip the axes. On most seabirds there hould be more variability in the pitch than in the roll. If the
+roll plot appears more variable, then the axes should be flipped.
 }
