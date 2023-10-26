@@ -4,7 +4,9 @@ axytrek_acc_to_dataset <- function(data,
                                    output_dataset,
                                    date_format = '%Y-%m-%d %H:%M:%OS',
                                    timezone = 'UTC',
-                                   plot = T) {
+                                   plot = T,
+                                   ask = F,
+                                   force = F) {
 
   data <- data |>
     dplyr::rename(time = Timestamp, x = X, y = Y, z = Z) |>
@@ -14,6 +16,8 @@ axytrek_acc_to_dataset <- function(data,
     dplyr::group_by(site, subsite, species, year, metal_band, dep_id, deployed)|>
     dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
+
+  data <- checkAxes(data, ask = ask, force = force)
 
   dd <- na.omit(c(deployments$time_released, deployments$time_recaptured))
   temp <- data[seq(1, nrow(data), 30 * getFrequency(data$time)),]
@@ -230,7 +234,9 @@ axytrek_to_dataset <- function(files,
                                acc = T,
                                tdr = T,
                                gps = T,
-                               plot = T) {
+                               plot = T,
+                               fix_axes = F,
+                               force_axes = F) {
 
   check_filetype <- grep('.csv', files)
   if (length(check_filetype) != length(files)) stop('All files must be .csv format')
@@ -272,7 +278,9 @@ axytrek_to_dataset <- function(files,
                              output_dataset = output_dataset,
                              date_format = date_format,
                              timezone = timezone,
-                             plot = plot)
+                             plot = plot,
+                             ask = fix_axes,
+                             force = force_axes)
 
       if (tdr == TRUE) axytrek_tdr_to_dataset(data = dat,
                              deployments = deployments[i,],
