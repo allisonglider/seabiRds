@@ -34,7 +34,32 @@ getMode <- function(x) {
 #' @return A vector of values (in km) giving the distance between each location in the track and the colony (or fixed location).
 
 getColDist <- function(lon, lat, colonyLon, colonyLat) {
-  raster::pointDistance(data.frame(lon = lon, lat = lat), c(colonyLon, colonyLat), lonlat = T)/1000 #distance from colony in km
+    if (min(lon, na.rm = T) < -180 | max(lon, na.rm = T) > 180) {
+    stop("Longitude values are not between -180 and 180")
+  }
+  
+  if (colonyLon < -180 | colonyLon > 180) {
+    stop("colonyLon values are not between -180 and 180")
+  }
+  
+  if (min(lat, na.rm = T) < -180 | max(lat, na.rm = T) > 90) {
+    stop("Longitude values are not between -180 and 180")
+  }
+  
+  if (colonyLat < -90 | colonyLat > 90) {
+    stop("colonyLat values are not between -90 and 90")
+  }
+  
+  if (length(colonyLat) > 1 | length(colonyLon) > 1) {
+    stop("colonyLat and colonyLon must have a length of 1")
+  }
+  
+  dd <- as.matrix(data.frame(lon = lon, lat = lat))
+
+  cc <- as.matrix(data.frame(lon = colonyLon, lat = colonyLat))
+  
+  as.vector(terra::distance(dd, cc, lonlat = T)/1000) 
+  
   #' @export getColDist
 }
 
@@ -114,18 +139,16 @@ getDist <- function(lon, lat) {
   if (min(lon, na.rm = T) < -180 | max(lon, na.rm = T) > 180) {
     stop("Longitude values are not between -180 and 180")
   }
-
+  
   if (min(lat, na.rm = T) < -180 | max(lat, na.rm = T) > 90) {
     stop("Longitude values are not between -180 and 180")
   }
-
+  
   dd <- data.frame(lon = lon, lat = lat)
-
-
-  c(NA,
-    raster::pointDistance(dd[2:nrow(dd),c("lon","lat")],
-                          dd[1:(nrow(dd)-1),c("lon","lat")],
-                          lonlat = T)/1000)
+  
+  dd <- as.matrix(dd)
+  
+  as.vector(terra::distance(dd, sequential =TRUE, lonlat = TRUE)/1000)
   #' @export getDist
 }
 
