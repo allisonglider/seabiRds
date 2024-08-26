@@ -258,11 +258,11 @@ getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) 
   dynamicX <- X - staticX
   dynamicY <- Y - staticY
   if (partial == F) dynamicZ <- Z - staticZ
-  if (partial == F) ODBA <- sqrt((dynamicX^2) + (dynamicY^2) + (dynamicZ^2))
+  if (partial == F) VeDBA <- sqrt((dynamicX^2) + (dynamicY^2) + (dynamicZ^2))
 
-  if (partial == T) ODBA <- sqrt((dynamicX^2) + (dynamicY^2))
+  if (partial == T) VeDBA <- sqrt((dynamicX^2) + (dynamicY^2))
 
-  return(ODBA)
+  return(VeDBA)
 
   #' @export getDBA
 }
