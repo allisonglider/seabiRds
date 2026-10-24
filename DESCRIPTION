@@ -8,9 +8,6 @@ Description: Provides tools for standardizing biologging data to upload to the A
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
-Required:
-    ggplot2,
-    cowplot
 Imports:
     dplyr,
     lubridate,
@@ -20,7 +17,13 @@ Imports:
     rnaturalearthdata,
     pracma,
     zoo,
-    terra
+    terra,
+    cowplot, 
+    ggplot2, 
+    graphics, 
+    methods, 
+    stats, 
+    utils
 VignetteBuilder: knitr
-Suggests: knitr, rmarkdown
+Suggests: arrow, knitr, rmarkdown
 Config/roxygen2/version: 8.1.1
