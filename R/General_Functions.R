@@ -339,7 +339,7 @@ check_overlaps <- function(deployments, variables = c("metal_band", "gps_id", "g
     if (!('time_recaptured' %in% names(deployments))) stop('time_recaptured column not found in deployments, deployments should be output from seabiRds::formatDeployments()')
 
 
-    mb <- na.omit(unique(deployments[,v]))
+    mb <- stats::na.omit(unique(deployments[,v]))
     for (m in mb) {
 
       temp <- subset(deployments, deployments[,v]== m)
@@ -385,7 +385,7 @@ bbox_at_zoom <- function(locs, zoom_level = NULL) {
   if (!(substr(class(locs)[1], 1, 7) %in% c('sf','Spatial'))) stop('locs must be an sf or sp object')
 
   if (class(locs)[1] != 'sf') {
-    locs <- as(locs, 'sf')
+    locs <- methods::as(locs, 'sf')
   }
   C <- 40075016.686   # ~ circumference of Earth in meters
 
