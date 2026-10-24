@@ -58,7 +58,7 @@ extract_raster_stack <- function(raster_stack, locations, names_var) {
   }
 
   if (class(locations)[1] == 'sf') {
-    locations <- as(locations, 'Spatial')
+    locations <- methods::as(locations, 'Spatial')
   }
 
   if (!(class(locations) %in% c("SpatialPointsDataFrame"))) {
