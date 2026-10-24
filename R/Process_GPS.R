@@ -361,7 +361,7 @@ readTechnosmartGPS <- function(inputFolder,
     if (is.na(deployments$dep_id[i]) == F) {
 
       # get lists of file names
-      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+      theFiles <- dd[grep(deployments$dep_id[i], dd, fixed = TRUE)]
 
       if (length(theFiles > 0)) {
 
@@ -508,7 +508,7 @@ readCattrackGPS <- function(inputFolder,
     if (is.na(deployments$dep_id[i]) == F) {
 
       # get lists of file names
-      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+      theFiles <- dd[grep(deployments$dep_id[i], dd, fixed = TRUE)]
 
       if (length(theFiles > 0)) {
 
@@ -628,9 +628,12 @@ cleanGPSData <- function(data,
 
           pp <- .cleanGPSDataPlot(temp, newData, tt, yy)
           print(pp)
-          Sys.sleep(3)
 
-          readline("Press [enter] for next plot")
+          # only pause for input when someone is there to press enter
+          if (interactive()) {
+            Sys.sleep(3)
+            readline("Press [enter] for next plot")
+          }
 
         }
 
@@ -710,13 +713,16 @@ cleanGPSData <- function(data,
 # Sub-function to check if files in the input folder have a matching record in the deployment data
 
 .matchFiles <- function(files, deployment_ids) {
+
+  .warn_ambiguous_files(files, deployment_ids)
+
   mf <- data.frame(
     files = files,
     match = NA
   )
 
   for (theDeps in deployment_ids) {
-    mf$match[grep(theDeps, mf$files)] <- theDeps
+    mf$match[grep(theDeps, mf$files, fixed = TRUE)] <- theDeps
   }
 
   unmatchedFiles <- mf$files[is.na(mf$match)]
@@ -728,7 +734,7 @@ cleanGPSData <- function(data,
 
   unmatchedDeployments <- c()
   for (dd in deployment_ids) {
-    idx <- grep(dd, files)
+    idx <- grep(dd, files, fixed = TRUE)
     if (length(idx) <1)  unmatchedDeployments <- c(unmatchedDeployments, dd)
   }
 
@@ -822,7 +828,7 @@ readTechnosmartTDR <- function(inputFolder,
     if (is.na(deployments$dep_id[i]) == F) {
 
       # get lists of file names
-      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+      theFiles <- dd[grep(deployments$dep_id[i], dd, fixed = TRUE)]
 
       if (length(theFiles > 0)) {
 
@@ -927,7 +933,7 @@ readLAT150 <- function(inputFolder,
     if (is.na(deployments$dep_id[i]) == F) {
 
       # get lists of file names
-      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+      theFiles <- dd[grep(deployments$dep_id[i], dd, fixed = TRUE)]
 
       if (length(theFiles > 0)) {
 
@@ -1118,9 +1124,11 @@ cleanTDRData <- function(data,
             print(myPlot)
           }
 
-          Sys.sleep(1)
-
-          readline("Press [enter] for next plot")
+          # only pause for input when someone is there to press enter
+          if (interactive()) {
+            Sys.sleep(1)
+            readline("Press [enter] for next plot")
+          }
 
 
         }
