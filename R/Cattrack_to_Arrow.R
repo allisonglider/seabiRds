@@ -65,12 +65,13 @@ cattrack_to_dataset <- function(files,
                                 dateFormat,
                                 plot = T) {
 
-  check_filetype <- grep('.csv', files)
-  if (length(check_filetype) != length(files)) stop('All files must be .csv format')
+  .check_arrow()
+  .check_csv_files(files)
+  .warn_ambiguous_files(files, deployments$dep_id)
 
   for (i in 1:nrow(deployments)) {
 
-    idx <- files[grep(deployments$dep_id[i], files)]
+    idx <- files[grep(deployments$dep_id[i], files, fixed = TRUE)]
 
     if (length(idx) > 0) {
 
@@ -100,8 +101,8 @@ cattrack_to_dataset <- function(files,
       if (nrow(dat) > 0) {
 
         dd <- deployments |>
-          filter(gps_id == deployments$gps_id[i]) |>
-          arrange(time_released)
+          dplyr::filter(gps_id == deployments$gps_id[i]) |>
+          dplyr::arrange(time_released)
         idx <- which(dd$dep_id == deployments$dep_id[i])
         if (idx > 1) start_time <- mean(c(dd$time_recaptured[idx - 1], deployments$time_released[i])) else start_time <- min(dat$time)
         if (idx < nrow(dd)) end_time <- mean(c(dd$time_released[idx + 1], deployments$time_recaptured[i])) else end_time <- max(dat$time)

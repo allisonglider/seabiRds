@@ -18,12 +18,13 @@ lat2800_to_dataset <- function(files,
                                max_rows,
                                timezone = 'UTC') {
 
-  check_filetype <- grep('.csv', files)
-  if (length(check_filetype) != length(files)) stop('All files must be .csv format')
+  .check_arrow()
+  .check_csv_files(files)
+  .warn_ambiguous_files(files, deployments$dep_id)
 
   for (i in 1:nrow(deployments)) {
 
-    idx <- grep(deployments$dep_id[i], files)
+    idx <- grep(deployments$dep_id[i], files, fixed = TRUE)
 
     if (length(idx) > 0) {
 
@@ -31,7 +32,8 @@ lat2800_to_dataset <- function(files,
         paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = FALSE, immediate. = TRUE)
 
       dat <- files[idx] |>
-        purrr::map_df(~read.csv(file = ., stringsAsFactors = F, nrows = max_rows, skip = 2)) |>
+        lapply(utils::read.csv, stringsAsFactors = F, nrows = max_rows, skip = 2) |>
+        dplyr::bind_rows() |>
         dplyr::mutate(
           Timestamp = as.POSIXct(paste(Date, Time), format = date_format, tz = timezone),
           Timestamp = lubridate::with_tz(Timestamp, tzone = 'UTC'),
@@ -64,11 +66,11 @@ lat2800_tdr_to_dataset <- function(data,
                                    plot) {
 
   data <- data |>
-    rename(temperature_c = dplyr::starts_with('IntTemp'),
-           depth_m = dplyr::starts_with('Pressure'),
-           wet = WetDryState,
-           time = Timestamp) |>
-    mutate(
+    dplyr::rename(temperature_c = dplyr::starts_with('IntTemp'),
+                  depth_m = dplyr::starts_with('Pressure'),
+                  wet = WetDryState,
+                  time = Timestamp) |>
+    dplyr::mutate(
       wet = ifelse(wet == 0, 1, 0)
     ) |>
     dplyr::inner_join(deployments[, c('dep_id', 'metal_band', 'species', 'site', 'subsite')], by = 'dep_id') |>

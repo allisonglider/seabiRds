@@ -19,7 +19,7 @@ axytrek_acc_to_dataset <- function(data,
 
   data <- checkAxes(data, ask = ask, force = force)
 
-  dd <- na.omit(c(deployments$time_released, deployments$time_recaptured))
+  dd <- stats::na.omit(c(deployments$time_released, deployments$time_recaptured))
   temp <- data[seq(1, nrow(data), 30 * getFrequency(data$time)),]
 
   if (plot == T) {
@@ -51,12 +51,15 @@ axytrek_tdr_to_dataset <- function(data,
   if (!('Depth') %in% names(data)) {data$Depth <- NA}
 
   data <- data |>
-    rename(temperature_c = dplyr::starts_with('Temp')) |>
+    dplyr::rename(temperature_c = dplyr::starts_with('Temp')) |>
     dplyr::filter(!is.na(temperature_c)) |>
-    tidyr::separate(Activity, into = c('active', 'wet'), sep = '/') |>
-    mutate(
+    dplyr::mutate(
+      # Activity is stored as 'active/wet' text, keep the part after the '/'
+      wet = vapply(strsplit(as.character(Activity), '/', fixed = TRUE),
+                   function(x) x[2], character(1)),
       wet = ifelse(wet == 'Wet', 1, 0)
       ) |>
+    dplyr::select(-Activity) |>
     dplyr::rename(time = Timestamp, depth_m = Depth) |>
     dplyr::inner_join(deployments[, c('dep_id', 'metal_band', 'species', 'site', 'subsite')], by = 'dep_id') |>
     dplyr::select(site, subsite, species, year,
@@ -65,7 +68,7 @@ axytrek_tdr_to_dataset <- function(data,
     dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
 
-  dd <- na.omit(c(deployments$time_released, deployments$time_recaptured))
+  dd <- stats::na.omit(c(deployments$time_released, deployments$time_recaptured))
   temp <- data[seq(1, nrow(data), 30 * getFrequency(data$time)),]
 
   if (plot == T) {
@@ -116,7 +119,7 @@ axytrek_gps_to_dataset <- function(data,
   ss <- min(c(data$time[1],deployments$time_released), na.rm = T)
   ee <- max(c(data$time[nrow(data)],deployments$time_recaptured), na.rm = T)
   temp <- data |>
-    mutate(coldist = getColDist(lon, lat, colonyLon = deployments$dep_lon, colonyLat = deployments$dep_lat))
+    dplyr::mutate(coldist = getColDist(lon, lat, colonyLon = deployments$dep_lon, colonyLat = deployments$dep_lat))
 
   if (plot == T) {
     suppressMessages(
@@ -147,7 +150,7 @@ axytrek_acc_check <- function(file,
                               date_format = '%Y-%m-%d %H:%M:%OS',
                               timezone = 'UTC'){
 
-  tt <- read.csv(file = file, stringsAsFactors = F, nrows = 1)
+  tt <- utils::read.csv(file = file, stringsAsFactors = F, nrows = 1)
 
   check_names <- c('Timestamp', 'X', 'Y', 'Z') %in% names(tt)
 
@@ -169,7 +172,7 @@ axytrek_tdr_check <- function(file,
                               date_format = '%Y-%m-%d %H:%M:%OS',
                               timezone = 'UTC'){
 
-  tt <- read.csv(file = file, stringsAsFactors = F, nrows = 1)
+  tt <- utils::read.csv(file = file, stringsAsFactors = F, nrows = 1)
   names(tt)[grep('Temp', names(tt))] <- 'Temperature'
 
   check_depth <- c('Depth') %in% names(tt)
@@ -196,7 +199,7 @@ axytrek_gps_check <- function(file,
                               date_format = '%Y-%m-%d %H:%M:%OS',
                               timezone = 'UTC'){
 
-  tt <- read.csv(file = file, stringsAsFactors = F, nrows = 1)
+  tt <- utils::read.csv(file = file, stringsAsFactors = F, nrows = 1)
 
   check_names <- c('Timestamp', 'location.lat', 'location.lon') %in% names(tt)
 
@@ -238,12 +241,13 @@ axytrek_to_dataset <- function(files,
                                fix_axes = F,
                                force_axes = F) {
 
-  check_filetype <- grep('.csv', files)
-  if (length(check_filetype) != length(files)) stop('All files must be .csv format')
+  .check_arrow()
+  .check_csv_files(files)
+  .warn_ambiguous_files(files, deployments$dep_id)
 
   for (i in 1:nrow(deployments)) {
 
-    idx <- grep(deployments$dep_id[i], files)
+    idx <- grep(deployments$dep_id[i], files, fixed = TRUE)
 
     if (length(idx) > 0) {
 
@@ -263,7 +267,8 @@ axytrek_to_dataset <- function(files,
                         timezone = timezone)
 
       dat <- files[idx] |>
-        purrr::map_df(~read.csv(file = ., stringsAsFactors = F))|>
+        lapply(utils::read.csv, stringsAsFactors = F) |>
+        dplyr::bind_rows() |>
         dplyr::mutate(
           Timestamp = as.POSIXct(Timestamp, format = date_format, tz = timezone),
           Timestamp = lubridate::with_tz(Timestamp, tzone = 'UTC'),
