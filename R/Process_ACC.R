@@ -297,16 +297,23 @@ checkAxes <- function(data, ask = T, force = F) {
 
   if (force == T) ask <- F
 
+  # readline() cannot prompt outside an interactive session, so ask = TRUE would
+  # silently answer 'no'. Warn instead of failing so existing scripts keep running.
+  if (ask == T & !interactive()) {
+    warning('ask = TRUE requires an interactive session, so axes were not checked or flipped. Use force = TRUE if the axes should be flipped.', call. = F)
+    ask <- F
+  }
+
   if (ask == T) {
 
     pp <- seabiRds::getPitch(X = data$x, Y = data$y, Z = data$z, time = data$time, window = 1)
     rr <- seabiRds::getPitch(X = data$y, Y = data$x, Z = data$z, time = data$time, window = 1)
 
-    par(mfrow = c(2,1))
+    graphics::par(mfrow = c(2,1))
     idx <- seq(1, nrow(data), getFrequency(data$time))
-    plot(pp[idx] ~ data$time[idx], type = 'l', xlab = '', ylab = 'Pitch', main = data$dep_id[1])
-    plot(rr[idx] ~ data$time[idx], type = 'l', xlab = '', ylab = 'Roll', main = data$dep_id[1])
-    par(mfrow = c(1,1))
+    graphics::plot(pp[idx] ~ data$time[idx], type = 'l', xlab = '', ylab = 'Pitch', main = data$dep_id[1])
+    graphics::plot(rr[idx] ~ data$time[idx], type = 'l', xlab = '', ylab = 'Roll', main = data$dep_id[1])
+    graphics::par(mfrow = c(1,1))
 
     flip <- readline("Should axes be flipped(1: yes, 2: no) ?")
     if (flip == 1) force <- T
