@@ -221,12 +221,19 @@ axytrek_gps_check <- function(file,
 # -----
 #' @title Convert Axytrek biologger data to Arrow dataset
 #' @description Reads Axytrek biologger data and parses it into three arrow datasets for ACC, GPS, and TDR data
-#' @param files List of Axytrek .csv files, data must have file names taht are a partial match to the dep_id in deployment data
+#' @param files List of Axytrek .csv files, data must have file names that contain the dep_id in the deployment data
 #' @param deployments Deployment data formatted using seabiRds::formatDeployments()
 #' @param output_dataset Path where arrow dataset should be saved
 #' @param date_format The POSIXct date format used in .csv files
 #' @param timezone Timezone of raw data, default is UTC
+#' @param acc Should accelerometer data be processed and saved, TRUE or FALSE?
+#' @param tdr Should TDR (temperature and depth) data be processed and saved, TRUE or FALSE?
+#' @param gps Should GPS data be processed and saved, TRUE or FALSE?
 #' @param plot Should plot of data be generated, TRUE or FALSE?
+#' @param fix_axes If TRUE, pitch and roll are plotted for each deployment and you are asked whether the
+#' accelerometer x and y axes should be flipped (see checkAxes()). Requires an interactive R session.
+#' @param force_axes If TRUE, the accelerometer x and y axes are flipped for all deployments without asking
+#' (see checkAxes()). Only use this if you know that all of your data have this issue.
 #' @export
 
 axytrek_to_dataset <- function(files,
