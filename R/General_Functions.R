@@ -37,29 +37,29 @@ getColDist <- function(lon, lat, colonyLon, colonyLat) {
     if (min(lon, na.rm = T) < -180 | max(lon, na.rm = T) > 180) {
     stop("Longitude values are not between -180 and 180")
   }
-  
+
   if (colonyLon < -180 | colonyLon > 180) {
     stop("colonyLon values are not between -180 and 180")
   }
-  
+
   if (min(lat, na.rm = T) < -180 | max(lat, na.rm = T) > 90) {
     stop("Longitude values are not between -180 and 180")
   }
-  
+
   if (colonyLat < -90 | colonyLat > 90) {
     stop("colonyLat values are not between -90 and 90")
   }
-  
+
   if (length(colonyLat) > 1 | length(colonyLon) > 1) {
     stop("colonyLat and colonyLon must have a length of 1")
   }
-  
+
   dd <- as.matrix(data.frame(lon = lon, lat = lat))
 
   cc <- as.matrix(data.frame(lon = colonyLon, lat = colonyLat))
-  
-  as.vector(terra::distance(dd, cc, lonlat = T)/1000) 
-  
+
+  as.vector(terra::distance(dd, cc, lonlat = T)/1000)
+
   #' @export getColDist
 }
 
@@ -139,15 +139,15 @@ getDist <- function(lon, lat) {
   if (min(lon, na.rm = T) < -180 | max(lon, na.rm = T) > 180) {
     stop("Longitude values are not between -180 and 180")
   }
-  
+
   if (min(lat, na.rm = T) < -180 | max(lat, na.rm = T) > 90) {
     stop("Longitude values are not between -180 and 180")
   }
-  
+
   dd <- data.frame(lon = lon, lat = lat)
-  
+
   dd <- as.matrix(dd)
-  
+
   as.vector(terra::distance(dd, sequential =TRUE, lonlat = TRUE)/1000)
   #' @export getDist
 }
@@ -158,23 +158,48 @@ getDist <- function(lon, lat) {
 #' @param time A vector of time values in POSIXct format.
 #' @param units The units of time for the output (eg. "days","hours","min","sec")
 #' @return A numeric vector of values in the requested time unit, giving the time between each location in the track and the previous location.
+#' The first value is always NA because the first location has no previous location.
 #'
 #' @section Warning:
-#' This function assumes that time values are in chronological order and all values are from a single individual.
-#' Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
+#' Time values must be in chronological order, and the function stops with an error if any time is earlier than the one before it.
+#' All values must also be from a single individual, so make sure that your data are ordered within any grouping variable
+#' and that you calculate the time differences separately for each individual (see examples).
+#'
+#' @examples
+#' # Locations recorded 5 and 10 minutes apart
+#' times <- as.POSIXct('2020-06-01 12:00:00', tz = 'UTC') + c(0, 300, 900)
+#'
+#' # Time since the previous location in hours (the default)
+#' getDT(times)
+#'
+#' # Same times in minutes
+#' getDT(times, units = 'min')
+#'
+#' # With more than one individual, calculate it separately for each one
+#' df <- data.frame(
+#'   id = rep(c('A', 'B'), each = 3),
+#'   time = as.POSIXct('2020-06-01 12:00:00', tz = 'UTC') + c(0, 300, 900, 0, 600, 1200)
+#' )
+#'
+#' df |>
+#'   dplyr::group_by(id) |>
+#'   dplyr::mutate(dt_min = getDT(time, units = 'min'))
+#'
 
 getDT <- function(time, units = "hours") {
 
-  if (class(time)[1] != "POSIXct") {
+  if (!inherits(time, "POSIXct")) {
     stop("time values must be in POSIXct format")
   }
 
+  if (length(time) == 0) return(numeric(0))
+
   tt <- c(NA,
-          as.numeric(difftime(time[2:length(time)],
-                              time[1:(length(time) - 1)],
+          as.numeric(difftime(time[-1],
+                              time[-length(time)],
                               units = units)))
 
-  if (min(tt < 0, na.rm = T)) {
+  if (any(tt < 0, na.rm = TRUE)) {
     stop("Negative values for time difference, data need to be in chronological order before running getDT")
   }
 

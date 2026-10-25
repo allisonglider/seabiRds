@@ -26,5 +26,10 @@ Imports:
     stats, 
     utils
 VignetteBuilder: knitr
-Suggests: arrow, knitr, rmarkdown
+Suggests: 
+    arrow,
+    knitr,
+    rmarkdown,
+    testthat (>= 3.0.0)
 Config/roxygen2/version: 8.1.1
+Config/testthat/edition: 3
