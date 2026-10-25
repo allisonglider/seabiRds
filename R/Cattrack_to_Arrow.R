@@ -49,8 +49,8 @@ cattrack_gps_to_dataset <- function(data,
 
 # -----
 #' @title Convert Cattrack biologger data to Arrow dataset
-#' @description Reads Cattrack biologger data and parses it into two arrow datasets for GPS and TDR
-#' @param files List of Cattrack .csv files, data must include logger IDs that match the gps_id in deployment data
+#' @description Reads Cattrack biologger data and parses it into an arrow dataset for GPS data
+#' @param files List of Cattrack .csv files, data must have file names that contain the dep_id in the deployment data
 #' @param deployments Deployment data formatted using seabiRds::formatDeployments()
 #' @param output_dataset Path where arrow dataset should be saved
 #' @param timezone Timezone of raw data, default is UTC

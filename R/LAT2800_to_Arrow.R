@@ -1,13 +1,13 @@
 # -----
 #' @title Convert Lat2800 biologger data to Arrow dataset
-#' @description Reads Lat2800 biologger data and parses it into three arrow datasets for  TDR data
-#' @param files List of Lat2800 .csv files, data must have file names that are a partial match to the dep_id in deployment data
+#' @description Reads Lat2800 biologger data and parses it into an arrow dataset for TDR data
+#' @param files List of Lat2800 .csv files, data must have file names that contain the dep_id in the deployment data
 #' @param deployments Deployment data formatted using seabiRds::formatDeployments()
 #' @param output_dataset Path where arrow dataset should be saved
 #' @param date_format The POSIXct date format used in .csv files
-#' @param timezone Timezone of raw data, default is UTC
 #' @param plot Should plot of data be generated, TRUE or FALSE?
-#' @param max_rows Maximum rows to read in, LAT2800 units sometimes fill memory with rows of invalid data that are too long to read in
+#' @param max_rows Maximum rows to read in from each file, LAT2800 units sometimes fill memory with rows of invalid data that are too long to read in. There is no default, so a value must be supplied.
+#' @param timezone Timezone of raw data, default is UTC
 #' @export
 
 lat2800_to_dataset <- function(files,

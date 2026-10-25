@@ -151,8 +151,8 @@ ecotone_gps_to_dataset <- function(data,
 
 # -----
 #' @title Convert Ecotone biologger data to Arrow dataset
-#' @description Reads ecotone biologger data and parses it into two arrow datasets for GPS and TDR
-#' @param files List of ecotone .csv files, data must include logger IDs that match the gps_id in deployment data
+#' @description Reads ecotone biologger data and parses it into arrow datasets for GPS data and, depending on the columns in the files, TDR data or dive data
+#' @param files List of ecotone .csv files, data must include logger IDs that match the gps_id in deployment data (file names do not need to match)
 #' @param deployments Deployment data formatted using seabiRds::formatDeployments()
 #' @param output_dataset Path where arrow dataset should be saved
 #' @param timezone Timezone of raw data, default is UTC

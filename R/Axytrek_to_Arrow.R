@@ -25,8 +25,8 @@ axytrek_acc_to_dataset <- function(data,
   if (plot == T) {
     suppressMessages(p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = x)) +
                        ggplot2::geom_line(linewidth = 0.1, col = 'red') +
-                       ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = x), size = 0.1, col = 'black') +
-                       ggplot2::geom_vline(xintercept = dd, linetype = 2, col = 'blue', size = 0.5) +
+                       ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = x), linewidth = 0.1, col = 'black') +
+                       ggplot2::geom_vline(xintercept = dd, linetype = 2, col = 'blue', linewidth = 0.5) +
                        ggplot2::labs(title = data$dep_id[1], x = 'Time', y = 'x-axis (g)') +
                        ggplot2::theme_light()
     )
@@ -74,8 +74,8 @@ axytrek_tdr_to_dataset <- function(data,
   if (plot == T) {
     p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth_m)) +
       ggplot2::geom_line(col = 'red', linewidth = 0.1) +
-      ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = depth_m), size = 0.1, col = 'black') +
-      ggplot2::geom_vline(xintercept = dd, linetype = 2, col = 'blue', size = 0.5) +
+      ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = depth_m), linewidth = 0.1, col = 'black') +
+      ggplot2::geom_vline(xintercept = dd, linetype = 2, col = 'blue', linewidth = 0.5) +
       ggplot2::labs(title = data$dep_id[1], x = 'Time', y = 'Depth (m)') +
       ggplot2::scale_y_reverse() +
       ggplot2::theme_light()
