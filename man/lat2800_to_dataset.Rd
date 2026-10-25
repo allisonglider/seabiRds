@@ -15,7 +15,7 @@ lat2800_to_dataset(
 )
 }
 \arguments{
-\item{files}{List of Lat2800 .csv files, data must have file names that are a partial match to the dep_id in deployment data}
+\item{files}{List of Lat2800 .csv files, data must have file names that contain the dep_id in the deployment data}
 
 \item{deployments}{Deployment data formatted using seabiRds::formatDeployments()}
 
@@ -25,10 +25,10 @@ lat2800_to_dataset(
 
 \item{plot}{Should plot of data be generated, TRUE or FALSE?}
 
-\item{max_rows}{Maximum rows to read in, LAT2800 units sometimes fill memory with rows of invalid data that are too long to read in}
+\item{max_rows}{Maximum rows to read in from each file, LAT2800 units sometimes fill memory with rows of invalid data that are too long to read in. There is no default, so a value must be supplied.}
 
 \item{timezone}{Timezone of raw data, default is UTC}
 }
 \description{
-Reads Lat2800 biologger data and parses it into three arrow datasets for  TDR data
+Reads Lat2800 biologger data and parses it into an arrow dataset for TDR data
 }
