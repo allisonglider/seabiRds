@@ -54,6 +54,8 @@ cattrack_gps_to_dataset <- function(data,
 #' @param deployments Deployment data formatted using seabiRds::formatDeployments()
 #' @param output_dataset Path where arrow dataset should be saved
 #' @param timezone Timezone of raw data, default is UTC
+#' @param dateFormat POSIXct format of the Date column in the files (e.g. \%d/\%m/\%Y). The Time column is
+#' read as \%H:\%M:\%S and added to this format. There is no default, so a value must be supplied.
 #' @param plot Should plot of data be generated, TRUE or FALSE?
 #'
 #' @export
