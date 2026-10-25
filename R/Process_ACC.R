@@ -1,31 +1,31 @@
 # ---------------------------------------------------------------------------------------------------------------
 #' Find peak frequency
 #'
-#'@param data Vector of numeric values for finding peaks
-#'@param method Method for calculating peak frequency, options are 'pracma' or 'fft'
-#'@param time Vector of POSIXct times
-#'@param frequency Sampling frequency of data, in Hz, if missing the function will estimate frequency from time
-#'@param window Size of moving window for estimating peaks, in seconds
-#'@param threshold Minimum amplitude to be include as a true peak, results may differ with method
-#'@param sample Only used in fft method, only calculate paeaks at sample interval, in sec, to save processing time
-#'@param maxfreq Maximum frequency of interest using the FFT method
+#' @param data Vector of numeric values for finding peaks
+#' @param method Method for calculating peak frequency, options are 'pracma' or 'fft'
+#' @param time Vector of POSIXct times
+#' @param frequency Sampling frequency of data, in Hz, if missing the function will estimate frequency from time
+#' @param window Size of moving window for estimating peaks, in seconds
+#' @param threshold Minimum amplitude to be included as a true peak, results may differ with method
+#' @param sample Only used in fft method, only calculate peaks at sample interval, in sec, to save processing time
+#' @param maxfreq Maximum frequency of interest using the FFT method
 #'
-#'@details
+#' @details
 #'
-#'The pracma method uses pracma::findpeaks() to count the number of peaks within each window
-#'above a specified treshold. Results are returned as peaks per second. This approach is faster
-#'than the fft method and can be less impacted by noise in the data.If using this approach, I recommend
-#'exploring different threshold values to understand how this changes the result.
+#' The pracma method uses pracma::findpeaks() to count the number of peaks within each window
+#' above a specified threshold. Results are returned as peaks per second. This approach is faster
+#' than the fft method and can be less impacted by noise in the data. If using this approach, I recommend
+#' exploring different threshold values to understand how this changes the result.
 #'
-#'The fft method uses a Fast Fourier Transform to identify the peak frequency in the input data
-#'over a moving window defined the frequency * interval. The threshold paramter filters out peaks
-#'identified in samples with an inter-quartile range less than the threshold value. This helps eliminate
-#'noisy peaks with low amplitudes. This method can be slow for large data sets. Use sample to only
-#'calcualte peaks at a sampling interval (default is 1 sec), this can speed up the algorithm.
+#' The fft method uses a Fast Fourier Transform to identify the peak frequency in the input data
+#' over a moving window defined by window (in seconds) multiplied by frequency (in Hz). The threshold parameter
+#' filters out peaks identified in samples with an inter-quartile range less than the threshold value.
+#' This helps eliminate noisy peaks with low amplitudes. This method can be slow for large data sets.
+#' Use sample to only calculate peaks at a sampling interval (default is 1 sec), this can speed up the algorithm.
 #'
-#'@return A vector of frequencies (Hz).
+#' @return A vector of frequencies (Hz). Values at the start and end of the data, where there is not a full window, are NA.
 #'
-#'@examples
+#' @examples
 #'
 #' # generate data with a noisy sine wave in the middle
 #' ts <- 25 # sampling rate of 25 Hz
@@ -61,6 +61,8 @@
 getPeakFrequency <- function(data, time, method = c('pracma', 'fft'), window, frequency = NULL,
                      threshold = 0.1, sample = 1, maxfreq = NULL) {
 
+  method <- match.arg(method)
+
   if (is.null(frequency)) frequency <- getFrequency(time = time)
 
   if (method == 'pracma') {
@@ -68,7 +70,8 @@ getPeakFrequency <- function(data, time, method = c('pracma', 'fft'), window, fr
 
     tt <- rep(0, length(data))
 
-    tt[pracma::findpeaks(data, threshold = threshold)[,2]] <- 1
+    pk <- pracma::findpeaks(data, threshold = threshold)
+    if (!is.null(pk)) tt[pk[,2]] <- 1
 
     peaks <- zoo::rollsum(tt, window * frequency, sum, fill = 0)
 
