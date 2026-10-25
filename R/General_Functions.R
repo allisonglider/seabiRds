@@ -32,9 +32,19 @@ getMode <- function(x) {
 #' @param colonyLon Longitude of the colony (or fixed location).
 #' @param colonyLat Latitude of the colony (or fixed location).
 #' @return A vector of values (in km) giving the distance between each location in the track and the colony (or fixed location).
+#' @examples
+#' # Distance from a colony at 45 N, 60 W to each location in a track
+#' lon <- c(-60, -60.5, -61)
+#' lat <- c(45, 45.2, 45.4)
+#' getColDist(lon, lat, colonyLon = -60, colonyLat = 45)
 
 getColDist <- function(lon, lat, colonyLon, colonyLat) {
-    if (min(lon, na.rm = T) < -180 | max(lon, na.rm = T) > 180) {
+
+  if (length(colonyLat) > 1 | length(colonyLon) > 1) {
+    stop("colonyLat and colonyLon must have a length of 1")
+  }
+
+  if (min(lon, na.rm = T) < -180 | max(lon, na.rm = T) > 180) {
     stop("Longitude values are not between -180 and 180")
   }
 
@@ -42,16 +52,12 @@ getColDist <- function(lon, lat, colonyLon, colonyLat) {
     stop("colonyLon values are not between -180 and 180")
   }
 
-  if (min(lat, na.rm = T) < -180 | max(lat, na.rm = T) > 90) {
-    stop("Longitude values are not between -180 and 180")
+  if (min(lat, na.rm = T) < -90 | max(lat, na.rm = T) > 90) {
+    stop("Latitude values are not between -90 and 90")
   }
 
   if (colonyLat < -90 | colonyLat > 90) {
     stop("colonyLat values are not between -90 and 90")
-  }
-
-  if (length(colonyLat) > 1 | length(colonyLon) > 1) {
-    stop("colonyLat and colonyLon must have a length of 1")
   }
 
   dd <- as.matrix(data.frame(lon = lon, lat = lat))
@@ -129,10 +135,17 @@ getSessions <- function(value, ignore = FALSE, ignoreValue = NULL, maxSession = 
 #' @param lon A vector of longitude values.
 #' @param lat A vector of latitude values.
 #' @return A vector of values (in km) giving the distance between each location in the track and the previous location.
+#' The first value is always 0 because the first location has no previous location.
 #'
 #' @section Warning:
 #' This function assumes that longitude and latitude values are in chronological order and all values are from a single individual.
-#' Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
+#' Make sure that your data are ordered within any grouping variable.
+#'
+#' @examples
+#' # Distance between each location and the one before it
+#' lon <- c(-60, -60.5, -61)
+#' lat <- c(45, 45.2, 45.4)
+#' getDist(lon, lat)
 
 getDist <- function(lon, lat) {
 
@@ -140,8 +153,8 @@ getDist <- function(lon, lat) {
     stop("Longitude values are not between -180 and 180")
   }
 
-  if (min(lat, na.rm = T) < -180 | max(lat, na.rm = T) > 90) {
-    stop("Longitude values are not between -180 and 180")
+  if (min(lat, na.rm = T) < -90 | max(lat, na.rm = T) > 90) {
+    stop("Latitude values are not between -90 and 90")
   }
 
   dd <- data.frame(lon = lon, lat = lat)
@@ -218,33 +231,73 @@ getDT <- function(time, units = "hours") {
 #' @param threshold Maximum ground speed for species in km/hr.
 #'
 #' @return Data frame with speed, distance between points, time between points added. Locations with unrealistic speeds are removed.
-#' The alogrithm is iterative, so consecutive unrealistic locations will be removed.
+#' The algorithm is iterative, so consecutive unrealistic locations will be removed. If there are fewer than two locations, the data are returned with dist, dt and speed set to NA.
 #'
 #' @section Warning:
 #' This function assumes that time values are in chronological order and all values are from a single individual.
-#' Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
+#' Make sure that your data are ordered within any grouping variable.
+#'
+#' @examples
+#' # Hourly locations about 11 km apart, with one location far from the rest
+#' track <- data.frame(
+#'   lon = c(0, 0.1, 0.2, 5, 0.3, 0.4),
+#'   lat = 0,
+#'   time = as.POSIXct('2020-06-01 12:00:00', tz = 'UTC') + 3600 * (0:5)
+#' )
+#'
+#' # Remove locations that would need a speed above 50 km/hr. The location after the
+#' # far-away one is also removed, because its speed is calculated from the far-away one.
+#' filterSpeed(track, threshold = 50)
+#'
+#' # If your columns have other names, specify column names to use
+#' track2 <- track
+#' names(track2) <- c('Longitude', 'Latitude', 'Timestamp')
+#' filterSpeed(track2, lon = 'Longitude', lat = 'Latitude', time = 'Timestamp', threshold = 50)
+#'
+#' # The function is for one individual at a time, so apply it to each individual
+#' tracks <- rbind(
+#'   data.frame(id = 'A', track),
+#'   data.frame(id = 'B', transform(track, lon = lon + 10))
+#' )
+#' filtered <- lapply(split(tracks, tracks$id), filterSpeed, threshold = 50)
+#' do.call(rbind, filtered)
 
 filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold) {
 
-  if (class(data[,"time"])[1] != "POSIXct") {
+  # check that the columns named in lon, lat and time exist
+  missing_cols <- setdiff(c(lon, lat, time), names(data))
+  if (length(missing_cols) > 0) {
+    stop("data does not contain the column(s): ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+
+  if (!inherits(data[[time]], "POSIXct")) {
     stop("time values must be in POSIXct format")
   }
 
-  if (min(data[,"lon"], na.rm = T) < -180 | max(data[,"lon"], na.rm = T) > 180) {
+  # nothing to filter with fewer than two locations
+  if (nrow(data) < 2) {
+    data$dist <- rep(NA_real_, nrow(data))
+    data$dt <- rep(NA_real_, nrow(data))
+    data$speed <- rep(NA_real_, nrow(data))
+    return(data)
+  }
+
+  if (min(data[[lon]], na.rm = T) < -180 | max(data[[lon]], na.rm = T) > 180) {
     stop("Longitude values are not between -180 and 180")
   }
 
-  if (min(data[,"lat"], na.rm = T) < -90 | max(data[,"lat"], na.rm = T) > 90) {
-    stop("Longitude values are not between -180 and 180")
+  if (min(data[[lat]], na.rm = T) < -90 | max(data[[lat]], na.rm = T) > 90) {
+    stop("Latitude values are not between -90 and 90")
   }
 
   maxSpeed <- threshold + 1
   while (maxSpeed > threshold) {
-    data$dist <- getDist(data[,lon], data[,lat])
-    data$dt <- getDT(data[,time], units = "hours")
+    data$dist <- getDist(data[[lon]], data[[lat]])
+    data$dt <- getDT(data[[time]], units = "hours")
     data$speed <- data$dist/data$dt
     data <- subset(data, data$speed <= threshold | is.na(data$speed))
-    maxSpeed <- max(data$speed, na.rm = T)
+    speeds <- data$speed[!is.na(data$speed)]
+    maxSpeed <- if (length(speeds) == 0) -Inf else max(speeds)
   }
 
   data

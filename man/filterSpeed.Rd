@@ -19,7 +19,7 @@ filterSpeed(data, lon = "lon", lat = "lat", time = "time", threshold)
 }
 \value{
 Data frame with speed, distance between points, time between points added. Locations with unrealistic speeds are removed.
-The alogrithm is iterative, so consecutive unrealistic locations will be removed.
+The algorithm is iterative, so consecutive unrealistic locations will be removed. If there are fewer than two locations, the data are returned with dist, dt and speed set to NA.
 }
 \description{
 Calculates the ground speed for each location in a track and removes locations requiring movements above a speed threshold.
@@ -27,6 +27,31 @@ Calculates the ground speed for each location in a track and removes locations r
 \section{Warning}{
 
 This function assumes that time values are in chronological order and all values are from a single individual.
-Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
+Make sure that your data are ordered within any grouping variable.
 }
 
+\examples{
+# Hourly locations about 11 km apart, with one location far from the rest
+track <- data.frame(
+  lon = c(0, 0.1, 0.2, 5, 0.3, 0.4),
+  lat = 0,
+  time = as.POSIXct('2020-06-01 12:00:00', tz = 'UTC') + 3600 * (0:5)
+)
+
+# Remove locations that would need a speed above 50 km/hr. The location after the
+# far-away one is also removed, because its speed is calculated from the far-away one.
+filterSpeed(track, threshold = 50)
+
+# If your columns have other names, specify column names to use
+track2 <- track
+names(track2) <- c('Longitude', 'Latitude', 'Timestamp')
+filterSpeed(track2, lon = 'Longitude', lat = 'Latitude', time = 'Timestamp', threshold = 50)
+
+# The function is for one individual at a time, so apply it to each individual
+tracks <- rbind(
+  data.frame(id = 'A', track),
+  data.frame(id = 'B', transform(track, lon = lon + 10))
+)
+filtered <- lapply(split(tracks, tracks$id), filterSpeed, threshold = 50)
+do.call(rbind, filtered)
+}

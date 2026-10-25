@@ -13,6 +13,7 @@ getDist(lon, lat)
 }
 \value{
 A vector of values (in km) giving the distance between each location in the track and the previous location.
+The first value is always 0 because the first location has no previous location.
 }
 \description{
 Calculates the distance between the current location and the previous location in a track.
@@ -20,6 +21,12 @@ Calculates the distance between the current location and the previous location i
 \section{Warning}{
 
 This function assumes that longitude and latitude values are in chronological order and all values are from a single individual.
-Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
+Make sure that your data are ordered within any grouping variable.
 }
 
+\examples{
+# Distance between each location and the one before it
+lon <- c(-60, -60.5, -61)
+lat <- c(45, 45.2, 45.4)
+getDist(lon, lat)
+}
