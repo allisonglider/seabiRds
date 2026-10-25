@@ -574,7 +574,6 @@ readCattrackGPS <- function(inputFolder,
 #'
 #' @param data Name of object with formatted GPS data.
 #' @param deployments Name of object with formatted deployment data.
-#' @param tagTZ Timezone of GPS data.
 #' @param speedThreshold Fastest possible movement in km/hr.
 #' @param plot Should data be plotted (TRUE or FALSE).
 #'
@@ -1051,7 +1050,6 @@ readEcotoneTDR <- function(inputFolder,
 #'
 #' @param data Name of object with formatted TDR data.
 #' @param deployments Name of object with formatted deployment data.
-#' @param tagTZ Timezone of TDR data.
 #' @param plot Should data be plotted (TRUE or FALSE).
 #'
 #' @details This function clips the TDR data to the start and end times of each TDR deployment. The link between deployment
