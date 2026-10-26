@@ -361,7 +361,7 @@ readTechnosmartGPS <- function(inputFolder,
     if (is.na(deployments$dep_id[i]) == F) {
 
       # get lists of file names
-      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+      theFiles <- dd[grep(deployments$dep_id[i], dd, fixed = TRUE)]
 
       if (length(theFiles > 0)) {
 
@@ -508,7 +508,7 @@ readCattrackGPS <- function(inputFolder,
     if (is.na(deployments$dep_id[i]) == F) {
 
       # get lists of file names
-      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+      theFiles <- dd[grep(deployments$dep_id[i], dd, fixed = TRUE)]
 
       if (length(theFiles > 0)) {
 
@@ -574,7 +574,6 @@ readCattrackGPS <- function(inputFolder,
 #'
 #' @param data Name of object with formatted GPS data.
 #' @param deployments Name of object with formatted deployment data.
-#' @param tagTZ Timezone of GPS data.
 #' @param speedThreshold Fastest possible movement in km/hr.
 #' @param plot Should data be plotted (TRUE or FALSE).
 #'
@@ -628,9 +627,12 @@ cleanGPSData <- function(data,
 
           pp <- .cleanGPSDataPlot(temp, newData, tt, yy)
           print(pp)
-          Sys.sleep(3)
 
-          readline("Press [enter] for next plot")
+          # only pause for input when someone is there to press enter
+          if (interactive()) {
+            Sys.sleep(3)
+            readline("Press [enter] for next plot")
+          }
 
         }
 
@@ -676,14 +678,6 @@ cleanGPSData <- function(data,
   xran <- my_bb[c(1,3)]
   yran <- my_bb[c(2,4)]
 
-  # coord_range <- max(c(xran[2] - xran[1], yran[2] - yran[1]))
-  # coord_breaks <- 0.1
-  # if (coord_range > 0.5) coord_breaks <- 0.2
-  # if (coord_range >= 1) coord_breaks <- 0.5
-  # if (coord_range >= 2) coord_breaks <- 1
-  # if (coord_range >= 5) coord_breaks <- 2
-  # if (coord_range >= 10) coord_breaks <- 5
-
   suppressMessages(
     myMap<- ggplot2::ggplot(data = newData[!is.na(newData$lon),]) +
       ggplot2::geom_sf(data = world) +
@@ -691,12 +685,8 @@ cleanGPSData <- function(data,
       ggplot2::geom_path(data = temp[!is.na(temp$lon),], ggplot2::aes(x = lon, y = lat), col = 'red') +
       ggplot2::geom_point(data = newData[!is.na(newData$lon),], ggplot2::aes(x = lon, y = lat)) +
       ggplot2::geom_path(data = newData[!is.na(newData$lon),], ggplot2::aes(x = lon, y = lat)) +
-      # ggplot2::scale_x_continuous(breaks = seq(-180, 180, coord_breaks)) +
-      # ggplot2::scale_y_continuous(breaks = seq(-90, 90, coord_breaks)) +
-      #ggplot2::geom_point(data = tt, ggplot2::aes(x = tt$dep_lon, y = tt$dep_lon), fill = 'green', shape = 24, size = 3) +
       ggplot2::coord_sf(xlim = xran, ylim = yran) +
       ggplot2::theme_light() +
-      #ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90)) +
       ggplot2::labs(title = paste(temp$dep_id[1]), x = "", y = "")
   )
 
@@ -710,13 +700,16 @@ cleanGPSData <- function(data,
 # Sub-function to check if files in the input folder have a matching record in the deployment data
 
 .matchFiles <- function(files, deployment_ids) {
+
+  .warn_ambiguous_files(files, deployment_ids)
+
   mf <- data.frame(
     files = files,
     match = NA
   )
 
   for (theDeps in deployment_ids) {
-    mf$match[grep(theDeps, mf$files)] <- theDeps
+    mf$match[grep(theDeps, mf$files, fixed = TRUE)] <- theDeps
   }
 
   unmatchedFiles <- mf$files[is.na(mf$match)]
@@ -728,7 +721,7 @@ cleanGPSData <- function(data,
 
   unmatchedDeployments <- c()
   for (dd in deployment_ids) {
-    idx <- grep(dd, files)
+    idx <- grep(dd, files, fixed = TRUE)
     if (length(idx) <1)  unmatchedDeployments <- c(unmatchedDeployments, dd)
   }
 
@@ -822,7 +815,7 @@ readTechnosmartTDR <- function(inputFolder,
     if (is.na(deployments$dep_id[i]) == F) {
 
       # get lists of file names
-      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+      theFiles <- dd[grep(deployments$dep_id[i], dd, fixed = TRUE)]
 
       if (length(theFiles > 0)) {
 
@@ -927,7 +920,7 @@ readLAT150 <- function(inputFolder,
     if (is.na(deployments$dep_id[i]) == F) {
 
       # get lists of file names
-      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+      theFiles <- dd[grep(deployments$dep_id[i], dd, fixed = TRUE)]
 
       if (length(theFiles > 0)) {
 
@@ -1045,7 +1038,6 @@ readEcotoneTDR <- function(inputFolder,
 #'
 #' @param data Name of object with formatted TDR data.
 #' @param deployments Name of object with formatted deployment data.
-#' @param tagTZ Timezone of TDR data.
 #' @param plot Should data be plotted (TRUE or FALSE).
 #'
 #' @details This function clips the TDR data to the start and end times of each TDR deployment. The link between deployment
@@ -1118,9 +1110,11 @@ cleanTDRData <- function(data,
             print(myPlot)
           }
 
-          Sys.sleep(1)
-
-          readline("Press [enter] for next plot")
+          # only pause for input when someone is there to press enter
+          if (interactive()) {
+            Sys.sleep(1)
+            readline("Press [enter] for next plot")
+          }
 
 
         }
