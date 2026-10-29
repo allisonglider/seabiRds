@@ -45,13 +45,13 @@ formatDeployments(
 
 \item{species}{Character string with name of the field containing the 4-letter AOU species code. Required.}
 
-\item{metal_band}{Character string with name of the field containing the metal band number. Values should be numeric with 9-10 digits, dashes are not allowed.}
+\item{metal_band}{Character string with name of the field containing the metal band number. Values should be numeric with 8 or 9 digits, dashes are not allowed.}
 
 \item{colour_band}{Character string with name of the field containing the colour band code.}
 
 \item{dep_id}{Character string with name of the field containing deployment ID (see details). Each dep_id must be unique. Required.}
 
-\item{fill_dep_id}{Should missing dep_id values be filled by combining metal_band and release date, default is TRUE.}
+\item{fill_dep_id}{Should missing dep_id values be filled by combining metal_band and release date, default is FALSE.}
 
 \item{site}{Character string with name of the field containing the site (e.g. Coats). Required.}
 
@@ -61,7 +61,7 @@ formatDeployments(
 
 \item{dep_lon}{Character string with name of the field containing the deployment longitude. Required.}
 
-\item{dep_lat}{Character string with name of the field containing the the deployment latitude. Required.}
+\item{dep_lat}{Character string with name of the field containing the deployment latitude. Required.}
 
 \item{time_released}{Character string with name of the field containing deployment start time (when birds was released with tag), must use date format specified with dateFormat argument. Required.}
 
@@ -91,9 +91,9 @@ formatDeployments(
 
 \item{cam_id}{Character string with name of the field containing the name of the camera tag deployed.}
 
-\item{hrl_id}{Character string with name of the field containing the name of the hear rate logger tag deployed.}
+\item{hrl_id}{Character string with name of the field containing the name of the heart rate logger tag deployed.}
 
-\item{keep}{List of variable names for other dpeloyment data to keep with output.}
+\item{keep}{List of variable names for other deployment data to keep with output.}
 }
 \value{
 A new dataframe with deployment times in UTC and field names that are compatible with other functions in this package and the lab biologging database.
@@ -109,13 +109,13 @@ then the readGPSdata() or readTDRdata() function you use in the next step will n
 downloaded data, where all the locations from all units are mixed together (Ecotone units), then you can leave this field empty use the fill_dep_id = T argument
 to automatically generate unique dep_ids.
 
-dep_tz and tagTZ are used to make sure a consistent time zone is used clip the GPS data. The output times from this function will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones. Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
+dep_tz and tagTZ are used to make sure a consistent time zone is used to clip the GPS data. The output times from this function will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones. Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
 
 fed_unfed is specific to data from black-legged kittiwakes (BLKI) at Middleton. This field is used to indicate if the bird in the deployment was part of the fed, unfed, or semi-fed groups.
-Input values must be either fed, unfed, or semi, captilization does not matter. Other users can ignore this field.
+Input values must be either fed, unfed, or semi, captalization does not matter. Other users can ignore this field.
 
 gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id are each used to store the identifier for the biologger units deployed. Because some deployments use multiple devices,
 and some devices have multiple logger types, each is recorded separately. For example, Technosmart Axy-trek units record GPS, TDR, and ACC data, so the logger id should be entered in each of these fields
-to show that all thre data types are available. If both an Ecotone GPS and a Lotek TDR were deployed at the same time on the same bird, then record the Ecotone logger ID
+to show that all three data types are available. If both an Ecotone GPS and a Lotek TDR were deployed at the same time on the same bird, then record the Ecotone logger ID
 in the gps_id field and the Lotek TDR logger id in the TDR field.
 }

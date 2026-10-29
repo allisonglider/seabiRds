@@ -71,7 +71,9 @@ cattrack_to_dataset <- function(files,
   .check_csv_files(files)
   .warn_ambiguous_files(files, deployments$dep_id)
 
-  for (i in 1:nrow(deployments)) {
+  if (nrow(deployments) == 0) stop('deployments has no rows', call. = FALSE)
+
+  for (i in seq_len(nrow(deployments))) {
 
     idx <- files[grep(deployments$dep_id[i], files, fixed = TRUE)]
 

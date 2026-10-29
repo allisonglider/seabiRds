@@ -188,7 +188,9 @@ ecotone_to_dataset <- function(files,
   if (!('HDOP' %in% names(output))) output$HDOP <- NA
   if (!('Sat..Count' %in% names(output))) output$`Sat..Count` <- NA
 
-  for (i in 1:nrow(deployments)) {
+  if (nrow(deployments) == 0) stop('deployments has no rows', call. = FALSE)
+
+  for (i in seq_len(nrow(deployments))) {
 
     dat <- output |>
       dplyr::filter(gps_id == deployments$gps_id[i])
