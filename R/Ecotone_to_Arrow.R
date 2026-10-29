@@ -27,8 +27,8 @@ ecotone_tdr_to_dataset <- function(data,
   data$time[idx] <- data$time[idx] - 1
 
   data <- data |>
-    rename(temperature_c = Temp_sens, depth_m = Depth) |>
-    mutate(
+    dplyr::rename(temperature_c = Temp_sens, depth_m = Depth) |>
+    dplyr::mutate(
       Div.down = ifelse(is.na(Div.down), 0, Div.down),
       Div.up = ifelse(is.na(Div.up), 0, Div.up),
       depth_m = ifelse(Div.up == 1 | Div.down == 1, 0, depth_m),
@@ -151,8 +151,8 @@ ecotone_gps_to_dataset <- function(data,
 
 # -----
 #' @title Convert Ecotone biologger data to Arrow dataset
-#' @description Reads ecotone biologger data and parses it into two arrow datasets for GPS and TDR
-#' @param files List of ecotone .csv files, data must include logger IDs that match the gps_id in deployment data
+#' @description Reads ecotone biologger data and parses it into arrow datasets for GPS data and, depending on the columns in the files, TDR data or dive data
+#' @param files List of ecotone .csv files, data must include logger IDs that match the gps_id in deployment data (file names do not need to match)
 #' @param deployments Deployment data formatted using seabiRds::formatDeployments()
 #' @param output_dataset Path where arrow dataset should be saved
 #' @param timezone Timezone of raw data, default is UTC
@@ -166,8 +166,8 @@ ecotone_to_dataset <- function(files,
                                timezone = 'UTC',
                                plot = T) {
 
-  check_filetype <- grep('.csv', files)
-  if (length(check_filetype) != length(files)) stop('All files must be .csv format')
+  .check_arrow()
+  .check_csv_files(files)
 
   output <- combineFiles(files = files,
                          pattern = "csv",
@@ -188,10 +188,12 @@ ecotone_to_dataset <- function(files,
   if (!('HDOP' %in% names(output))) output$HDOP <- NA
   if (!('Sat..Count' %in% names(output))) output$`Sat..Count` <- NA
 
-  for (i in 1:nrow(deployments)) {
+  if (nrow(deployments) == 0) stop('deployments has no rows', call. = FALSE)
+
+  for (i in seq_len(nrow(deployments))) {
 
     dat <- output |>
-      filter(gps_id == deployments$gps_id[i])
+      dplyr::filter(gps_id == deployments$gps_id[i])
 
     if (nrow(dat) > 0 & is.na(deployments$time_recaptured[i])) {
       deployments$time_recaptured[i] <- max(dat$time)
@@ -202,8 +204,8 @@ ecotone_to_dataset <- function(files,
     if (nrow(dat) > 0) {
 
       dd <- deployments |>
-        filter(gps_id == deployments$gps_id[i]) |>
-        arrange(time_released)
+        dplyr::filter(gps_id == deployments$gps_id[i]) |>
+        dplyr::arrange(time_released)
       idx <- which(dd$dep_id == deployments$dep_id[i])
       if (idx > 1) start_time <- mean(c(dd$time_recaptured[idx - 1], deployments$time_released[i])) else start_time <- min(dat$time)
       if (idx < nrow(dd)) end_time <- mean(c(dd$time_released[idx + 1], deployments$time_recaptured[i])) else end_time <- max(dat$time)

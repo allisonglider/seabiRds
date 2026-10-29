@@ -60,8 +60,7 @@ locs$rn <- strftime(locs$time, 'X\%Y.\%m.\%d')
 intersect(locs$rn, names(r))
 
 # Extract values
-locs <- SpatialPointsDataFrame(coords = locs[,c('lon','lat')],
-                               data = locs, proj4string = CRS('+proj=longlat'))
+locs <- sf::st_as_sf(locs, coords = c('lon', 'lat'), crs = 4326)
 
 extract_raster_stack(raster_stack = r, locations = locs, names_var = 'rn')
 }

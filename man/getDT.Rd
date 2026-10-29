@@ -13,13 +13,36 @@ getDT(time, units = "hours")
 }
 \value{
 A numeric vector of values in the requested time unit, giving the time between each location in the track and the previous location.
+The first value is always NA because the first location has no previous location.
 }
 \description{
 Calculates the time between between the current location and the previous location in a track.
 }
 \section{Warning}{
 
-This function assumes that time values are in chronological order and all values are from a single individual.
-Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
+Time values must be in chronological order, and the function stops with an error if any time is earlier than the one before it.
+All values must also be from a single individual, so make sure that your data are ordered within any grouping variable
+and that you calculate the time differences separately for each individual (see examples).
 }
 
+\examples{
+# Locations recorded 5 and 10 minutes apart
+times <- as.POSIXct('2020-06-01 12:00:00', tz = 'UTC') + c(0, 300, 900)
+
+# Time since the previous location in hours (the default)
+getDT(times)
+
+# Same times in minutes
+getDT(times, units = 'min')
+
+# With more than one individual, calculate it separately for each one
+df <- data.frame(
+  id = rep(c('A', 'B'), each = 3),
+  time = as.POSIXct('2020-06-01 12:00:00', tz = 'UTC') + c(0, 300, 900, 0, 600, 1200)
+)
+
+df |>
+  dplyr::group_by(id) |>
+  dplyr::mutate(dt_min = getDT(time, units = 'min'))
+
+}

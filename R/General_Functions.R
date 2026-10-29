@@ -32,34 +32,40 @@ getMode <- function(x) {
 #' @param colonyLon Longitude of the colony (or fixed location).
 #' @param colonyLat Latitude of the colony (or fixed location).
 #' @return A vector of values (in km) giving the distance between each location in the track and the colony (or fixed location).
+#' @examples
+#' # Distance from a colony at 45 N, 60 W to each location in a track
+#' lon <- c(-60, -60.5, -61)
+#' lat <- c(45, 45.2, 45.4)
+#' getColDist(lon, lat, colonyLon = -60, colonyLat = 45)
 
 getColDist <- function(lon, lat, colonyLon, colonyLat) {
-    if (min(lon, na.rm = T) < -180 | max(lon, na.rm = T) > 180) {
-    stop("Longitude values are not between -180 and 180")
-  }
-  
-  if (colonyLon < -180 | colonyLon > 180) {
-    stop("colonyLon values are not between -180 and 180")
-  }
-  
-  if (min(lat, na.rm = T) < -180 | max(lat, na.rm = T) > 90) {
-    stop("Longitude values are not between -180 and 180")
-  }
-  
-  if (colonyLat < -90 | colonyLat > 90) {
-    stop("colonyLat values are not between -90 and 90")
-  }
-  
+
   if (length(colonyLat) > 1 | length(colonyLon) > 1) {
     stop("colonyLat and colonyLon must have a length of 1")
   }
-  
+
+  if (min(lon, na.rm = T) < -180 | max(lon, na.rm = T) > 180) {
+    stop("Longitude values are not between -180 and 180")
+  }
+
+  if (colonyLon < -180 | colonyLon > 180) {
+    stop("colonyLon values are not between -180 and 180")
+  }
+
+  if (min(lat, na.rm = T) < -90 | max(lat, na.rm = T) > 90) {
+    stop("Latitude values are not between -90 and 90")
+  }
+
+  if (colonyLat < -90 | colonyLat > 90) {
+    stop("colonyLat values are not between -90 and 90")
+  }
+
   dd <- as.matrix(data.frame(lon = lon, lat = lat))
 
   cc <- as.matrix(data.frame(lon = colonyLon, lat = colonyLat))
-  
-  as.vector(terra::distance(dd, cc, lonlat = T)/1000) 
-  
+
+  as.vector(terra::distance(dd, cc, lonlat = T)/1000)
+
   #' @export getColDist
 }
 
@@ -129,25 +135,32 @@ getSessions <- function(value, ignore = FALSE, ignoreValue = NULL, maxSession = 
 #' @param lon A vector of longitude values.
 #' @param lat A vector of latitude values.
 #' @return A vector of values (in km) giving the distance between each location in the track and the previous location.
+#' The first value is always 0 because the first location has no previous location.
 #'
 #' @section Warning:
 #' This function assumes that longitude and latitude values are in chronological order and all values are from a single individual.
-#' Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
+#' Make sure that your data are ordered within any grouping variable.
+#'
+#' @examples
+#' # Distance between each location and the one before it
+#' lon <- c(-60, -60.5, -61)
+#' lat <- c(45, 45.2, 45.4)
+#' getDist(lon, lat)
 
 getDist <- function(lon, lat) {
 
   if (min(lon, na.rm = T) < -180 | max(lon, na.rm = T) > 180) {
     stop("Longitude values are not between -180 and 180")
   }
-  
-  if (min(lat, na.rm = T) < -180 | max(lat, na.rm = T) > 90) {
-    stop("Longitude values are not between -180 and 180")
+
+  if (min(lat, na.rm = T) < -90 | max(lat, na.rm = T) > 90) {
+    stop("Latitude values are not between -90 and 90")
   }
-  
+
   dd <- data.frame(lon = lon, lat = lat)
-  
+
   dd <- as.matrix(dd)
-  
+
   as.vector(terra::distance(dd, sequential =TRUE, lonlat = TRUE)/1000)
   #' @export getDist
 }
@@ -158,23 +171,48 @@ getDist <- function(lon, lat) {
 #' @param time A vector of time values in POSIXct format.
 #' @param units The units of time for the output (eg. "days","hours","min","sec")
 #' @return A numeric vector of values in the requested time unit, giving the time between each location in the track and the previous location.
+#' The first value is always NA because the first location has no previous location.
 #'
 #' @section Warning:
-#' This function assumes that time values are in chronological order and all values are from a single individual.
-#' Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
+#' Time values must be in chronological order, and the function stops with an error if any time is earlier than the one before it.
+#' All values must also be from a single individual, so make sure that your data are ordered within any grouping variable
+#' and that you calculate the time differences separately for each individual (see examples).
+#'
+#' @examples
+#' # Locations recorded 5 and 10 minutes apart
+#' times <- as.POSIXct('2020-06-01 12:00:00', tz = 'UTC') + c(0, 300, 900)
+#'
+#' # Time since the previous location in hours (the default)
+#' getDT(times)
+#'
+#' # Same times in minutes
+#' getDT(times, units = 'min')
+#'
+#' # With more than one individual, calculate it separately for each one
+#' df <- data.frame(
+#'   id = rep(c('A', 'B'), each = 3),
+#'   time = as.POSIXct('2020-06-01 12:00:00', tz = 'UTC') + c(0, 300, 900, 0, 600, 1200)
+#' )
+#'
+#' df |>
+#'   dplyr::group_by(id) |>
+#'   dplyr::mutate(dt_min = getDT(time, units = 'min'))
+#'
 
 getDT <- function(time, units = "hours") {
 
-  if (class(time)[1] != "POSIXct") {
+  if (!inherits(time, "POSIXct")) {
     stop("time values must be in POSIXct format")
   }
 
+  if (length(time) == 0) return(numeric(0))
+
   tt <- c(NA,
-          as.numeric(difftime(time[2:length(time)],
-                              time[1:(length(time) - 1)],
+          as.numeric(difftime(time[-1],
+                              time[-length(time)],
                               units = units)))
 
-  if (min(tt < 0, na.rm = T)) {
+  if (any(tt < 0, na.rm = TRUE)) {
     stop("Negative values for time difference, data need to be in chronological order before running getDT")
   }
 
@@ -193,33 +231,73 @@ getDT <- function(time, units = "hours") {
 #' @param threshold Maximum ground speed for species in km/hr.
 #'
 #' @return Data frame with speed, distance between points, time between points added. Locations with unrealistic speeds are removed.
-#' The alogrithm is iterative, so consecutive unrealistic locations will be removed.
+#' The algorithm is iterative, so consecutive unrealistic locations will be removed. If there are fewer than two locations, the data are returned with dist, dt and speed set to NA.
 #'
 #' @section Warning:
 #' This function assumes that time values are in chronological order and all values are from a single individual.
-#' Make sure that your data are ordered, and use a for loop or some other method to apply this to multiple tracks
+#' Make sure that your data are ordered within any grouping variable.
+#'
+#' @examples
+#' # Hourly locations about 11 km apart, with one location far from the rest
+#' track <- data.frame(
+#'   lon = c(0, 0.1, 0.2, 5, 0.3, 0.4),
+#'   lat = 0,
+#'   time = as.POSIXct('2020-06-01 12:00:00', tz = 'UTC') + 3600 * (0:5)
+#' )
+#'
+#' # Remove locations that would need a speed above 50 km/hr. The location after the
+#' # far-away one is also removed, because its speed is calculated from the far-away one.
+#' filterSpeed(track, threshold = 50)
+#'
+#' # If your columns have other names, specify column names to use
+#' track2 <- track
+#' names(track2) <- c('Longitude', 'Latitude', 'Timestamp')
+#' filterSpeed(track2, lon = 'Longitude', lat = 'Latitude', time = 'Timestamp', threshold = 50)
+#'
+#' # The function is for one individual at a time, so apply it to each individual
+#' tracks <- rbind(
+#'   data.frame(id = 'A', track),
+#'   data.frame(id = 'B', transform(track, lon = lon + 10))
+#' )
+#' filtered <- lapply(split(tracks, tracks$id), filterSpeed, threshold = 50)
+#' do.call(rbind, filtered)
 
 filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold) {
 
-  if (class(data[,"time"])[1] != "POSIXct") {
+  # check that the columns named in lon, lat and time exist
+  missing_cols <- setdiff(c(lon, lat, time), names(data))
+  if (length(missing_cols) > 0) {
+    stop("data does not contain the column(s): ", paste(missing_cols, collapse = ", "), call. = FALSE)
+  }
+
+  if (!inherits(data[[time]], "POSIXct")) {
     stop("time values must be in POSIXct format")
   }
 
-  if (min(data[,"lon"], na.rm = T) < -180 | max(data[,"lon"], na.rm = T) > 180) {
+  # nothing to filter with fewer than two locations
+  if (nrow(data) < 2) {
+    data$dist <- rep(NA_real_, nrow(data))
+    data$dt <- rep(NA_real_, nrow(data))
+    data$speed <- rep(NA_real_, nrow(data))
+    return(data)
+  }
+
+  if (min(data[[lon]], na.rm = T) < -180 | max(data[[lon]], na.rm = T) > 180) {
     stop("Longitude values are not between -180 and 180")
   }
 
-  if (min(data[,"lat"], na.rm = T) < -90 | max(data[,"lat"], na.rm = T) > 90) {
-    stop("Longitude values are not between -180 and 180")
+  if (min(data[[lat]], na.rm = T) < -90 | max(data[[lat]], na.rm = T) > 90) {
+    stop("Latitude values are not between -90 and 90")
   }
 
   maxSpeed <- threshold + 1
   while (maxSpeed > threshold) {
-    data$dist <- getDist(data[,lon], data[,lat])
-    data$dt <- getDT(data[,time], units = "hours")
+    data$dist <- getDist(data[[lon]], data[[lat]])
+    data$dt <- getDT(data[[time]], units = "hours")
     data$speed <- data$dist/data$dt
     data <- subset(data, data$speed <= threshold | is.na(data$speed))
-    maxSpeed <- max(data$speed, na.rm = T)
+    speeds <- data$speed[!is.na(data$speed)]
+    maxSpeed <- if (length(speeds) == 0) -Inf else max(speeds)
   }
 
   data
@@ -339,7 +417,7 @@ check_overlaps <- function(deployments, variables = c("metal_band", "gps_id", "g
     if (!('time_recaptured' %in% names(deployments))) stop('time_recaptured column not found in deployments, deployments should be output from seabiRds::formatDeployments()')
 
 
-    mb <- na.omit(unique(deployments[,v]))
+    mb <- stats::na.omit(unique(deployments[,v]))
     for (m in mb) {
 
       temp <- subset(deployments, deployments[,v]== m)
@@ -385,7 +463,7 @@ bbox_at_zoom <- function(locs, zoom_level = NULL) {
   if (!(substr(class(locs)[1], 1, 7) %in% c('sf','Spatial'))) stop('locs must be an sf or sp object')
 
   if (class(locs)[1] != 'sf') {
-    locs <- as(locs, 'sf')
+    locs <- methods::as(locs, 'sf')
   }
   C <- 40075016.686   # ~ circumference of Earth in meters
 
