@@ -8,17 +8,17 @@
 #' @param dateFormat Character string specifying the POSIX standard format for your deployment times, defaults is Y-m-d H:M:S. See ?strftime for other datetime formats
 #' @param dep_tz Timezone of deployment.
 #' @param species Character string with name of the field containing the 4-letter AOU species code. Required.
-#' @param metal_band Character string with name of the field containing the metal band number. Values should be numeric with 9-10 digits, dashes are not allowed.
+#' @param metal_band Character string with name of the field containing the metal band number. Values should be numeric with 8 or 9 digits, dashes are not allowed.
 #' @param colour_band Character string with name of the field containing the colour band code.
 #' @param dep_id Character string with name of the field containing deployment ID (see details). Each dep_id must be unique. Required.
-#' @param fill_dep_id Should missing dep_id values be filled by combining metal_band and release date, default is TRUE.
+#' @param fill_dep_id Should missing dep_id values be filled by combining metal_band and release date, default is FALSE.
 #' @param site Character string with name of the field containing the site (e.g. Coats). Required.
 #' @param subsite Character string with name of the field containing the subsite (e.g. Coats West). This is used if your study area has distinct units within the main site.
 #' @param nest Character string with name of the field containing the nest id. Optional.
 #' @param time_released Character string with name of the field containing deployment start time (when birds was released with tag), must use date format specified with dateFormat argument. Required.
 #' @param time_recaptured Character string with name of the field containing deployment end time (when birds was recaptured with tag), must use date format specified with dateFormat argument.
 #' @param dep_lon Character string with name of the field containing the deployment longitude. Required.
-#' @param dep_lat Character string with name of the field containing the the deployment latitude. Required.
+#' @param dep_lat Character string with name of the field containing the deployment latitude. Required.
 #' @param status_on Breeding status at start of deployment. Values accepted: E - eggs, C - chicks, FB - failed-breeder, NB - non-breeder, PB - pre-breeder, J - juvenile.
 #' @param status_off Breeding status at end of deployment. Values accepted: E - eggs, C - chicks, FB - failed-breeder, NB - non-breeder, PB - pre-breeder, J - juvenile.
 #' @param mass_on Character string with name of the field containing the bird mass (g) at start of deployment.
@@ -31,8 +31,8 @@
 #' @param gls_id Character string with name of the field containing the name of the GLS tag deployed.
 #' @param mag_id Character string with name of the field containing the name of the magnetometer tag deployed.
 #' @param cam_id Character string with name of the field containing the name of the camera tag deployed.
-#' @param hrl_id Character string with name of the field containing the name of the hear rate logger tag deployed.
-#' @param keep List of variable names for other dpeloyment data to keep with output.
+#' @param hrl_id Character string with name of the field containing the name of the heart rate logger tag deployed.
+#' @param keep List of variable names for other deployment data to keep with output.
 #'
 #' @details dep_id is a critical field for matching deployment information to the tracking data. Every dep_id in your data must be unique. If these data will be imported into the Arctic Ecology Lab Biologging database,
 #' then each dep_id must be unique within the database. Using a dep_id based on the band number and deployment date will ensure that each dep_id is unique. If your tracking data has a single data file for
@@ -41,14 +41,14 @@
 #' downloaded data, where all the locations from all units are mixed together (Ecotone units), then you can leave this field empty use the fill_dep_id = T argument
 #' to automatically generate unique dep_ids.
 #'
-#' dep_tz and tagTZ are used to make sure a consistent time zone is used clip the GPS data. The output times from this function will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones. Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
+#' dep_tz and tagTZ are used to make sure a consistent time zone is used to clip the GPS data. The output times from this function will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones. Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
 #'
 #' fed_unfed is specific to data from black-legged kittiwakes (BLKI) at Middleton. This field is used to indicate if the bird in the deployment was part of the fed, unfed, or semi-fed groups.
-#' Input values must be either fed, unfed, or semi, captilization does not matter. Other users can ignore this field.
+#' Input values must be either fed, unfed, or semi, captalization does not matter. Other users can ignore this field.
 #'
 #' gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id are each used to store the identifier for the biologger units deployed. Because some deployments use multiple devices,
 #' and some devices have multiple logger types, each is recorded separately. For example, Technosmart Axy-trek units record GPS, TDR, and ACC data, so the logger id should be entered in each of these fields
-#' to show that all thre data types are available. If both an Ecotone GPS and a Lotek TDR were deployed at the same time on the same bird, then record the Ecotone logger ID
+#' to show that all three data types are available. If both an Ecotone GPS and a Lotek TDR were deployed at the same time on the same bird, then record the Ecotone logger ID
 #' in the gps_id field and the Lotek TDR logger id in the TDR field.
 #'
 #' @return A new dataframe with deployment times in UTC and field names that are compatible with other functions in this package and the lab biologging database.
@@ -131,11 +131,6 @@ formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz
   if (is.na(gls_id)) {
     deployments$gls_id <- NA
     gls_id <- 'gls_id'
-  }
-
-  if (is.na(gls_id)) {
-    deployments$gls_id <- NA
-    gps_id <- 'gps_id'
   }
 
   if (is.na(mag_id)) {
@@ -311,21 +306,21 @@ readGPSData <- function(inputFolder,
     output <- readTechnosmartGPS(inputFolder = inputFolder,
                                  deployments = deployments,
                                  tagTZ = tagTZ,
-                                 dateFormat = dateFormat)
+                                 dateFormat)
   }
 
   if (tagType == "Ecotone") {
     output <- readEcotoneGPS(inputFolder = inputFolder,
                              deployments = deployments,
                              tagTZ = tagTZ,
-                             dateFormat = dateFormat)
+                             dateFormat)
   }
 
   if (tagType %in% c("Cattrack", "igotU")) {
     output <- readCattrackGPS(inputFolder = inputFolder,
                               deployments = deployments,
                               tagTZ = tagTZ,
-                              dateFormat = dateFormat)
+                              dateFormat)
   }
 
 
@@ -361,7 +356,7 @@ readTechnosmartGPS <- function(inputFolder,
     if (is.na(deployments$dep_id[i]) == F) {
 
       # get lists of file names
-      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+      theFiles <- dd[grep(deployments$dep_id[i], dd, fixed = TRUE)]
 
       if (length(theFiles > 0)) {
 
@@ -508,7 +503,7 @@ readCattrackGPS <- function(inputFolder,
     if (is.na(deployments$dep_id[i]) == F) {
 
       # get lists of file names
-      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+      theFiles <- dd[grep(deployments$dep_id[i], dd, fixed = TRUE)]
 
       if (length(theFiles > 0)) {
 
@@ -574,7 +569,6 @@ readCattrackGPS <- function(inputFolder,
 #'
 #' @param data Name of object with formatted GPS data.
 #' @param deployments Name of object with formatted deployment data.
-#' @param tagTZ Timezone of GPS data.
 #' @param speedThreshold Fastest possible movement in km/hr.
 #' @param plot Should data be plotted (TRUE or FALSE).
 #'
@@ -628,9 +622,12 @@ cleanGPSData <- function(data,
 
           pp <- .cleanGPSDataPlot(temp, newData, tt, yy)
           print(pp)
-          Sys.sleep(3)
 
-          readline("Press [enter] for next plot")
+          # only pause for input when someone is there to press enter
+          if (interactive()) {
+            Sys.sleep(3)
+            readline("Press [enter] for next plot")
+          }
 
         }
 
@@ -676,14 +673,6 @@ cleanGPSData <- function(data,
   xran <- my_bb[c(1,3)]
   yran <- my_bb[c(2,4)]
 
-  # coord_range <- max(c(xran[2] - xran[1], yran[2] - yran[1]))
-  # coord_breaks <- 0.1
-  # if (coord_range > 0.5) coord_breaks <- 0.2
-  # if (coord_range >= 1) coord_breaks <- 0.5
-  # if (coord_range >= 2) coord_breaks <- 1
-  # if (coord_range >= 5) coord_breaks <- 2
-  # if (coord_range >= 10) coord_breaks <- 5
-
   suppressMessages(
     myMap<- ggplot2::ggplot(data = newData[!is.na(newData$lon),]) +
       ggplot2::geom_sf(data = world) +
@@ -691,12 +680,8 @@ cleanGPSData <- function(data,
       ggplot2::geom_path(data = temp[!is.na(temp$lon),], ggplot2::aes(x = lon, y = lat), col = 'red') +
       ggplot2::geom_point(data = newData[!is.na(newData$lon),], ggplot2::aes(x = lon, y = lat)) +
       ggplot2::geom_path(data = newData[!is.na(newData$lon),], ggplot2::aes(x = lon, y = lat)) +
-      # ggplot2::scale_x_continuous(breaks = seq(-180, 180, coord_breaks)) +
-      # ggplot2::scale_y_continuous(breaks = seq(-90, 90, coord_breaks)) +
-      #ggplot2::geom_point(data = tt, ggplot2::aes(x = tt$dep_lon, y = tt$dep_lon), fill = 'green', shape = 24, size = 3) +
       ggplot2::coord_sf(xlim = xran, ylim = yran) +
       ggplot2::theme_light() +
-      #ggplot2::theme(axis.text.y = ggplot2::element_text(angle = 90)) +
       ggplot2::labs(title = paste(temp$dep_id[1]), x = "", y = "")
   )
 
@@ -710,13 +695,16 @@ cleanGPSData <- function(data,
 # Sub-function to check if files in the input folder have a matching record in the deployment data
 
 .matchFiles <- function(files, deployment_ids) {
+
+  .warn_ambiguous_files(files, deployment_ids)
+
   mf <- data.frame(
     files = files,
     match = NA
   )
 
   for (theDeps in deployment_ids) {
-    mf$match[grep(theDeps, mf$files)] <- theDeps
+    mf$match[grep(theDeps, mf$files, fixed = TRUE)] <- theDeps
   }
 
   unmatchedFiles <- mf$files[is.na(mf$match)]
@@ -728,7 +716,7 @@ cleanGPSData <- function(data,
 
   unmatchedDeployments <- c()
   for (dd in deployment_ids) {
-    idx <- grep(dd, files)
+    idx <- grep(dd, files, fixed = TRUE)
     if (length(idx) <1)  unmatchedDeployments <- c(unmatchedDeployments, dd)
   }
 
@@ -795,7 +783,7 @@ if (tagType == "Ecotone") {
 # ---------------------------------------------------------------------------------------------------------------
 
 readTechnosmartTDR <- function(inputFolder,
-                               deployments = depData,
+                               deployments,
                                tagTZ = "UTC",
                                tagType = "Technosmart",
                                dateFormat = "%Y-%m-%d")
@@ -822,7 +810,7 @@ readTechnosmartTDR <- function(inputFolder,
     if (is.na(deployments$dep_id[i]) == F) {
 
       # get lists of file names
-      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+      theFiles <- dd[grep(deployments$dep_id[i], dd, fixed = TRUE)]
 
       if (length(theFiles > 0)) {
 
@@ -927,7 +915,7 @@ readLAT150 <- function(inputFolder,
     if (is.na(deployments$dep_id[i]) == F) {
 
       # get lists of file names
-      theFiles <- dd[grep(deployments$dep_id[i], dd)]
+      theFiles <- dd[grep(deployments$dep_id[i], dd, fixed = TRUE)]
 
       if (length(theFiles > 0)) {
 
@@ -1045,7 +1033,6 @@ readEcotoneTDR <- function(inputFolder,
 #'
 #' @param data Name of object with formatted TDR data.
 #' @param deployments Name of object with formatted deployment data.
-#' @param tagTZ Timezone of TDR data.
 #' @param plot Should data be plotted (TRUE or FALSE).
 #'
 #' @details This function clips the TDR data to the start and end times of each TDR deployment. The link between deployment
@@ -1118,9 +1105,11 @@ cleanTDRData <- function(data,
             print(myPlot)
           }
 
-          Sys.sleep(1)
-
-          readline("Press [enter] for next plot")
+          # only pause for input when someone is there to press enter
+          if (interactive()) {
+            Sys.sleep(1)
+            readline("Press [enter] for next plot")
+          }
 
 
         }

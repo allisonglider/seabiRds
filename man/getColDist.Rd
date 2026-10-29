@@ -21,3 +21,9 @@ A vector of values (in km) giving the distance between each location in the trac
 \description{
 Calculates the distance between the colony (or any fixed location) and each point in a track.
 }
+\examples{
+# Distance from a colony at 45 N, 60 W to each location in a track
+lon <- c(-60, -60.5, -61)
+lat <- c(45, 45.2, 45.4)
+getColDist(lon, lat, colonyLon = -60, colonyLat = 45)
+}

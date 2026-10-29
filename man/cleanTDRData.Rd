@@ -12,8 +12,6 @@ cleanTDRData(data, deployments, plot = T)
 \item{deployments}{Name of object with formatted deployment data.}
 
 \item{plot}{Should data be plotted (TRUE or FALSE).}
-
-\item{tagTZ}{Timezone of TDR data.}
 }
 \value{
 A new dataframe containing cleaned TDR data.
