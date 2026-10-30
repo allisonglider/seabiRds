@@ -41,6 +41,12 @@
 #' downloaded data, where all the locations from all units are mixed together (Ecotone units), then you can leave this field empty use the fill_dep_id = T argument
 #' to automatically generate unique dep_ids.
 #'
+#' Column names: if a column argument is not given, the function looks for a column in deployments
+#' with the standard name (the same as the argument, e.g. mass_on). Required columns that are not
+#' found give an error, and optional columns that are not found are filled with NA. Give the column
+#' name as an argument when your data use a different name. Setting an optional argument to NA
+#' leaves that column out even if it exists.
+#'
 #' dep_tz and tagTZ are used to make sure a consistent time zone is used to clip the GPS data. The output times from this function will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones. Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
 #'
 #' fed_unfed is specific to data from black-legged kittiwakes (BLKI) at Middleton. This field is used to indicate if the bird in the deployment was part of the fed, unfed, or semi-fed groups.
@@ -53,14 +59,52 @@
 #'
 #' @return A new dataframe with deployment times in UTC and field names that are compatible with other functions in this package and the lab biologging database.
 
-formatDeployments <- function(deployments, dateFormat = "%Y-%m-%d %H:%M", dep_tz,
-                              species, metal_band, colour_band, dep_id, fill_dep_id = F,
-                              site, subsite = NA, nest = NA, dep_lon, dep_lat,
-                              time_released, time_recaptured = NA,
-                              status_on = NA, status_off = NA, mass_on = NA, mass_off = NA, exclude = NA, fed_unfed = NA,
-                              gps_id = NA, tdr_id = NA, acc_id = NA, gls_id = NA, mag_id = NA, cam_id = NA, hrl_id = NA,
+formatDeployments <- function(deployments,
+                              dateFormat = "%Y-%m-%d %H:%M",
+                              dep_tz,
+                              species,
+                              metal_band,
+                              colour_band,
+                              dep_id,
+                              fill_dep_id = F,
+                              site,
+                              subsite = NA,
+                              nest = NA,
+                              dep_lon,
+                              dep_lat,
+                              time_released,
+                              time_recaptured = NA,
+                              status_on = NA,
+                              status_off = NA,
+                              mass_on = NA,
+                              mass_off = NA,
+                              exclude = NA,
+                              fed_unfed = NA,
+                              gps_id = NA,
+                              tdr_id = NA,
+                              acc_id = NA,
+                              gls_id = NA, mag_id = NA, cam_id = NA, hrl_id = NA,
                               keep = NULL)
 {
+
+  # Use the standard column name for any column argument that was not supplied
+  supplied <- names(as.list(match.call())[-1])
+
+  required_cols <- c('species', 'metal_band', 'colour_band', 'dep_id',
+                     'site', 'dep_lon', 'dep_lat', 'time_released')
+  optional_cols <- c('subsite', 'nest', 'time_recaptured', 'status_on', 'status_off',
+                     'mass_on', 'mass_off', 'exclude', 'fed_unfed',
+                     'gps_id', 'tdr_id', 'acc_id', 'gls_id', 'mag_id', 'cam_id', 'hrl_id')
+
+  not_found <- required_cols[!(required_cols %in% supplied) & !(required_cols %in% names(deployments))]
+  if (length(not_found) > 0) {
+    stop('Column(s) not found in deployments: ', paste(not_found, collapse = ', '),
+         '. Add the column(s) or give the column name(s) as arguments.', call. = FALSE)
+  }
+
+  for (nm in c(required_cols, optional_cols)) {
+    if (!(nm %in% supplied) && nm %in% names(deployments)) assign(nm, nm, envir = environment())
+  }
 
   if (sum(is.na(deployments[,dep_lon])) > 0 | sum(is.na(deployments[,dep_lat])) > 0) stop("Cannot have missing values in deployment location. Check dep_lon and dep_lat.", call. = F)
 
