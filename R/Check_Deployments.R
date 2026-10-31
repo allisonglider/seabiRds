@@ -17,6 +17,8 @@
 #' @details
 #' A file is matched to a deployment when the dep_id appears anywhere in the file path. This is the rule used by
 #' axytrek_to_dataset(), cattrack_to_dataset() and lat2800_to_dataset() to find the files for each deployment.
+#' Deployments that produced no data have no file, so they are listed as deployments without files and ok stays FALSE.
+#' The report reminds you to confirm that these deployments really did not produce data.
 #' A deployment can have more than one file (e.g. Axy-trek files that end in _S1, _S2 and so on). There is no
 #' expected number of files, so the count in files_per_deployment is for you to review.
 #'
@@ -126,9 +128,15 @@ check_deployment_files <- function(deployments, files, pattern = '\\.csv$', recu
 
     message('Checked ', length(dep_ids), ' deployments and ', length(files) + length(other_files), ' files')
     .report_section('-- Deployments with no matching file --', deployments_without_files)
+    if (length(deployments_without_files) > 0) {
+      message('  Note: a deployment that produced no data will not have a file. Please confirm, using the field notes,\n',
+              '  that each of these deployments produced no data.')
+    }
     .report_section('-- Files with no matching deployment --', files_without_deployments)
-    .report_section('-- Files that match more than one dep_id --',
-                    paste0(ambiguous_files$file, ' matches ', ambiguous_files$dep_id))
+    if (nrow(ambiguous_files) > 0) {
+      .report_section('-- Files that match more than one dep_id --',
+                      paste0(ambiguous_files$file, ' matches ', ambiguous_files$dep_id))
+    }
     .report_section('-- Files that are not the expected file type --', other_files)
     .report_section('-- dep_id values used by more than one row --', duplicated_dep_ids)
     if (missing_dep_ids > 0) message('-- ', missing_dep_ids, ' row(s) have a blank dep_id --')
