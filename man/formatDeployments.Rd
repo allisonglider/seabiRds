@@ -109,6 +109,12 @@ then the readGPSdata() or readTDRdata() function you use in the next step will n
 downloaded data, where all the locations from all units are mixed together (Ecotone units), then you can leave this field empty use the fill_dep_id = T argument
 to automatically generate unique dep_ids.
 
+Column names: if a column argument is not given, the function looks for a column in deployments
+with the standard name (the same as the argument, e.g. mass_on). Required columns that are not
+found give an error, and optional columns that are not found are filled with NA. Give the column
+name as an argument when your data use a different name. Setting an optional argument to NA
+leaves that column out even if it exists.
+
 dep_tz and tagTZ are used to make sure a consistent time zone is used to clip the GPS data. The output times from this function will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones. Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
 
 fed_unfed is specific to data from black-legged kittiwakes (BLKI) at Middleton. This field is used to indicate if the bird in the deployment was part of the fed, unfed, or semi-fed groups.
