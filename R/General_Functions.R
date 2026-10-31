@@ -338,7 +338,7 @@ combineFiles <- function(files,
   temp <- data.frame()
 
   if (type %in% c("csv","txt")) {
-    for (ff in 1:length(files)) {
+    for (ff in seq_along(files)) {
       if (file.size(files[ff]) > 0) {
         tt <- utils::read.csv(files[ff], sep = sep, header = header, stringsAsFactors = stringsAsFactors, skip = skip)
         if (ncol(tt) == 1) tt <- utils::read.csv(files[ff], header = header, stringsAsFactors = stringsAsFactors, skip = skip)

@@ -443,7 +443,7 @@ readTechnosmartGPS <- function(inputFolder,
 
   output <- data.frame()
 
-  for (i in 1:nrow(deployments)) {
+  for (i in seq_len(nrow(deployments))) {
 
     if (is.na(deployments$dep_id[i]) == F) {
 
@@ -590,7 +590,7 @@ readCattrackGPS <- function(inputFolder,
 
   output <- data.frame()
 
-  for (i in 1:nrow(deployments)) {
+  for (i in seq_len(nrow(deployments))) {
 
     if (is.na(deployments$dep_id[i]) == F) {
 
@@ -688,7 +688,7 @@ cleanGPSData <- function(data,
   output <- data.frame()
   theDeps <- unique(data$dep_id)
 
-  for (dd in 1:length(theDeps)) {
+  for (dd in seq_along(theDeps)) {
 
     temp <- subset(data, data$dep_id == theDeps[dd])
 
@@ -962,7 +962,7 @@ readTechnosmartTDR <- function(inputFolder,
 
   output <- data.frame()
 
-  for (i in 1:nrow(deployments)) {
+  for (i in seq_len(nrow(deployments))) {
 
     if (is.na(deployments$dep_id[i]) == F) {
 
@@ -1067,7 +1067,7 @@ readLAT150 <- function(inputFolder,
 
   output <- data.frame()
 
-  for (i in 1:nrow(deployments)) {
+  for (i in seq_len(nrow(deployments))) {
 
     if (is.na(deployments$dep_id[i]) == F) {
 
@@ -1213,7 +1213,7 @@ cleanTDRData <- function(data,
   output <- data.frame()
   theDeps <- unique(data$dep_id)
 
-  for (dd in 1:length(theDeps)) {
+  for (dd in seq_along(theDeps)) {
 
     temp <- subset(data, data$dep_id == theDeps[dd])
 
@@ -1229,7 +1229,7 @@ cleanTDRData <- function(data,
 
         if (plot) {
 
-          if (nrow(temp) > 100000) idx <- seq(1,nrow(temp), 5) else idx <- 1:nrow(temp)
+          if (nrow(temp) > 100000) idx <- seq(1,nrow(temp), 5) else idx <- seq_len(nrow(temp))
 
           plotPressure <- ifelse(sum(is.na(temp$depth) == F) == 0, T, F)
 
