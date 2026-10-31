@@ -340,7 +340,7 @@ res$ok
 
 The accelerometer in this example comes from one of the tag models where the x and y axes are flipped, so `force_axes = TRUE` is used to correct them. This is explained in the section on Axy-trek tags below.
 
-```{r p3-import, eval = has_arrow, fig.width = 7, fig.height = 4}
+```{r p3-import, eval = has_arrow, fig.width = 7, fig.height = 4} to {r p3-import, eval = has_arrow, fig.width = 8, fig.height = 4.5}
 out_dir <- file.path(tempdir(), 'axytrek_dataset')
 
 seabiRds::axytrek_to_dataset(files = ex_files,
@@ -376,7 +376,7 @@ The plots show the full record from the logger. Data collected while the logger 
 
 - **ACC:** the x-axis of the accelerometer.
 - **TDR:** depth over time.
-- **GPS:** the distance of each location from the colony over time and a map of the track.
+- **GPS:** the distance of each location from the colony over time, and a map of the locations.
 
 Things to look for:
 

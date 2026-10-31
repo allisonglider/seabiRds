@@ -2,6 +2,7 @@
 # Listing them here stops R CMD check from reporting them as 'no visible binding for global variable'.
 # Only add names of data columns here, not functions or objects.
 utils::globalVariables(c(
+  '.data',
   'Activity', 'Altitude', 'Date', 'Day', 'Depth', 'Div.down', 'Div.up', 'Diving.duration',
   'HDOP', 'Hour', 'In.range', 'Latitude', 'Logger.ID', 'Longitude', 'Minute', 'Month',
   'Sat..Count', 'Second', 'Temp_sens', 'Time', 'Timestamp', 'WetDryState', 'X', 'Y', 'Year', 'Z',

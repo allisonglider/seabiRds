@@ -11,6 +11,9 @@
 # import and for showing the workflow. Do not use it for analyses that depend on the accelerometer
 # sampling frequency (e.g. getPeakFrequency(), dynamic body acceleration, pitch).
 
+# Input: the full raw Axy-trek export (GPS, TDR and ACC together) for deployment AA51_99699520_20240807,
+# a thick-billed murre (TBMU) at CGM, extracted from the .ard file with X-Manager.
+# Original file name: 'E:/Biologgers/CGM/TBMU/2024/technosmart/AA51_99699520_20240807_S1.csv'
 input_file  <- 'E:/Biologgers/CGM/TBMU/2024/technosmart/AA51_99699520_20240807_S1.csv'
 output_file <- 'inst/extdata/axytrek/AA51_99699520_20240807_S1.csv'
 
