@@ -54,4 +54,5 @@ tracks <- rbind(
 )
 filtered <- lapply(split(tracks, tracks$id), filterSpeed, threshold = 50)
 do.call(rbind, filtered)
+
 }

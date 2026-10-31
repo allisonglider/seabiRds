@@ -29,4 +29,5 @@ Make sure that your data are ordered within any grouping variable.
 lon <- c(-60, -60.5, -61)
 lat <- c(45, 45.2, 45.4)
 getDist(lon, lat)
+
 }

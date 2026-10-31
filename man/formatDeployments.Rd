@@ -41,7 +41,7 @@ formatDeployments(
 
 \item{dateFormat}{Character string specifying the POSIX standard format for your deployment times, defaults is Y-m-d H:M:S. See ?strftime for other datetime formats}
 
-\item{dep_tz}{Timezone of deployment.}
+\item{dep_tz}{Time zone of the release and recapture times in deployments (for example the local time zone of the site, such as 'Canada/Eastern'). See OlsonNames() for time zone codes.}
 
 \item{species}{Character string with name of the field containing the 4-letter AOU species code. Required.}
 
@@ -63,9 +63,9 @@ formatDeployments(
 
 \item{dep_lat}{Character string with name of the field containing the deployment latitude. Required.}
 
-\item{time_released}{Character string with name of the field containing deployment start time (when birds was released with tag), must use date format specified with dateFormat argument. Required.}
+\item{time_released}{Character string with name of the field containing deployment start time (when the bird was released with tag), must use date format specified with dateFormat argument. Required.}
 
-\item{time_recaptured}{Character string with name of the field containing deployment end time (when birds was recaptured with tag), must use date format specified with dateFormat argument.}
+\item{time_recaptured}{Character string with name of the field containing deployment end time (when the bird was recaptured with tag), must use date format specified with dateFormat argument.}
 
 \item{status_on}{Breeding status at start of deployment. Values accepted: E - eggs, C - chicks, FB - failed-breeder, NB - non-breeder, PB - pre-breeder, J - juvenile.}
 
@@ -96,18 +96,33 @@ formatDeployments(
 \item{keep}{List of variable names for other deployment data to keep with output.}
 }
 \value{
-A new dataframe with deployment times in UTC and field names that are compatible with other functions in this package and the lab biologging database.
+A new dataframe with deployment times in UTC and field names that are compatible with the \code{*_to_dataset()} functions and the lab biologging database.
 }
 \description{
-This function standardizes deployment data, which is the first step in processing any tracking data. The function will create standard field names and formats for key data about each deployment. All deployment times will be converted to UTC, to ensure tracking data are clipped to the correct time.
+This function standardizes deployment data, which is the step before importing biologger data with the \code{*_to_dataset()} functions
+(\code{axytrek_to_dataset()}, \code{cattrack_to_dataset()}, \code{ecotone_to_dataset()} and \code{lat2800_to_dataset()}).
+The function creates standard field names and formats for key data about each deployment, and these importers
+use the result to link the biologger data to each deployment and to flag the data collected while the logger was deployed.
+All deployment times are converted to UTC to match the biologger data.
 }
 \details{
-dep_id is a critical field for matching deployment information to the tracking data. Every dep_id in your data must be unique. If these data will be imported into the Arctic Ecology Lab Biologging database,
-then each dep_id must be unique within the database. Using a dep_id based on the band number and deployment date will ensure that each dep_id is unique. If your tracking data has a single data file for
-each deployment (Technosmart, Cattrack, and Lotek units), then the dep_id should be consistent with the name of this file. If the dep_id is not contained within the file name,
-then the readGPSdata() or readTDRdata() function you use in the next step will not be able to find the data associated with this deployment.  If you have remotely
-downloaded data, where all the locations from all units are mixed together (Ecotone units), then you can leave this field empty use the fill_dep_id = T argument
-to automatically generate unique dep_ids.
+This function can be used with any deployment metadata sheet. It converts your sheet to a standard format
+by mapping your column names to the standard field names (see the arguments above), and then
+standardizes the formats of the key fields. If your sheet already uses the standard names, which are the same as the argument names
+(e.g. \code{mass_on}), the function finds them without being told.
+
+If you do not already have a metadata sheet, a deployment template that uses the standard column names is installed with this package. Use
+\code{system.file('extdata', 'deployments_template.xlsx', package = 'seabiRds')} to find it. Its \code{Instructions} and \code{Data dictionary}
+sheets describe each column. See \code{vignette('Managing-biologging-data', package = 'seabiRds')} for the workflow that uses it.
+
+dep_id is a critical field for matching deployment information to the biologger data. Every dep_id in your data must be unique. If these data will be imported into the Arctic Ecology Lab Biologging database,
+then each dep_id must be unique within the database. The recommended format is \code{<loggerid>_<metalband>_<yyyymmdd>}, which the deployment template builds for you.
+If your biologger data has a single file for each deployment (Axy-trek, Cattrack and LAT2800 units), the dep_id must appear in the name of that file.
+If it does not, the \code{*_to_dataset()} function will not be able to find the data associated with the deployment.
+\code{check_deployment_files()} can be used to check this before importing. Ecotone units are downloaded remotely and the data from several units
+are mixed together in the same files. The file names do not need to contain the dep_id, because \code{ecotone_to_dataset()} matches the data to the deployment using
+the logger ID in the data and the gps_id in the deployment data. A dep_id is still needed for each deployment. If it is missing, you can use the fill_dep_id = TRUE argument
+to generate one from the metal band and the release date.
 
 Column names: if a column argument is not given, the function looks for a column in deployments
 with the standard name (the same as the argument, e.g. mass_on). Required columns that are not
@@ -115,13 +130,41 @@ found give an error, and optional columns that are not found are filled with NA.
 name as an argument when your data use a different name. Setting an optional argument to NA
 leaves that column out even if it exists.
 
-dep_tz and tagTZ are used to make sure a consistent time zone is used to clip the GPS data. The output times from this function will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones. Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
+dep_tz is the time zone of the release and recapture times in your deployment data. Both times are converted to UTC, which is the time zone
+the \code{*_to_dataset()} functions convert the biologger data to. Separately, the \code{timezone} argument of the \code{*_to_dataset()} functions is the time zone
+of the raw logger files, and most devices record time in 'UTC'. You can look up time zone codes with OlsonNames() or here:
+https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
 
 fed_unfed is specific to data from black-legged kittiwakes (BLKI) at Middleton. This field is used to indicate if the bird in the deployment was part of the fed, unfed, or semi-fed groups.
-Input values must be either fed, unfed, or semi, captalization does not matter. Other users can ignore this field.
+Input values must be either fed, unfed, or semi, capitalization does not matter. Other users can ignore this field.
 
 gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id are each used to store the identifier for the biologger units deployed. Because some deployments use multiple devices,
 and some devices have multiple logger types, each is recorded separately. For example, Technosmart Axy-trek units record GPS, TDR, and ACC data, so the logger id should be entered in each of these fields
 to show that all three data types are available. If both an Ecotone GPS and a Lotek TDR were deployed at the same time on the same bird, then record the Ecotone logger ID
 in the gps_id field and the Lotek TDR logger id in the TDR field.
+}
+\examples{
+# read the example deployment that is installed with the package (in the deployment template format)
+example_file <- system.file('extdata', 'axytrek', 'axytrek_ex.csv', package = 'seabiRds')
+deployments <- read.csv(example_file)
+
+# standardize it, giving the time zone of the release and recapture times
+dep <- formatDeployments(deployments, dep_tz = 'Canada/Eastern')
+dep[, c('dep_id', 'site', 'species', 'time_released', 'time_recaptured')]
+
+# if a column has a different name, give the name as an argument
+names(deployments)[names(deployments) == 'metal_band'] <- 'band'
+dep <- formatDeployments(deployments, dep_tz = 'Canada/Eastern', metal_band = 'band')
+
+\dontrun{
+# copy the deployment template to your working directory
+template <- system.file('extdata', 'deployments_template.xlsx', package = 'seabiRds')
+file.copy(template, 'seabiRds_deployments_template.xlsx')
+}
+
+}
+\seealso{
+\code{check_deployment_files()} to check the deployment data against the biologger files before importing,
+and \code{axytrek_to_dataset()}, \code{cattrack_to_dataset()}, \code{ecotone_to_dataset()} and
+\code{lat2800_to_dataset()}, which use the formatted deployments.
 }

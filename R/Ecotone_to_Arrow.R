@@ -43,8 +43,9 @@ ecotone_tdr_to_dataset <- function(data,
     dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
 
-  seabiRds::cleanTDRData(data = data |> dplyr::rename(depth = depth_m) |> dplyr::filter(!is.na(depth)),
-                         deployments = deployments, plot = plot)
+  # All data are kept and the deployed column flags the deployment period,
+  # so the plot only needs to show which records are flagged.
+  if (plot == T) .plot_tdr_check(data = data, deployments = deployments)
 
   data |>
     arrow::write_dataset(paste0(output_dataset,'/tdr'), format = "parquet",
@@ -137,10 +138,9 @@ ecotone_gps_to_dataset <- function(data,
     dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
 
-  cleanGPSData(data = data,
-               deployments = deployments,
-               speedThreshold = NA,
-               plot = plot)
+  # All data are kept and the deployed column flags the deployment period,
+  # so the plot only needs to show which locations are flagged.
+  if (plot == T) .plot_gps_check(data = data, deployments = deployments)
 
   data |>
     arrow::write_dataset(paste0(output_dataset,'/gps'), format = "parquet",

@@ -49,6 +49,8 @@
 #' locs <- sf::st_as_sf(locs, coords = c('lon', 'lat'), crs = 4326)
 #'
 #' extract_raster_stack(raster_stack = r, locations = locs, names_var = 'rn')
+#'
+#' @export
 
 extract_raster_stack <- function(raster_stack, locations, names_var) {
 
@@ -83,5 +85,4 @@ extract_raster_stack <- function(raster_stack, locations, names_var) {
 
   output
 
-  #' @export extract_raster_stack
 }

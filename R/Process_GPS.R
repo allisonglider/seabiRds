@@ -2,11 +2,15 @@
 #' Format deployment data
 #'
 #' @description
-#' This function standardizes deployment data, which is the first step in processing any tracking data. The function will create standard field names and formats for key data about each deployment. All deployment times will be converted to UTC, to ensure tracking data are clipped to the correct time.
+#' This function standardizes deployment data, which is the step before importing biologger data with the \code{*_to_dataset()} functions
+#' (\code{axytrek_to_dataset()}, \code{cattrack_to_dataset()}, \code{ecotone_to_dataset()} and \code{lat2800_to_dataset()}).
+#' The function creates standard field names and formats for key data about each deployment, and these importers
+#' use the result to link the biologger data to each deployment and to flag the data collected while the logger was deployed.
+#' All deployment times are converted to UTC to match the biologger data.
 #'
 #' @param deployments A data frame with deployment data. Required.
 #' @param dateFormat Character string specifying the POSIX standard format for your deployment times, defaults is Y-m-d H:M:S. See ?strftime for other datetime formats
-#' @param dep_tz Timezone of deployment.
+#' @param dep_tz Time zone of the release and recapture times in deployments (for example the local time zone of the site, such as 'Canada/Eastern'). See OlsonNames() for time zone codes.
 #' @param species Character string with name of the field containing the 4-letter AOU species code. Required.
 #' @param metal_band Character string with name of the field containing the metal band number. Values should be numeric with 8 or 9 digits, dashes are not allowed.
 #' @param colour_band Character string with name of the field containing the colour band code.
@@ -15,8 +19,8 @@
 #' @param site Character string with name of the field containing the site (e.g. Coats). Required.
 #' @param subsite Character string with name of the field containing the subsite (e.g. Coats West). This is used if your study area has distinct units within the main site.
 #' @param nest Character string with name of the field containing the nest id. Optional.
-#' @param time_released Character string with name of the field containing deployment start time (when birds was released with tag), must use date format specified with dateFormat argument. Required.
-#' @param time_recaptured Character string with name of the field containing deployment end time (when birds was recaptured with tag), must use date format specified with dateFormat argument.
+#' @param time_released Character string with name of the field containing deployment start time (when the bird was released with tag), must use date format specified with dateFormat argument. Required.
+#' @param time_recaptured Character string with name of the field containing deployment end time (when the bird was recaptured with tag), must use date format specified with dateFormat argument.
 #' @param dep_lon Character string with name of the field containing the deployment longitude. Required.
 #' @param dep_lat Character string with name of the field containing the deployment latitude. Required.
 #' @param status_on Breeding status at start of deployment. Values accepted: E - eggs, C - chicks, FB - failed-breeder, NB - non-breeder, PB - pre-breeder, J - juvenile.
@@ -34,12 +38,23 @@
 #' @param hrl_id Character string with name of the field containing the name of the heart rate logger tag deployed.
 #' @param keep List of variable names for other deployment data to keep with output.
 #'
-#' @details dep_id is a critical field for matching deployment information to the tracking data. Every dep_id in your data must be unique. If these data will be imported into the Arctic Ecology Lab Biologging database,
-#' then each dep_id must be unique within the database. Using a dep_id based on the band number and deployment date will ensure that each dep_id is unique. If your tracking data has a single data file for
-#' each deployment (Technosmart, Cattrack, and Lotek units), then the dep_id should be consistent with the name of this file. If the dep_id is not contained within the file name,
-#' then the readGPSdata() or readTDRdata() function you use in the next step will not be able to find the data associated with this deployment.  If you have remotely
-#' downloaded data, where all the locations from all units are mixed together (Ecotone units), then you can leave this field empty use the fill_dep_id = T argument
-#' to automatically generate unique dep_ids.
+#' @details This function can be used with any deployment metadata sheet. It converts your sheet to a standard format
+#' by mapping your column names to the standard field names (see the arguments above), and then
+#' standardizes the formats of the key fields. If your sheet already uses the standard names, which are the same as the argument names
+#' (e.g. \code{mass_on}), the function finds them without being told.
+#'
+#' If you do not already have a metadata sheet, a deployment template that uses the standard column names is installed with this package. Use
+#' \code{system.file('extdata', 'deployments_template.xlsx', package = 'seabiRds')} to find it. Its \code{Instructions} and \code{Data dictionary}
+#' sheets describe each column. See \code{vignette('Managing-biologging-data', package = 'seabiRds')} for the workflow that uses it.
+#'
+#' dep_id is a critical field for matching deployment information to the biologger data. Every dep_id in your data must be unique. If these data will be imported into the Arctic Ecology Lab Biologging database,
+#' then each dep_id must be unique within the database. The recommended format is \code{<loggerid>_<metalband>_<yyyymmdd>}, which the deployment template builds for you.
+#' If your biologger data has a single file for each deployment (Axy-trek, Cattrack and LAT2800 units), the dep_id must appear in the name of that file.
+#' If it does not, the \code{*_to_dataset()} function will not be able to find the data associated with the deployment.
+#' \code{check_deployment_files()} can be used to check this before importing. Ecotone units are downloaded remotely and the data from several units
+#' are mixed together in the same files. The file names do not need to contain the dep_id, because \code{ecotone_to_dataset()} matches the data to the deployment using
+#' the logger ID in the data and the gps_id in the deployment data. A dep_id is still needed for each deployment. If it is missing, you can use the fill_dep_id = TRUE argument
+#' to generate one from the metal band and the release date.
 #'
 #' Column names: if a column argument is not given, the function looks for a column in deployments
 #' with the standard name (the same as the argument, e.g. mass_on). Required columns that are not
@@ -47,17 +62,45 @@
 #' name as an argument when your data use a different name. Setting an optional argument to NA
 #' leaves that column out even if it exists.
 #'
-#' dep_tz and tagTZ are used to make sure a consistent time zone is used to clip the GPS data. The output times from this function will be in the tagTZ. Most devices record time in 'UTC'. You can look up timezone codes here: https://en.wikipedia.org/wiki/List_of_tz_database_time_zones. Eastern time is 'US/Eastern' and Pacific time is 'US/Pacific'.
+#' dep_tz is the time zone of the release and recapture times in your deployment data. Both times are converted to UTC, which is the time zone
+#' the \code{*_to_dataset()} functions convert the biologger data to. Separately, the \code{timezone} argument of the \code{*_to_dataset()} functions is the time zone
+#' of the raw logger files, and most devices record time in 'UTC'. You can look up time zone codes with OlsonNames() or here:
+#' https://en.wikipedia.org/wiki/List_of_tz_database_time_zones.
 #'
 #' fed_unfed is specific to data from black-legged kittiwakes (BLKI) at Middleton. This field is used to indicate if the bird in the deployment was part of the fed, unfed, or semi-fed groups.
-#' Input values must be either fed, unfed, or semi, captalization does not matter. Other users can ignore this field.
+#' Input values must be either fed, unfed, or semi, capitalization does not matter. Other users can ignore this field.
 #'
 #' gps_id, tdr_id, acc_id, gls_id, mag_id, cam_id, hrl_id are each used to store the identifier for the biologger units deployed. Because some deployments use multiple devices,
 #' and some devices have multiple logger types, each is recorded separately. For example, Technosmart Axy-trek units record GPS, TDR, and ACC data, so the logger id should be entered in each of these fields
 #' to show that all three data types are available. If both an Ecotone GPS and a Lotek TDR were deployed at the same time on the same bird, then record the Ecotone logger ID
 #' in the gps_id field and the Lotek TDR logger id in the TDR field.
 #'
-#' @return A new dataframe with deployment times in UTC and field names that are compatible with other functions in this package and the lab biologging database.
+#' @seealso \code{check_deployment_files()} to check the deployment data against the biologger files before importing,
+#' and \code{axytrek_to_dataset()}, \code{cattrack_to_dataset()}, \code{ecotone_to_dataset()} and
+#' \code{lat2800_to_dataset()}, which use the formatted deployments.
+#'
+#' @return A new dataframe with deployment times in UTC and field names that are compatible with the \code{*_to_dataset()} functions and the lab biologging database.
+#'
+#' @examples
+#' # read the example deployment that is installed with the package (in the deployment template format)
+#' example_file <- system.file('extdata', 'axytrek', 'axytrek_ex.csv', package = 'seabiRds')
+#' deployments <- read.csv(example_file)
+#'
+#' # standardize it, giving the time zone of the release and recapture times
+#' dep <- formatDeployments(deployments, dep_tz = 'Canada/Eastern')
+#' dep[, c('dep_id', 'site', 'species', 'time_released', 'time_recaptured')]
+#'
+#' # if a column has a different name, give the name as an argument
+#' names(deployments)[names(deployments) == 'metal_band'] <- 'band'
+#' dep <- formatDeployments(deployments, dep_tz = 'Canada/Eastern', metal_band = 'band')
+#'
+#' \dontrun{
+#' # copy the deployment template to your working directory
+#' template <- system.file('extdata', 'deployments_template.xlsx', package = 'seabiRds')
+#' file.copy(template, 'seabiRds_deployments_template.xlsx')
+#' }
+#'
+#' @export
 
 formatDeployments <- function(deployments,
                               dateFormat = "%Y-%m-%d %H:%M",
@@ -315,11 +358,15 @@ formatDeployments <- function(deployments,
   # Return formatted deployment data
   dep
 
-  #' @export formatDeployments
 }
 
 # ---------------------------------------------------------------------------------------------------------------
 #' Reads in raw GPS data and sets up standard field names.
+#'
+#' @description
+#' \strong{Legacy function.} This is an old data importer that has been superseded by the \code{*_to_dataset} series of
+#' functions (\code{axytrek_to_dataset()}, \code{cattrack_to_dataset()}, \code{ecotone_to_dataset()} and
+#' \code{lat2800_to_dataset()}) and is only retained here for backward compatibility.
 #'
 #' @param inputFolder Folder containing all the raw GPS files to be processed.
 #' @param deployments Name of object with deployment data.
@@ -334,6 +381,8 @@ formatDeployments <- function(deployments,
 #' The function will print lists of: GPS files that contain no data, GPS files that have no matching deployments in the deployment data, and deployments that have no matching GPS files. This is intended to help you identify errors in data entry or file naming. For technosmart units, I recommend you re-export data any time you change the file name because X-Manager includes the file name as a column in the data.
 #'
 #' @return A new dataframe containing all GPS data.
+#'
+#' @export
 
 readGPSData <- function(inputFolder,
                         deployments,
@@ -370,7 +419,6 @@ readGPSData <- function(inputFolder,
 
   output
 
-  #' @export readGPSData
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -395,7 +443,7 @@ readTechnosmartGPS <- function(inputFolder,
 
   output <- data.frame()
 
-  for (i in 1:nrow(deployments)) {
+  for (i in seq_len(nrow(deployments))) {
 
     if (is.na(deployments$dep_id[i]) == F) {
 
@@ -542,7 +590,7 @@ readCattrackGPS <- function(inputFolder,
 
   output <- data.frame()
 
-  for (i in 1:nrow(deployments)) {
+  for (i in seq_len(nrow(deployments))) {
 
     if (is.na(deployments$dep_id[i]) == F) {
 
@@ -611,6 +659,12 @@ readCattrackGPS <- function(inputFolder,
 # ---------------------------------------------------------------------------------------------------------------
 #' Cleans up GPS data, by clipping to deployment times and filtering unrealistic locations.
 #'
+#' @description
+#' \strong{Legacy function.} This is an old data processing function that has been superseded by the
+#' \code{*_to_dataset} series of functions (\code{axytrek_to_dataset()}, \code{cattrack_to_dataset()},
+#' \code{ecotone_to_dataset()} and \code{lat2800_to_dataset()}) and is only retained here for backward compatibility.
+#' The newer functions keep all of the data and flag the deployment period with the \code{deployed} column.
+#'
 #' @param data Name of object with formatted GPS data.
 #' @param deployments Name of object with formatted deployment data.
 #' @param speedThreshold Fastest possible movement in km/hr.
@@ -622,6 +676,8 @@ readCattrackGPS <- function(inputFolder,
 #' is missing. In this case the function creates a 'dep_id' field in each data frame by concatenating the tag
 #'
 #' @return A new dataframe containing cleaned GPS data.
+#'
+#' @export
 
 cleanGPSData <- function(data,
                          deployments,
@@ -632,7 +688,7 @@ cleanGPSData <- function(data,
   output <- data.frame()
   theDeps <- unique(data$dep_id)
 
-  for (dd in 1:length(theDeps)) {
+  for (dd in seq_along(theDeps)) {
 
     temp <- subset(data, data$dep_id == theDeps[dd])
 
@@ -682,7 +738,6 @@ cleanGPSData <- function(data,
 
   output
 
-  #' @export cleanGPSData
 }
 
 # -----
@@ -732,7 +787,60 @@ cleanGPSData <- function(data,
   pp <- cowplot::plot_grid(myPlot, myMap)
   pp
 
-  #' @export .cleanGPSDataPlot
+}
+
+# -----
+# Sub-function for plotting GPS data in the importers (Cattrack, Ecotone).
+#
+# The importers keep all of the data and flag the deployment period with the deployed column, so
+# nothing needs to be clipped or filtered before saving. This only draws the plot of distance from the
+# colony and the map: deployed locations in black, undeployed locations in red. It returns nothing and does
+# not pause between plots (unlike cleanGPSData()). A plot that cannot be drawn gives a message or warning
+# and never stops the data from being saved.
+
+.plot_gps_check <- function(data, deployments) {
+
+  data <- as.data.frame(dplyr::ungroup(data))
+
+  for (id in unique(data$dep_id)) {
+
+    tt <- deployments[deployments$dep_id == id, ]
+    if (nrow(tt) == 0) next
+    tt <- tt[1, ]
+
+    temp <- data[data$dep_id == id & !is.na(data$lon) & !is.na(data$lat), ]
+    temp <- temp[order(temp$time), ]
+    if (nrow(temp) == 0) next
+
+    if (is.na(tt$time_recaptured)) tt$time_recaptured <- max(temp$time, na.rm = TRUE)
+
+    # use the deployment location as the colony, or the first location after release if it is missing
+    if (is.na(tt$dep_lon) | is.na(tt$dep_lat)) {
+      first <- which(temp$time >= tt$time_released)[1]
+      if (is.na(first)) first <- 1
+      colony_lon <- temp$lon[first]
+      colony_lat <- temp$lat[first]
+      yy <- 'Distance from first location (km)'
+    } else {
+      colony_lon <- tt$dep_lon
+      colony_lat <- tt$dep_lat
+      yy <- 'Distance from colony (km)'
+    }
+    temp$coldist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = colony_lon, colonyLat = colony_lat)
+
+    new_data <- temp[temp$deployed == 1, ]
+
+    if (nrow(new_data) > 5) {
+      tryCatch(
+        print(.cleanGPSDataPlot(temp, new_data, tt, yy)),
+        error = function(e) warning('Plot could not be drawn for ', id, ': ', conditionMessage(e), call. = FALSE)
+      )
+    } else {
+      message('Less than 5 deployed locations for ', id, ', plot not drawn (all data are still saved)')
+    }
+  }
+
+  invisible(NULL)
 }
 
 # -----
@@ -769,11 +877,15 @@ cleanGPSData <- function(data,
     unmatchedDeployments <- unmatchedDeployments[!is.na(unmatchedDeployments)]
     print(as.character(unmatchedDeployments))
   }
-  #' @export .matchFiles
 }
 
 # ---------------------------------------------------------------------------------------------------------------
 #' Reads in raw TDR data and sets up a standard format.
+#'
+#' @description
+#' \strong{Legacy function.} This is an old data importer that has been superseded by the \code{*_to_dataset} series of
+#' functions (\code{axytrek_to_dataset()}, \code{cattrack_to_dataset()}, \code{ecotone_to_dataset()} and
+#' \code{lat2800_to_dataset()}) and is only retained here for backward compatibility.
 #'
 #' @param inputFolder Folder containing all the raw GPS files to be processed.
 #' @param deployments Name of object with deployment data.
@@ -790,6 +902,8 @@ cleanGPSData <- function(data,
 #' The function will print lists of: TDR files that contain no data, TDR files that have no matching deployments in the deployment data, and deployments that have no matching TDR files. This is intended to help you identify errors in data entry or file naming. For technosmart units, I recommend you re-export data any time you change the file name because X-Manager includes the file name as a column in the data.
 #'
 #' @return A new dataframe containing all TDR data.
+#'
+#' @export
 
 readTDRData <- function(inputFolder,
                         deployments,
@@ -821,7 +935,6 @@ if (tagType == "Ecotone") {
   }
   output
 
-  #' @export readTDRData
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -849,7 +962,7 @@ readTechnosmartTDR <- function(inputFolder,
 
   output <- data.frame()
 
-  for (i in 1:nrow(deployments)) {
+  for (i in seq_len(nrow(deployments))) {
 
     if (is.na(deployments$dep_id[i]) == F) {
 
@@ -954,7 +1067,7 @@ readLAT150 <- function(inputFolder,
 
   output <- data.frame()
 
-  for (i in 1:nrow(deployments)) {
+  for (i in seq_len(nrow(deployments))) {
 
     if (is.na(deployments$dep_id[i]) == F) {
 
@@ -1075,6 +1188,12 @@ readEcotoneTDR <- function(inputFolder,
 # ---------------------------------------------------------------------------------------------------------------
 #' Cleans up TDR data, by clipping to deployment times
 #'
+#' @description
+#' \strong{Legacy function.} This is an old data processing function that has been superseded by the
+#' \code{*_to_dataset} series of functions (\code{axytrek_to_dataset()}, \code{cattrack_to_dataset()},
+#' \code{ecotone_to_dataset()} and \code{lat2800_to_dataset()}) and is only retained here for backward compatibility.
+#' The newer functions keep all of the data and flag the deployment period with the \code{deployed} column.
+#'
 #' @param data Name of object with formatted TDR data.
 #' @param deployments Name of object with formatted deployment data.
 #' @param plot Should data be plotted (TRUE or FALSE).
@@ -1083,6 +1202,8 @@ readEcotoneTDR <- function(inputFolder,
 #' times and the TDR data is made using the 'dep_id' field. Because
 #'
 #' @return A new dataframe containing cleaned TDR data.
+#'
+#' @export
 
 cleanTDRData <- function(data,
                          deployments,
@@ -1092,7 +1213,7 @@ cleanTDRData <- function(data,
   output <- data.frame()
   theDeps <- unique(data$dep_id)
 
-  for (dd in 1:length(theDeps)) {
+  for (dd in seq_along(theDeps)) {
 
     temp <- subset(data, data$dep_id == theDeps[dd])
 
@@ -1108,7 +1229,7 @@ cleanTDRData <- function(data,
 
         if (plot) {
 
-          if (nrow(temp) > 100000) idx <- seq(1,nrow(temp), 5) else idx <- 1:nrow(temp)
+          if (nrow(temp) > 100000) idx <- seq(1,nrow(temp), 5) else idx <- seq_len(nrow(temp))
 
           plotPressure <- ifelse(sum(is.na(temp$depth) == F) == 0, T, F)
 
@@ -1165,8 +1286,56 @@ cleanTDRData <- function(data,
 
   output
 
-  #' @export cleanTDRData
 }
 
 # -----
+
+# -----
+# Sub-function for plotting TDR data in the importers (Ecotone, LAT2800).
+#
+# The importers keep all of the data and flag the deployment period with the deployed column, so
+# nothing needs to be clipped or filtered before saving. This only draws the plot of depth over time:
+# deployed data in black, undeployed data in red, and release and recapture times as dashed lines.
+# It returns nothing and does not pause between plots (unlike cleanTDRData()). A plot that cannot be
+# drawn gives a message or warning and never stops the data from being saved.
+
+.plot_tdr_check <- function(data, deployments) {
+
+  data <- as.data.frame(dplyr::ungroup(data))
+  data <- data[!is.na(data$depth_m), ]
+
+  for (id in unique(data$dep_id)) {
+
+    tt <- deployments[deployments$dep_id == id, ]
+    if (nrow(tt) == 0) next
+    tt <- tt[1, ]
+
+    temp <- data[data$dep_id == id, ]
+    temp <- temp[order(temp$time), ]
+
+    if (sum(temp$deployed == 1, na.rm = TRUE) <= 5) {
+      message('Less than 5 deployed depth records for ', id, ', plot not drawn (all data are still saved)')
+      next
+    }
+
+    # large datasets are thinned so the plot draws quickly
+    if (nrow(temp) > 100000) temp <- temp[seq(1, nrow(temp), 5), ]
+
+    release_recapture <- stats::na.omit(c(tt$time_released, tt$time_recaptured))
+
+    tryCatch({
+      p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth_m)) +
+        ggplot2::geom_line(col = 'red') +
+        ggplot2::geom_line(data = temp[temp$deployed == 1, ], ggplot2::aes(x = time, y = depth_m)) +
+        ggplot2::geom_vline(xintercept = release_recapture, linetype = 2, col = 'red') +
+        ggplot2::scale_y_reverse() +
+        ggplot2::theme_light() +
+        ggplot2::labs(title = id, y = 'Depth (m)', x = 'Time')
+      suppressWarnings(print(p))
+    },
+    error = function(e) warning('Plot could not be drawn for ', id, ': ', conditionMessage(e), call. = FALSE))
+  }
+
+  invisible(NULL)
+}
 

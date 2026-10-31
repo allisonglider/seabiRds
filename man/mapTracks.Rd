@@ -8,18 +8,30 @@ mapTracks(
   data,
   groups = "dep_id",
   legend_label = "Deployments",
-  use_legend = T
+  use_legend = T,
+  deployed_only = FALSE
 )
 }
 \arguments{
-\item{data}{tracking data in the seabiRds format}
+\item{data}{tracking data in the seabiRds format. This can be a data frame from the standardized
+gps dataset, for example \code{dplyr::collect(arrow::open_dataset('path/gps'))}. Locations are
+sorted by dep_id and time (if these columns are present) before they are drawn.}
 
 \item{groups}{name of the variable to use for plotting line/point colours}
 
 \item{legend_label}{Title for legend}
 
 \item{use_legend}{Should the legend be plotted (TRUE/FALSE)}
+
+\item{deployed_only}{If TRUE and data has a deployed column, only locations collected while the logger
+was deployed (deployed = 1) are mapped. The standardized datasets keep locations before release and
+after recapture, flagged with deployed = 0. Default is FALSE.}
 }
 \description{
 Creates a simple plot of logger tracks using a grouping variable for plot colours
+}
+\details{
+The level of detail in the base map depends on how far the locations are from the colony. If data has a
+coldist column (distance from the colony, in km) it is used. If not, the distance from the first location
+is used.
 }

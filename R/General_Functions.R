@@ -17,11 +17,12 @@
 #' @examples
 #' x <- c(1,2,1,2,4,5,7,8,4,2,3,4,4,4)
 #' getMode(x)
+#'
+#' @export
 
 getMode <- function(x) {
   uniqv <- unique(x)
   uniqv[which.max(tabulate(match(x, uniqv)))]
-  #' @export getMode
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -37,6 +38,8 @@ getMode <- function(x) {
 #' lon <- c(-60, -60.5, -61)
 #' lat <- c(45, 45.2, 45.4)
 #' getColDist(lon, lat, colonyLon = -60, colonyLat = 45)
+#'
+#' @export
 
 getColDist <- function(lon, lat, colonyLon, colonyLat) {
 
@@ -66,7 +69,6 @@ getColDist <- function(lon, lat, colonyLon, colonyLat) {
 
   as.vector(terra::distance(dd, cc, lonlat = T)/1000)
 
-  #' @export getColDist
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -94,6 +96,8 @@ getColDist <- function(lon, lat, colonyLon, colonyLat) {
 #'
 #' # example with text input that does not assign ID to colony
 #' getSessions(value = tt, ignore = TRUE, ignoreValue = 'colony')
+#'
+#' @export
 
 getSessions <- function(value, ignore = FALSE, ignoreValue = NULL, maxSession = Inf) {
 
@@ -125,7 +129,6 @@ getSessions <- function(value, ignore = FALSE, ignoreValue = NULL, maxSession = 
 
   output
 
-  #' @export getSessions
 }
 
 
@@ -146,6 +149,8 @@ getSessions <- function(value, ignore = FALSE, ignoreValue = NULL, maxSession = 
 #' lon <- c(-60, -60.5, -61)
 #' lat <- c(45, 45.2, 45.4)
 #' getDist(lon, lat)
+#'
+#' @export
 
 getDist <- function(lon, lat) {
 
@@ -162,7 +167,6 @@ getDist <- function(lon, lat) {
   dd <- as.matrix(dd)
 
   as.vector(terra::distance(dd, sequential =TRUE, lonlat = TRUE)/1000)
-  #' @export getDist
 }
 
 # --------------------------------------------------------------------------------------------------------------
@@ -198,6 +202,7 @@ getDist <- function(lon, lat) {
 #'   dplyr::group_by(id) |>
 #'   dplyr::mutate(dt_min = getDT(time, units = 'min'))
 #'
+#' @export
 
 getDT <- function(time, units = "hours") {
 
@@ -218,7 +223,6 @@ getDT <- function(time, units = "hours") {
 
   tt
 
-  #' @export getDT
 }
 
 # ---------------------------------------------------------------------------------------
@@ -261,6 +265,8 @@ getDT <- function(time, units = "hours") {
 #' )
 #' filtered <- lapply(split(tracks, tracks$id), filterSpeed, threshold = 50)
 #' do.call(rbind, filtered)
+#'
+#' @export
 
 filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold) {
 
@@ -301,7 +307,6 @@ filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold
   }
 
   data
-  #' @export filterSpeed
 }
 
 # ---------------------------------------------------------------------------------------
@@ -317,6 +322,8 @@ filterSpeed <- function(data, lon = "lon", lat = "lat", time = "time", threshold
 #' @param combineColumns Change to TRUE if you want to merge files by columns, default is FALSE which binds files by rows.
 #'
 #' @return Dataframe with all files combined.
+#'
+#' @export
 
 
 combineFiles <- function(files,
@@ -331,7 +338,7 @@ combineFiles <- function(files,
   temp <- data.frame()
 
   if (type %in% c("csv","txt")) {
-    for (ff in 1:length(files)) {
+    for (ff in seq_along(files)) {
       if (file.size(files[ff]) > 0) {
         tt <- utils::read.csv(files[ff], sep = sep, header = header, stringsAsFactors = stringsAsFactors, skip = skip)
         if (ncol(tt) == 1) tt <- utils::read.csv(files[ff], header = header, stringsAsFactors = stringsAsFactors, skip = skip)
@@ -353,7 +360,6 @@ combineFiles <- function(files,
 
   temp
 
-  #' @export combineFiles
 
 }
 
@@ -373,6 +379,7 @@ combineFiles <- function(files,
 #' print(myTimes)
 #' getFrequency(myTimes)
 #'
+#' @export
 
 getFrequency <- function(time) {
 
@@ -380,7 +387,6 @@ getFrequency <- function(time) {
   if (mt == 0) stop("Dominant sampling frequency was 0, check that your POSIXct values use milliseconds: %H:%M:%OS", call. = F)
   1/signif(getMode(getDT(time, units = "sec")),2)
 
-  #' @export getFrequency
 }
 
 

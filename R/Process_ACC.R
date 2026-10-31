@@ -55,6 +55,8 @@
 #' plot(dat ~ tim, type = 'l')
 #' plot(myPeaks ~ tim, type = 'l')
 #' par(mfrow = c(1,1))
+#'
+#' @export
 
 
 # Version that accounts for unequal time intervals
@@ -143,7 +145,6 @@ getPeakFrequency <- function(data, time, method = c('pracma', 'fft'), window, fr
 
   return(peaks)
 
-  #' @export getPeakFrequency
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -155,6 +156,8 @@ getPeakFrequency <- function(data, time, method = c('pracma', 'fft'), window, fr
 #' @param window Size of moving window for estimating peaks, in seconds
 #'
 #' @details Calculates inter-quartile range using a moving window of time*frequency
+#'
+#' @export
 
 getAmplitude <- function(dat, window, time, frequency = NULL) {
 
@@ -168,7 +171,6 @@ getAmplitude <- function(dat, window, time, frequency = NULL) {
 
   return(amp)
 
-  #' @export getAmplitude
 }
 
 
@@ -185,6 +187,8 @@ getAmplitude <- function(dat, window, time, frequency = NULL) {
 #' @param standVar Variable to use in standardizing pitch values, if desired
 #' @param standMin Minimum value in standVar for standarization
 #' @param standMax Maximum value in standVar for standarization
+#'
+#' @export
 
 getPitch <- function(X, Y, Z, window, time, frequency = NULL,
                      standVar = NULL, standMin = NULL, standMax = NULL) {
@@ -230,7 +234,6 @@ getPitch <- function(X, Y, Z, window, time, frequency = NULL,
 
   return(pitch)
 
-  #' @export getPitch
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -243,6 +246,8 @@ getPitch <- function(X, Y, Z, window, time, frequency = NULL,
 #' @param window Size of moving window for estimating peaks, in seconds
 #' @param frequency Sampling frequency of data, in Hz, if missing the function will estimate frequency from time
 #' @param partial If TRUE, calculates partial dynamic body acceleration
+#'
+#' @export
 
 
 getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) {
@@ -267,7 +272,6 @@ getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) 
 
   return(ODBA)
 
-  #' @export getDBA
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -287,6 +291,8 @@ getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) 
 #' If ask is set to true, then the function will plot pitch and roll using the data, and ask the user if they want to
 #' flip the axes. On most seabirds there hould be more variability in the pitch than in the roll. If the
 #' roll plot appears more variable, then the axes should be flipped.
+#'
+#' @export
 
 
 checkAxes <- function(data, ask = T, force = F) {
@@ -327,7 +333,6 @@ checkAxes <- function(data, ask = T, force = F) {
   }
 
   return(data)
-  #' @export checkAxes
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -339,6 +344,8 @@ checkAxes <- function(data, ask = T, force = F) {
 #' an issue between different configurations of Technosmart AxyTrek units. This functions takes formatted
 #' accelerometer data, swaps the x and y axes and multiplies the original x-axis by -1. This makes the x, y, and z
 #' fields consistent with other acceleromters.
+#'
+#' @export
 
 fixAxes <- function(data) {
 
@@ -353,5 +360,4 @@ fixAxes <- function(data) {
   data$y <- temp * -1
 
   return(data)
-  #' @export fixAxes
 }
