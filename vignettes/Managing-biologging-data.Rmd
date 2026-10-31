@@ -376,7 +376,7 @@ The plots show the full record from the logger. Data collected while the logger 
 
 - **ACC:** the x-axis of the accelerometer.
 - **TDR:** depth over time.
-- **GPS:** the distance of each location from the colony over time.
+- **GPS:** the distance of each location from the colony over time and a map of the track.
 
 Things to look for:
 
