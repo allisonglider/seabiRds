@@ -4,7 +4,12 @@ Title: Prepares biologging data for analysis and upload to the lab database
 Version: 0.2.0
 Author: Allison Patterson
 Maintainer: Allison Patterson <allison.patterson@mail.mcgill.ca>
-Description: Provides tools for standardizing biologging data to upload to the Arctic Ecology Lab biologging database. Provides functions for working with GPS and accelormeter data.
+Description: Provides tools for standardizing biologging data and importing it into the Arctic Ecology Lab
+    biologging database. Imports GPS, time-depth recorder and accelerometer data from Axy-trek, Cattrack,
+    Ecotone and LAT2800 loggers as standardized parquet datasets, and provides functions for working with
+    GPS and accelerometer data.
+URL: https://github.com/allisonglider/seabiRds
+BugReports: https://github.com/allisonglider/seabiRds/issues
 License: GPL (>= 2)
 Encoding: UTF-8
 LazyData: true
