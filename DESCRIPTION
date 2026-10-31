@@ -1,7 +1,7 @@
 Package: seabiRds
 Type: Package
 Title: Prepares biologging data for analysis and upload to the lab database
-Version: 0.1.0
+Version: 0.2.0
 Author: Allison Patterson
 Maintainer: Allison Patterson <allison.patterson@mail.mcgill.ca>
 Description: Provides tools for standardizing biologging data to upload to the Arctic Ecology Lab biologging database. Provides functions for working with GPS and accelormeter data.
