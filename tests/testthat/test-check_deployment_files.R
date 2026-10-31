@@ -142,6 +142,34 @@ testthat::test_that("check_deployment_files prints a report unless quiet", {
   testthat::expect_silent(seabiRds::check_deployment_files(deps, folder, quiet = TRUE))
 })
 
+testthat::test_that("check_deployment_files reminds you to confirm deployments with no data", {
+
+  folder <- make_folder('A12_123456789_20261014_S1.csv')
+
+  testthat::expect_message(
+    seabiRds::check_deployment_files(deps, folder),
+    'produced no data'
+  )
+
+  # no reminder when every deployment has a file, and none when quiet
+  folder <- make_folder(c('A12_123456789_20261014_S1.csv', 'A13_987654321_20261015_S1.csv'))
+  testthat::expect_message(
+    seabiRds::check_deployment_files(deps, folder),
+    'No problems found'
+  )
+  testthat::expect_silent(seabiRds::check_deployment_files(deps, folder, quiet = TRUE))
+})
+
+testthat::test_that("check_deployment_files only reports sections that have problems", {
+
+  folder <- make_folder(c('A12_123456789_20261014_S1.csv', 'A13_987654321_20261015_S1.csv'))
+  msgs <- testthat::capture_messages(seabiRds::check_deployment_files(deps, folder))
+
+  testthat::expect_false(any(grepl('more than one', msgs)))
+  testthat::expect_false(any(grepl('no matching', msgs)))
+  testthat::expect_true(any(grepl('No problems found', msgs)))
+})
+
 testthat::test_that("check_deployment_files needs a dep_id column", {
 
   testthat::expect_error(

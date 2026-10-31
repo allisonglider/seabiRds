@@ -48,6 +48,8 @@ the importers from finding the right data. It also counts the files found for ea
 \details{
 A file is matched to a deployment when the dep_id appears anywhere in the file path. This is the rule used by
 axytrek_to_dataset(), cattrack_to_dataset() and lat2800_to_dataset() to find the files for each deployment.
+Deployments that produced no data have no file, so they are listed as deployments without files and ok stays FALSE.
+The report reminds you to confirm that these deployments really did not produce data.
 A deployment can have more than one file (e.g. Axy-trek files that end in _S1, _S2 and so on). There is no
 expected number of files, so the count in files_per_deployment is for you to review.
 

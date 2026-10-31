@@ -1,0 +1,2 @@
+site,subsite,dep_lon,dep_lat,species,metal_band,colour_band,nest,time_released,status_on,mass_on,fed_unfed,gps_id,tdr_id,acc_id,gls_id,mag_id,cam_id,hrl_id,dep_id,time_recaptured,status_off,mass_off,exclude
+CGM,CGM,-76.07,72.94,TBMU,99699520,,H8,2024-08-07 15:41,C,902,,AA51,AA51,AA51,,,,,AA51_99699520_20240807,2024-08-07 16:41,C,875,
