@@ -31,7 +31,9 @@ axytrek_to_dataset(
 
 \item{acc}{Should accelerometer data be processed and saved, TRUE or FALSE?}
 
-\item{tdr}{Should TDR (temperature and depth) data be processed and saved, TRUE or FALSE?}
+\item{tdr}{Should TDR (temperature and depth) data be processed and saved, TRUE or FALSE? If a file has no TDR
+columns (e.g. the TDR was turned off), a warning names the file and the TDR data are skipped for that deployment.
+The other data types are still processed. A summary of the skipped deployments is printed at the end.}
 
 \item{gps}{Should GPS data be processed and saved, TRUE or FALSE?}
 

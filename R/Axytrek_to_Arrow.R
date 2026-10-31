@@ -172,13 +172,19 @@ axytrek_tdr_check <- function(file,
   tt <- utils::read.csv(file = file, stringsAsFactors = F, nrows = 1)
   names(tt)[grep('Temp', names(tt))] <- 'Temperature'
 
+  # A logger with the TDR turned off has no TDR columns. Warn and return FALSE so the
+  # TDR step can be skipped for this deployment.
+  check_names <- c('Timestamp', 'Temperature', 'Activity') %in% names(tt)
+
+  if (sum(check_names) != 3) {
+    warning(paste0(file, ' has no TDR data (it does not contain columns named Timestamp, Activity, and Temp...C). ',
+                   'TDR data skipped for this deployment.'), call. = FALSE, immediate. = TRUE)
+    return(invisible(FALSE))
+  }
+
   check_depth <- c('Depth') %in% names(tt)
 
   if (sum(check_depth) != 1) warning(paste0(file, ' is missing Depth data'), call. = F)
-
-  check_names <- c('Timestamp', 'Temperature', 'Activity') %in% names(tt)
-
-  if (sum(check_names) != 3) stop(paste0(file, ' does not contain columns named Timestamp, Activity, and Temp...C'))
 
   date_error <- paste0(' --- Date format test failed for: ', file, ' \nCheck that the date format',
                        tt$Timestamp, ' matches the date_format string: ', date_format, '. \n\n See ?strptime for help with POSIX string formats')
@@ -188,6 +194,7 @@ axytrek_tdr_check <- function(file,
   if (check_dateformat > Sys.time()) stop(date_error)
   if (length(grep('%OS', date_format)) != 1) stop('date_format must include miliseconds for accelerometer data. Replace %S with %OS')
 
+  invisible(TRUE)
 }
 
 # -----
@@ -224,7 +231,9 @@ axytrek_gps_check <- function(file,
 #' @param date_format The POSIXct date format used in .csv files
 #' @param timezone Timezone of raw data, default is UTC
 #' @param acc Should accelerometer data be processed and saved, TRUE or FALSE?
-#' @param tdr Should TDR (temperature and depth) data be processed and saved, TRUE or FALSE?
+#' @param tdr Should TDR (temperature and depth) data be processed and saved, TRUE or FALSE? If a file has no TDR
+#' columns (e.g. the TDR was turned off), a warning names the file and the TDR data are skipped for that deployment.
+#' The other data types are still processed. A summary of the skipped deployments is printed at the end.
 #' @param gps Should GPS data be processed and saved, TRUE or FALSE?
 #' @param plot Should plot of data be generated, TRUE or FALSE?
 #' @param fix_axes If TRUE, pitch and roll are plotted for each deployment and you are asked whether the
@@ -251,11 +260,16 @@ axytrek_to_dataset <- function(files,
 
   if (nrow(deployments) == 0) stop('deployments has no rows', call. = FALSE)
 
+  n_with_data <- 0
+  tdr_skipped <- character(0)
+
   for (i in seq_len(nrow(deployments))) {
 
     idx <- grep(deployments$dep_id[i], files, fixed = TRUE)
 
     if (length(idx) > 0) {
+
+      n_with_data <- n_with_data + 1
 
       if (is.na(deployments$time_recaptured[i])) warning(
         paste(deployments$dep_id[i], 'is missing time_recaptured'), call. = FALSE, immediate. = TRUE)
@@ -264,9 +278,13 @@ axytrek_to_dataset <- function(files,
                         date_format = date_format,
                         timezone = timezone)
 
-      if (tdr == TRUE) axytrek_tdr_check(file = files[idx[1]],
-                        date_format = date_format,
-                        timezone = timezone)
+      run_tdr <- tdr
+      if (tdr == TRUE) {
+        run_tdr <- axytrek_tdr_check(file = files[idx[1]],
+                          date_format = date_format,
+                          timezone = timezone)
+        if (!run_tdr) tdr_skipped <- c(tdr_skipped, deployments$dep_id[i])
+      }
 
       if (gps == TRUE) axytrek_gps_check(file = files[idx[1]],
                         date_format = date_format,
@@ -293,7 +311,7 @@ axytrek_to_dataset <- function(files,
                              ask = fix_axes,
                              force = force_axes)
 
-      if (tdr == TRUE) axytrek_tdr_to_dataset(data = dat,
+      if (run_tdr == TRUE) axytrek_tdr_to_dataset(data = dat,
                              deployments = deployments[i,],
                              output_dataset = output_dataset,
                              date_format = date_format,
@@ -311,4 +329,12 @@ axytrek_to_dataset <- function(files,
 
     } else {print(paste0('No matching data [',i,']: ', deployments$dep_id[i]))}
   }
+
+  if (length(tdr_skipped) > 0) {
+    message('TDR data skipped for ', length(tdr_skipped), ' of ', n_with_data,
+            ' deployments with data (no TDR columns in the file): ',
+            paste(tdr_skipped, collapse = ', '))
+  }
+
+  invisible(NULL)
 }

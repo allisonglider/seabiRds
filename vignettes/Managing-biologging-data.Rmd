@@ -1,0 +1,447 @@
+---
+title: "Managing biologging deployments"
+author: "Allison Patterson"
+output: rmarkdown::html_vignette
+vignette: >
+  %\VignetteIndexEntry{Managing biologging deployments}
+  %\VignetteEngine{knitr::rmarkdown}
+  %\VignetteEncoding{UTF-8}
+---
+
+```{r setup, include = FALSE}
+knitr::opts_chunk$set(
+  collapse = TRUE,
+  comment = "#>"
+)
+```
+
+Seabird biologging data have been collected by the Arctic Ecology Lab and collaborators at sites in Alaska and Nunavut since 2007. Long-term datasets like these are incredibly valuable to answer questions about how seabirds respond to changing oceans, across years, colonies and species. However, over those years different types of biologgers have been used and the information about each deployment has been kept in different formats, which created a challenge for integrating all of the data together. 
+
+To facilitate using these data we have developed a cloud-hosted database that allows researchers to query and download specific data from these long-term projects. The most common biologging data types that we collect are GPS, time-depth recorders (TDR), and tri-axial accelerometers (ACC). The database is designed to facilitate remote access of all three major data types. Widely used biologging archiving sites like Movebank and the Seabird Tracking Database have very limited support for the high-resolution TDR and ACC data we collect. They also cannot be queried to access data about the birds (e.g. sex, breeding status, and age). Our database enables access to all the data types and allows users to readily query data.
+
+This vignette provides instructions to support managing biologging data to easily be imported into the database. It shows how to:
+
+1. Record metadata about each deployment in a standard template.
+2. Organize the files from the most common biologger types used at these sites.
+3. Check the records in R and prepare them for import into a standardized database.
+
+## Part 1: Deployment metadata and biologger file management
+
+### Get the template
+
+The deployment template is included with the seabiRds R package. The line of code below copies it to your working directory:
+
+```{r get-template, eval = FALSE}
+
+template <- system.file('extdata', 'deployments_template.xlsx', package = 'seabiRds')
+file.copy(template, 'seabiRds_deployments_template.xlsx')
+
+```
+
+To simplify data management I recommend having one deployment file for each site, species and field season, named `<site>_<species>_<year>_Deployments.xlsx`, where the species is the four-letter AOU code. For example, `Coats_TBMU_2026_Deployments.xlsx`. Please do not make multiple sheets for different projects or stages of your field season, this can create more work when processing the data especially if there are inconsistencies between files. It is better to add a column for project where you can record which project the deployment was associated with.
+
+The template file has `Instructions` and `Data dictionary` sheets that describe every column, the expected format, and the drop-down lists. Please review these sheets before using the template.
+
+The template will facilitate recording new data in a format that is easily imported into our biologging database; however, if it does not meet your needs exactly you can modify it  as long as you retain the required fields and are consistent in how you format critical fields like datetimes, metal bands, and deployment ids (dep_id).
+
+### General considerations for metadata
+
+- **One file for each site, species, and field season.** Record all the deployments for that combination in the same sheet, even when they belong to different student projects. To show which project a deployment belongs to, add a column at the far right of the sheet (for example, `project`).
+- **One row per deployment.** A deployment is one release of a bird with one or more loggers. A bird carrying multiple loggers at once still takes one row. If the same bird is released on another occasion with a logger, that is a new deployment and a new row.
+- **Local time.** Times in the metadata should be recorded in local time for the site. The time zone is entered once when the sheet is processed in R. Recording in local time, and including the deployment location with the metadata, is usually easier than converting to UTC.  
+- **Extra columns can be added at the end of the template.** If you want to record additional fields related to a deployment, add additional columns to the template after `exclude`, so the drop-downs and automatic columns keep working.
+- **Look-up fields can be modified in the `Lists` sheet** Look-up fields for species, site, subsite, dep_lon and dep_lat can be modified in the lists sheet. If you are adding or modifying a site/subsite, contact me about updating the database.
+- **Type on the `Deployments` sheet.** The template fills in `dep_lon`, `dep_lat` and `dep_id` for you, and cells turn pink when something looks off.
+
+### Deployment identifiers
+
+Each deployment needs a unique identifier (`dep_id`) to link the metadata about the deployment to the data collected by the biologger(s). To ensure that each `dep_id` is unique, the recommended format for this field is `<loggerid>_<metalband>_<yyyymmdd>`. If the same logger gets redeployed on the same individual bird multiple times, this ensures that both deployments have a unique identifier. By including logger id, individual id, and date it is easier to figure out what went wrong if a data file is incorrectly labelled or there was a data entry error in the metadata.
+
+The template file will build this `dep_id` for you as you enter your data. You could alter this formula to use the colour band instead of the metal band (this is common at Middleton). You could also enter your own preferred `dep_id`, just recall that it may not be unique across all the data in our database.
+
+When we reach the stage of connecting the deployment metadata with the biologger data, the functions in seabiRds expect most of the biologger files to include the `dep_id` in the file name. This will be explained more below. It is important to be careful with this file naming so that data can be linked together.
+
+Be consistent when you write logger IDs and the `dep_id`. Capitalization follows the logger ID, so use the ID exactly as it is written for that logger. The recommended delimiter is `_`, but the important thing is to use the same one every time. When a date goes in a file name, write it as `yyyymmdd`.
+
+### Example
+
+Two thick-billed murres are caught at Coats Island in October 2026. Bird 1 is released on 14 October with
+Axy-trek A12 and the logger is recovered on 20 October. Bird 2 is released on 15 October with Ecotone E07, which downloads its data remotely, so there is no recapture time.
+
+| site  | subsite    | species | metal_band | colour_band | time_released    | gps_id | tdr_id | acc_id | dep_id                 | time_recaptured  |
+|:------|:-----------|:--------|:-----------|:------------|:-----------------|:-------|:-------|:-------|:-----------------------|:-----------------|
+| Coats | Coats West | TBMU    | 123456789  | X/M-X/R     | 2026-10-14 09:30 | A12    | A12    | A12    | A12_123456789_20261014 | 2026-10-20 14:05 |
+| Coats | Coats East | TBMU    | 987654321  |             | 2026-10-15 11:15 | E07    |        |        | E07_987654321_20261015 |                  |
+
+Notice that an Axy-trek biologger records GPS, TDR and ACC data, so this logger ID goes in `gps_id`, `tdr_id` and `acc_id`. A colour band can be left blank, and the recapture time can be blank for a remote-download logger like the Ecotone. A recapture time is needed for loggers that have to be recovered, like the Axy-trek.
+
+### Managing the biologger files
+
+**For every logger type, keep the files for the same site, year, species and logger type together in a single
+folder**. For example, have a single folder for all the Coats 2026 thick-billed murre Axy-trek files. If you are also collecting data with Ecotone loggers, keep those files together in a single Ecotone folder. When you link the metadata to the biologger data you can point to the folder containing the files for each logger type.
+
+It is much easier to keep files organized as you go during the field season than trying to sort it out months or years later. The sections below provide some specific suggestions related to the most common biologger types we use.
+
+#### Axy-trek
+
+Axy-trek loggers can record GPS, TDR and ACC data. The data are downloaded from the device as `.ard` files, which are then extracted with X-Manager. Please follow these best practices for managing Axy-trek data:
+
+- Rename the `.ard` files to include the `dep_id` **before** extracting them. The extracted files then carry the `dep_id` too. If you discover a mistake in the `dep_id`, fix the underlying .ard file name and re-export.
+- **Always retain the `.ard` files.** They are the original record of the deployment and may be needed to re-export the data in the future.
+- One deployment can produce more than one `.ard` file. Save all of them together and rename each one (if you uncover an error). **If the deployment results in many (eg. >5) .ard files the quality of data in the later files is probably not good. If all the file sizes are < 1 kb it may not be worth retaining them all.**
+- Redeploying a device within a season makes early renaming especially important to avoid confusion.
+
+Use these settings when exporting data in X-Manager: the conversion preferences, and the general settings.
+
+```{r xmanager-settings, echo = FALSE, out.width = '70%', fig.cap = c('X-Manager conversion preferences', 'X-Manager general settings')}
+
+knitr::include_graphics(c('images/xmanager-conversion-preferences.png',
+                          'images/xmanager-general-settings.png'))
+
+```
+
+If you are using the remote download Axy-trek units, please contact me about file management to identify best practices ahead of time.
+
+#### Cattrack
+
+Cattrack loggers record GPS only. The data are downloaded from the devices after they are retrieved from birds. Rename each file **as soon as possible** so that the file name includes the `dep_id` from the deployment sheet. This is especially important if devices will be redeployed within the same season, because the same device then produces more than one file.
+
+#### Ecotone
+
+Ecotone loggers are downloaded remotely to a base station, so the data from several loggers can end up in the same download file.
+
+- When you extract the downloads with NGAnalyzer, make sure all the outputs go into the same folder.
+- File names do not need the `dep_id`. The functions in seabiRds match the data to the correct deployments using the logger ID in the data and the `gps_id` in the deployment sheet, so it is important that the logger IDs in the deployment data match the actual logger ID in the data (case-sensitive).
+
+### Common mistakes
+
+| Slip | What to do |
+|:-----|:-----------|
+| Incorrect metal_band | Check the field notes, and fix the error in the data sheet or the file name. |
+| Incorrect release date | Check the field notes, and fix the error in the data sheet or the file name. |
+| Incorrect or missing logger ID | The ID in the file from the unit is usually correct, so correct the field notes and the data sheet to match it. An omitted logger ID can usually be worked out when the logger is recovered. |
+| Inconsistent capitalization or delimiters | Be consistent with the logger ID and follow the standards described above. |
+| Incorrect date format in a file name | Use the standard `yyyymmdd` format. |
+| Column inserted in the middle of the sheet | Add extra columns at the far right, so the drop-downs and automatic columns in the template keep working. |
+| New site, subsite, or species | Add this in the `Lists` sheet and contact me about making changes to the database. |
+
+#### Saving from the Excel file for use in R
+
+Before reading this sheet into R, save the `Deployments` sheet with **File > Save As > CSV UTF-8**. Excel saves only the sheet you are on, so do this from the `Deployments` sheet. If you have to make corrections while reviewing the data, make them in the excel file and save a new .csv version.
+
+## Part 2: Checking the deployment sheet in R
+
+This section walks you through importing deployment data into R and checking that `dep_id` matches your file names.
+
+#### Create data for example
+
+The examples below create a toy datasheet and temporary folder so that they run anywhere. With real data you would replace those lines with the path to your own CSV and folder.
+
+```{r example-data}
+
+sheet <- data.frame(
+  site = 'Coats',
+  subsite = c('Coats West', 'Coats East', 'Coats West'),
+  dep_lon = c(-82.01, -81.98, -82.01),
+  dep_lat = 62.95,
+  species = 'TBMU',
+  metal_band = c(123456789, 987654321, 111222333),
+  colour_band = c('X/M-X/R', NA, NA),
+  nest = c('N042', 'N108', NA),
+  time_released = c('2026-10-14 09:30', '2026-10-15 11:15', '2026-10-16 10:00'),
+  status_on = c('E', 'C', 'E'),
+  mass_on = c(410, 395, 402),
+  fed_unfed = NA,
+  gps_id = c('A12', 'A13', 'A14'),
+  tdr_id = c('A12', 'A13', 'A14'),
+  acc_id = c('A12', 'A13', 'A14'),
+  gls_id = NA,
+  mag_id = NA,
+  cam_id = NA,
+  hrl_id = NA,
+  dep_id = c('A12_123456789_20261014', 'A13_987654321_20261015', 'A14_111222333_20261016'),
+  time_recaptured = c('2026-10-20 14:05', '2026-10-21 09:40', '2026-10-22 16:20'),
+  status_off = c('E', 'C', 'E'),
+  mass_off = c(402, 390, 398),
+  exclude = NA
+)
+
+# stand-in for the CSV saved from Excel
+csv_file <- file.path(tempdir(), 'Coats_TBMU_2026_Deployments.csv')
+write.csv(sheet, csv_file, row.names = FALSE, na = '')
+
+# stand-in for the folder of raw Axy-trek files: deployment A14 has no file,
+# and there is one file that belongs to no deployment
+raw_folder <- file.path(tempdir(), 'axytrek_raw')
+dir.create(raw_folder, showWarnings = FALSE)
+invisible(file.create(file.path(raw_folder, c('A12_123456789_20261014_S1.csv',
+                                              'A12_123456789_20261014_S2.csv',
+                                              'A13_987654321_20261015_S1.csv',
+                                              'A15_555666777_20261017_S1.csv'))))
+
+```
+
+#### Read the sheet
+
+Read in data from the .csv file you saved from your version of the biologging metadata.
+
+```{r read-sheet}
+
+deployments <- read.csv(csv_file)
+nrow(deployments)
+
+```
+
+#### Check the sheet against the raw files
+
+`check_deployment_files()` compares the `dep_id` column with the file names in the folder. A file links to a deployment when the `dep_id` appears in its path.
+
+```{r check-files}
+
+res <- seabiRds::check_deployment_files(deployments, raw_folder)
+
+```
+
+The report provides detailed information on how files would link to `dep_id`.
+
+`res$files_per_deployment` shows how many files were found for each deployment. There is no expected number, because an Axy-trek deployment can have several files, but it is worth a glance for anything that looks unexpected.
+
+```{r files-per-deployment}
+
+res$files_per_deployment
+
+```
+
+The two lists below show the deployments with no matching file and the files with no matching deployment. Both are empty when everything lines up.
+
+```{r unmatched}
+
+res$deployments_without_files
+res$files_without_deployments
+
+```
+
+A deployment that produced no data will not have any files, so it appears in the list of deployments without files. That may be what is expected, but please confirm from your field notes that each of them really did not produce data. `res$ok` stays `FALSE` while this list is not empty, and the report prints a reminder.
+
+This check is for loggers where each deployment generates its own file (Axy-trek and Cattrack). If your sheet also has Ecotone deployments, subset the sheet to the other deployments first. Ecotone files are matched by logger ID inside the data, so they would all be reported as having no file.
+
+### Resolve any mismatch before you continue
+
+Please try to resolve every mismatch between a `dep_id` and its files before moving on. In the next step we will use tag-specific importers to link biologger data to deployments, so a mismatch left in place can mean missing data, or data attached to the wrong bird.
+
+Work out which record is wrong before changing anything, by carefully comparing three things:
+
+1. **Your field data notes**, the written record of what was done in the field.
+2. **The deployment metadata**, which is the row in the sheet (logger ID, metal band, release date).
+3. **The files**, meaning the names of the files and what they contain.
+
+| What the report says | Questions to ask |
+|:---------------------|:-----------------|
+| A deployment has no file | Was the logger recovered and downloaded? Is the file in another folder? Does the file name have a different logger ID, band or date from the sheet? Was something typed incorrectly in the sheet? |
+| A file has no deployment | Is the deployment missing from the sheet? Is the file a duplicate, a test file or from another season? Does the `dep_id` differ from the file name only by a typo? |
+| A file matches more than one `dep_id` | Does one `dep_id` start with another (for example `A21_1` and `A21_10`)? One of them needs to change so that no `dep_id` is part of another. |
+| A `dep_id` is used by more than one row | Is this a repeated row, or two releases on the same day with the same logger? Each deployment needs its own `dep_id`. |
+| A file is not the expected type | Is it a notes file or a different export? Move it out of the folder, or ignore it with the `pattern` argument. |
+
+**If an Axy-trek file name needs to be fixed, fix it in the original `.ard` file and re-export the data before
+proceeding.** Renaming only the exported file would leave it out of step with the original. If the sheet is the part
+that is wrong, correct it in Excel, save a new CSV and read it again.
+
+When the records agree, run the check again. In this example, the missing file for A14 turns up and the stray file
+turns out to be a test file that does not belong in the folder.
+
+```{r check-fixed}
+invisible(file.create(file.path(raw_folder, 'A14_111222333_20261016_S1.csv')))
+invisible(file.remove(file.path(raw_folder, 'A15_555666777_20261017_S1.csv')))
+
+res <- seabiRds::check_deployment_files(deployments, raw_folder)
+res$ok
+```
+
+#### Standardize the deployment sheet
+
+`formatDeployments()` standardizes the sheet and converts the release and recapture times to UTC. It looks for the template's standard column names on its own, so the only thing you need to give it is the time zone. This is the local time zone of the site, and it is entered here, once. Time zone codes are listed in `OlsonNames()`.
+
+```{r format-deployments}
+dep <- seabiRds::formatDeployments(deployments, dep_tz = 'Canada/Eastern')   # use the time zone code for your site
+
+dep[, c('dep_id', 'time_released', 'time_recaptured')]
+```
+
+If a column in your data has a different name, give the name as an argument, for example `metal_band = 'band'`. An extra column you added at the right of the sheet (for example `project`) is carried along if you list it in the `keep` argument, e.g. `keep = 'project'`. Setting an optional argument to `NA` leaves that column out.
+
+If `formatDeployments()` stops with an error, the message names the problem, such as a missing coordinate, a time that
+is not in the expected format, a metal band with the wrong number of digits, or a repeated `dep_id`. Fix it in the
+Excel sheet, save the CSV again and rerun. The `Data dictionary` sheet in the template lists what each column expects.
+
+```{r cleanup, include = FALSE}
+unlink(c(csv_file, raw_folder), recursive = TRUE)
+```
+
+## Part 3: Importing biologger data
+
+When the deployment sheet and the files agree, the next step is to import and review the biologger data. This part explains how the import functions in seabiRds work, how the imported data are stored, and how to review the data as they come in. The example uses Axy-trek data, and a section at the end covers considerations that are specific to Axy-trek tags.
+
+Writing a dataset needs the arrow package, which seabiRds does not install for you automatically (`install.packages('arrow')`).
+
+### What the importers do
+
+Every biologger manufacturer has its own file layout, column names, date formats and time zone. The import functions in seabiRds (`axytrek_to_dataset()`, `cattrack_to_dataset()`, `ecotone_to_dataset()` and `lat2800_to_dataset()`) read these different files and standardize them, so the data from every tag type end up with the same column names, UTC times and deployment information, ready to be combined across tags, years and sites. For each deployment, the importer links the raw file to the deployment sheet (through the `dep_id`, or the logger ID for Ecotone), adds the information about the bird and the site, and flags whether each record was collected while the logger was deployed on the bird.
+
+All of the data are kept. Records collected before release or after recapture are not removed, they are flagged with `deployed = 0` (and `deployed = 1` for the period between release and recapture). This makes it possible to look at what the logger recorded outside of the deployment, and to decide later how to use it.
+
+If you are using a biologger type not covered by one of these functions, please contact me to find a solution.
+
+### Separate datasets for GPS, TDR and ACC
+
+Each data type is saved in its own dataset: `gps`, `tdr` and `acc`. An Axy-trek tag records all three at once, so one raw file produces one dataset of each, but the three types are very different. In an Axy-trek deployment the accelerometer may record many records per second, the TDR usually records one record per second, and the GPS may be recording locations every few minutes. Keeping them separate means you can easily work with each dataset or combine them as needed.
+
+### Why arrow and parquet?
+
+The datasets are saved as parquet files using the arrow package. Parquet is a compact file format that is designed for large tables, and arrow lets R work with a dataset that is made of many parquet files without reading all of them into memory. See the [Arrow chapter of R for Data Science](https://r4ds.hadley.nz/arrow.html) for a good introduction.
+
+The importers also split each dataset into folders. The data are organized by site, subsite, species, year, metal band, `dep_id` and `deployed`, so every deployment gets its own small files, stored in its own folder. This has two big advantages:
+
+- **It saves space and time.** Each file holds a small, uniform piece of the data, and parquet stores it efficiently. Large accelerometer and TDR datasets take up much less room than the same data as csv files.
+- **It simplifies getting specific data.** When you ask for the data for one species, one colony, one year or one bird, R only needs to open the folders that match your request and skips everything else. You can retrieve a subset of a huge dataset quickly without loading the whole thing.
+
+It also makes importing safe to repeat. Importing the same deployment again replaces its earlier data in the dataset, so if you find a problem you can fix it and import again without creating duplicates.
+
+### Example data
+
+The seabiRds package includes a short example from a real Axy-trek deployment: a thick-billed murre at CGM, trimmed to look like a short deployment plus a few minutes before and after. It has the deployment sheet (in the template format) and one raw file named with the `dep_id`.
+
+```{r p3-setup, include = FALSE}
+has_arrow <- requireNamespace('arrow', quietly = TRUE)
+```
+
+```{r p3-example-data, eval = has_arrow}
+example_dir <- system.file('extdata', 'axytrek', package = 'seabiRds')
+
+ex_files <- list.files(example_dir, pattern = '_S[0-9]+\\.csv$', full.names = TRUE)
+basename(ex_files)
+
+ex_deployments <- read.csv(file.path(example_dir, 'axytrek_ex.csv'))
+ex_dep <- seabiRds::formatDeployments(ex_deployments, dep_tz = 'Canada/Eastern')
+
+ex_dep[, c('dep_id', 'site', 'species', 'time_released', 'time_recaptured')]
+```
+
+Run the file check one more time before importing. Nothing should be reported.
+
+```{r p3-check, eval = has_arrow}
+res <- seabiRds::check_deployment_files(ex_deployments, ex_files)
+res$ok
+```
+
+### Import the data
+
+`axytrek_to_dataset()` takes the list of files, the formatted deployments and the output location (`output_dataset`). Axy-trek files contain GPS, TDR and ACC data together, so one call writes all three. With `plot = TRUE`, a plot of each data type is drawn for every deployment as it is imported, so you can look over the data (see the next section).
+
+The accelerometer in this example comes from one of the tag models where the x and y axes are flipped, so `force_axes = TRUE` is used to correct them. This is explained in the section on Axy-trek tags below.
+
+```{r p3-import, eval = has_arrow, fig.width = 7, fig.height = 4}
+out_dir <- file.path(tempdir(), 'axytrek_dataset')
+
+seabiRds::axytrek_to_dataset(files = ex_files,
+                             deployments = ex_dep,
+                             output_dataset = out_dir,
+                             plot = TRUE,
+                             force_axes = TRUE)
+
+list.files(out_dir)
+```
+
+Each data type has its own folder inside the dataset. Inside each one, the data are split into the folders described above:
+
+```{r p3-folders, eval = has_arrow}
+list.files(file.path(out_dir, 'gps'), recursive = TRUE)
+```
+
+The `deployed` flag is part of the folder structure, so the data collected before release and after recapture are stored separately from the data collected during the deployment.
+
+```{r p3-read, eval = has_arrow}
+gps <- dplyr::collect(arrow::open_dataset(file.path(out_dir, 'gps')))
+
+nrow(gps)
+table(gps$deployed)
+head(gps[, c('dep_id', 'time', 'lon', 'lat', 'deployed')])
+```
+
+### Review the plots
+
+**Please look at the plots from every deployment.** The plots are the main way to catch problems before the data are added to the dataset. Fix any issues that you identify before finalizing the dataset and importing it into the database.
+
+The plots show the full record from the logger. Data collected while the logger was deployed (`deployed = 1`) are drawn in black and data collected outside the deployment (`deployed = 0`) are drawn in red. Dashed lines mark the release and recapture times. For Axy-trek data you get one plot for each data type:
+
+- **ACC:** the x-axis of the accelerometer.
+- **TDR:** depth over time.
+- **GPS:** the distance of each location from the colony over time.
+
+Things to look for:
+
+- **Deployed and undeployed data.** The black data should look like a bird at sea, and the red data should look like a logger sitting in camp or being carried out to be deployed, before release and after recapture. For example, a murre should be diving, and leaving and returning to the colony, within the black section of the plots only. If the animal-like behaviour in the plot starts before the release time or continues after the recapture time, the dates or times in the metadata may be wrong. Alternatively, if the data stop before the recapture time, it is possible the device died before the end of the deployment or the deployment end time is incorrect.
+- **Obvious data issues.** Look for flat lines, gaps, spikes, and values that are not plausible (for example, dive data that is improbably deep or underwater for long periods of time). Occasional outliers are fine, but systematic issues should be noted in the `exclude` column of the metadata table.
+- **Does the plot agree with your other records?** Cross-reference what the logger recorded with your field notes and the deployment metadata. Common issues are getting the date or time wrong in the metadata, or mislabelling a logger file so that the data are linked to the wrong bird.
+
+If you find an error, go back to the source and fix it, then import the deployment again. Depending on the problem that may mean correcting the deployment sheet and saving a new csv, or correcting a file name (for Axy-trek, in the original `.ard` file, then re-exporting). Because importing a deployment replaces its earlier data, you can repeat this until all the plots look right.
+
+Some deployments will have data that look wrong because the logger malfunctioned, or because the bird was handled in a way that makes the data unsuitable for other analysis (e.g. an experimental manipulation). These deployments can be flagged in the `exclude` column of the deployment sheet, along with a note about what happened. If the same logger gives problems more than once, please test it before it is deployed again, so that it does not waste another deployment.
+
+### Review in a temporary folder first
+
+While you are reviewing, write the output to a temporary folder on your computer and not to the main dataset. This is what the example above does with `tempdir()`. You can import, look at the plots, fix problems and import again as often as you like, and nothing is added to the shared data.
+
+Once every issue has been fixed and you are happy with the plots, run the same import again with `output_dataset` set to the path to our database on AWS S3. The `s3://` path below is only a placeholder, please contact me for the real path.
+
+```{r p3-s3, eval = FALSE}
+seabiRds::axytrek_to_dataset(files = ex_files,
+                             deployments = ex_dep,
+                             output_dataset = 's3://your-bucket-name/your-dataset',   # placeholder
+                             plot = FALSE,
+                             force_axes = TRUE)
+```
+
+Switching the plots off with `plot = FALSE` for the final import is fine, since you have already reviewed the data.
+
+### Specific considerations for Axy-trek data
+
+#### Importing only some data types
+
+The `acc`, `tdr` and `gps` arguments choose which data types are imported. For example, `tdr = FALSE` skips the TDR data. They are all `TRUE` by default, which is what you will want for most deployments.
+
+Some loggers are set up without the TDR on (this is sometimes the case at Middleton). When `tdr = TRUE` and the file doesn't contain the TDR columns, the importer gives a warning that names the file with missing data and skips the TDR for that deployment. The other data types are still imported. When it finishes, a summary line lists the deployments where the TDR was skipped. There is no need to turn `tdr` off for these files, but you can if you know ahead of time that none of them have it.
+
+#### Accelerometer axes
+
+Technosmart, the company that makes Axy-trek tags, made some models where the x, y and z axes of the accelerometer are labelled correctly, and some models where the x and y axes are flipped (they are mislabelled in the data). In our program, the older "eraser style" loggers with an internal antenna have the correct axes, and the newer loggers with the small external antenna have the flipped axes. The logger ID is not a reliable way to tell the models apart, the physical differences are better.
+
+The axytrek importer can fix this. Setting `force_axes = TRUE` flips the axes of every deployment in the call, without asking. Use this if you know ahead of time that all of the tags have flipped axes, which has been the case in recent years. This is what the example above does.
+
+If you don't know, or you have a mix of models, `fix_axes = TRUE` checks each deployment for you. It plots pitch and roll and asks whether the axes should be flipped. This is a visual check and needs an interactive R session, so it is not run in this vignette.
+
+```{r p3-axes, eval = FALSE}
+# plots pitch and roll for each deployment and asks if the axes should be flipped
+seabiRds::axytrek_to_dataset(files = ex_files,
+                             deployments = ex_dep,
+                             output_dataset = out_dir,
+                             fix_axes = TRUE)
+```
+
+Roll should have a mean that stays close to 0 and pitch should be more variable. If the roll looks more variable than the pitch, the axes are flipped and you should answer yes (1). If the axes need to be fixed, the x and y axes are swapped and the original x axis is multiplied by -1, so that they match other accelerometers.
+
+Technosmart may correct this issue at some point. It is a good idea to review some data from your tags every year, to be sure they are imported with the axes labelled correctly, before you use `force_axes = TRUE` for everything.
+
+#### Deployments without GPS data
+
+The GPS provides the accurate clock for an Axy-trek tag, and the accelerometer and TDR records depend on it for correct timestamps. If a deployment has no GPS fixes at all, the timestamps in the ACC and TDR records are not accurate. Take extra care with these deployments: the `deployed` flag and the plots depend on those times, so they may not be reliable.
+
+If you want to recover these data, the start time can be entered by hand when the `.ard` file is converted. In X-Manager, enter the time that the logger was started in the start time box of the data conversion, and then export the file again. Please be careful with this approach. It is only as good as the start time you enter, so check it against your field notes, document that you did it, and treat the timing of these data with caution. Contact me if you are encountering this issue and want assistance.
+
+```{r p3-cleanup, include = FALSE}
+unlink(file.path(tempdir(), 'axytrek_dataset'), recursive = TRUE)
+```
+
+#### Future work
+
+I will continue adding tutorials for the other tag types, but the process is generally similar to what is described here. Remember to review helpfiles in seabiRds for additional information. All import functions have the format `*_to_dataset`.
