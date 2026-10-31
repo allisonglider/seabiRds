@@ -113,28 +113,7 @@ axytrek_gps_to_dataset <- function(data,
 
   # All data are kept and the deployed column flags the deployment period,
   # so the plot only needs to show which locations are flagged.
-  if (plot == T) {
-
-    ss <- min(c(data$time[1],deployments$time_released), na.rm = T)
-    ee <- max(c(data$time[nrow(data)],deployments$time_recaptured), na.rm = T)
-    temp <- data |>
-      dplyr::mutate(coldist = getColDist(lon, lat, colonyLon = deployments$dep_lon, colonyLat = deployments$dep_lat))
-
-    suppressMessages(
-      myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = coldist)) +
-        ggplot2::geom_line(col = "red") +
-        ggplot2::geom_point(col = "red") +
-        ggplot2::geom_point(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = coldist)) +
-        ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = coldist)) +
-        ggplot2::geom_vline(xintercept = c(deployments$time_released, deployments$time_recaptured), linetype = 2, col = "red") +
-        ggplot2::xlim(ss,ee) +
-        ggplot2::theme_light() +
-        ggplot2::labs(title = paste(deployments$dep_id),
-                      y = 'Distance from deployment location (km)',
-                      x = "Time")
-    )
-    print(myPlot)
-  }
+  if (plot == T) .plot_gps_check(data = data, deployments = deployments)
 
   data |>
     arrow::write_dataset(paste0(output_dataset,'/gps'), format = "parquet",
