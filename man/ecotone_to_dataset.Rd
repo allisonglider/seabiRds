@@ -13,7 +13,7 @@ ecotone_to_dataset(
 )
 }
 \arguments{
-\item{files}{List of ecotone .csv files, data must include logger IDs that match the gps_id in deployment data}
+\item{files}{List of ecotone .csv files, data must include logger IDs that match the gps_id in deployment data (file names do not need to match)}
 
 \item{deployments}{Deployment data formatted using seabiRds::formatDeployments()}
 
@@ -24,5 +24,5 @@ ecotone_to_dataset(
 \item{plot}{Should plot of data be generated, TRUE or FALSE?}
 }
 \description{
-Reads ecotone biologger data and parses it into two arrow datasets for GPS and TDR
+Reads ecotone biologger data and parses it into arrow datasets for GPS data and, depending on the columns in the files, TDR data or dive data
 }

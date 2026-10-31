@@ -26,29 +26,29 @@ getPeakFrequency(
 
 \item{frequency}{Sampling frequency of data, in Hz, if missing the function will estimate frequency from time}
 
-\item{threshold}{Minimum amplitude to be include as a true peak, results may differ with method}
+\item{threshold}{Minimum amplitude to be included as a true peak, results may differ with method}
 
-\item{sample}{Only used in fft method, only calculate paeaks at sample interval, in sec, to save processing time}
+\item{sample}{Only used in fft method, only calculate peaks at sample interval, in sec, to save processing time}
 
 \item{maxfreq}{Maximum frequency of interest using the FFT method}
 }
 \value{
-A vector of frequencies (Hz).
+A vector of frequencies (Hz). Values at the start and end of the data, where there is not a full window, are NA.
 }
 \description{
 Find peak frequency
 }
 \details{
 The pracma method uses pracma::findpeaks() to count the number of peaks within each window
-above a specified treshold. Results are returned as peaks per second. This approach is faster
-than the fft method and can be less impacted by noise in the data.If using this approach, I recommend
+above a specified threshold. Results are returned as peaks per second. This approach is faster
+than the fft method and can be less impacted by noise in the data. If using this approach, I recommend
 exploring different threshold values to understand how this changes the result.
 
 The fft method uses a Fast Fourier Transform to identify the peak frequency in the input data
-over a moving window defined the frequency * interval. The threshold paramter filters out peaks
-identified in samples with an inter-quartile range less than the threshold value. This helps eliminate
-noisy peaks with low amplitudes. This method can be slow for large data sets. Use sample to only
-calcualte peaks at a sampling interval (default is 1 sec), this can speed up the algorithm.
+over a moving window defined by window (in seconds) multiplied by frequency (in Hz). The threshold parameter
+filters out peaks identified in samples with an inter-quartile range less than the threshold value.
+This helps eliminate noisy peaks with low amplitudes. This method can be slow for large data sets.
+Use sample to only calculate peaks at a sampling interval (default is 1 sec), this can speed up the algorithm.
 }
 \examples{
 
