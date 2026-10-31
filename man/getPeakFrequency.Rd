@@ -80,4 +80,5 @@ par(mfrow = c(2,1))
 plot(dat ~ tim, type = 'l')
 plot(myPeaks ~ tim, type = 'l')
 par(mfrow = c(1,1))
+
 }

@@ -8,6 +8,8 @@
 #' @param groups name of the variable to use for plotting line/point colours
 #' @param legend_label Title for legend
 #' @param use_legend Should the legend be plotted (TRUE/FALSE)
+#'
+#' @export
 
 mapTracks <- function(data, groups = 'dep_id', legend_label = 'Deployments', use_legend = T) {
 
@@ -48,5 +50,4 @@ mapTracks <- function(data, groups = 'dep_id', legend_label = 'Deployments', use
   )
 
   myMap
-  #' @export mapTracks
 }

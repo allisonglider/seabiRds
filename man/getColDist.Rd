@@ -26,4 +26,5 @@ Calculates the distance between the colony (or any fixed location) and each poin
 lon <- c(-60, -60.5, -61)
 lat <- c(45, 45.2, 45.4)
 getColDist(lon, lat, colonyLon = -60, colonyLat = 45)
+
 }

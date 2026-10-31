@@ -58,6 +58,8 @@
 #' in the gps_id field and the Lotek TDR logger id in the TDR field.
 #'
 #' @return A new dataframe with deployment times in UTC and field names that are compatible with other functions in this package and the lab biologging database.
+#'
+#' @export
 
 formatDeployments <- function(deployments,
                               dateFormat = "%Y-%m-%d %H:%M",
@@ -315,7 +317,6 @@ formatDeployments <- function(deployments,
   # Return formatted deployment data
   dep
 
-  #' @export formatDeployments
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -334,6 +335,8 @@ formatDeployments <- function(deployments,
 #' The function will print lists of: GPS files that contain no data, GPS files that have no matching deployments in the deployment data, and deployments that have no matching GPS files. This is intended to help you identify errors in data entry or file naming. For technosmart units, I recommend you re-export data any time you change the file name because X-Manager includes the file name as a column in the data.
 #'
 #' @return A new dataframe containing all GPS data.
+#'
+#' @export
 
 readGPSData <- function(inputFolder,
                         deployments,
@@ -370,7 +373,6 @@ readGPSData <- function(inputFolder,
 
   output
 
-  #' @export readGPSData
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -622,6 +624,8 @@ readCattrackGPS <- function(inputFolder,
 #' is missing. In this case the function creates a 'dep_id' field in each data frame by concatenating the tag
 #'
 #' @return A new dataframe containing cleaned GPS data.
+#'
+#' @export
 
 cleanGPSData <- function(data,
                          deployments,
@@ -682,7 +686,6 @@ cleanGPSData <- function(data,
 
   output
 
-  #' @export cleanGPSData
 }
 
 # -----
@@ -732,7 +735,60 @@ cleanGPSData <- function(data,
   pp <- cowplot::plot_grid(myPlot, myMap)
   pp
 
-  #' @export .cleanGPSDataPlot
+}
+
+# -----
+# Sub-function for plotting GPS data in the importers (Cattrack, Ecotone).
+#
+# The importers keep all of the data and flag the deployment period with the deployed column, so
+# nothing needs to be clipped or filtered before saving. This only draws the plot of distance from the
+# colony and the map: deployed locations in black, undeployed locations in red. It returns nothing and does
+# not pause between plots (unlike cleanGPSData()). A plot that cannot be drawn gives a message or warning
+# and never stops the data from being saved.
+
+.plot_gps_check <- function(data, deployments) {
+
+  data <- as.data.frame(dplyr::ungroup(data))
+
+  for (id in unique(data$dep_id)) {
+
+    tt <- deployments[deployments$dep_id == id, ]
+    if (nrow(tt) == 0) next
+    tt <- tt[1, ]
+
+    temp <- data[data$dep_id == id & !is.na(data$lon) & !is.na(data$lat), ]
+    temp <- temp[order(temp$time), ]
+    if (nrow(temp) == 0) next
+
+    if (is.na(tt$time_recaptured)) tt$time_recaptured <- max(temp$time, na.rm = TRUE)
+
+    # use the deployment location as the colony, or the first location after release if it is missing
+    if (is.na(tt$dep_lon) | is.na(tt$dep_lat)) {
+      first <- which(temp$time >= tt$time_released)[1]
+      if (is.na(first)) first <- 1
+      colony_lon <- temp$lon[first]
+      colony_lat <- temp$lat[first]
+      yy <- 'Distance from first location (km)'
+    } else {
+      colony_lon <- tt$dep_lon
+      colony_lat <- tt$dep_lat
+      yy <- 'Distance from colony (km)'
+    }
+    temp$coldist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = colony_lon, colonyLat = colony_lat)
+
+    new_data <- temp[temp$deployed == 1, ]
+
+    if (nrow(new_data) > 5) {
+      tryCatch(
+        print(.cleanGPSDataPlot(temp, new_data, tt, yy)),
+        error = function(e) warning('Plot could not be drawn for ', id, ': ', conditionMessage(e), call. = FALSE)
+      )
+    } else {
+      message('Less than 5 deployed locations for ', id, ', plot not drawn (all data are still saved)')
+    }
+  }
+
+  invisible(NULL)
 }
 
 # -----
@@ -769,7 +825,6 @@ cleanGPSData <- function(data,
     unmatchedDeployments <- unmatchedDeployments[!is.na(unmatchedDeployments)]
     print(as.character(unmatchedDeployments))
   }
-  #' @export .matchFiles
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -790,6 +845,8 @@ cleanGPSData <- function(data,
 #' The function will print lists of: TDR files that contain no data, TDR files that have no matching deployments in the deployment data, and deployments that have no matching TDR files. This is intended to help you identify errors in data entry or file naming. For technosmart units, I recommend you re-export data any time you change the file name because X-Manager includes the file name as a column in the data.
 #'
 #' @return A new dataframe containing all TDR data.
+#'
+#' @export
 
 readTDRData <- function(inputFolder,
                         deployments,
@@ -821,7 +878,6 @@ if (tagType == "Ecotone") {
   }
   output
 
-  #' @export readTDRData
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -1083,6 +1139,8 @@ readEcotoneTDR <- function(inputFolder,
 #' times and the TDR data is made using the 'dep_id' field. Because
 #'
 #' @return A new dataframe containing cleaned TDR data.
+#'
+#' @export
 
 cleanTDRData <- function(data,
                          deployments,
@@ -1165,8 +1223,56 @@ cleanTDRData <- function(data,
 
   output
 
-  #' @export cleanTDRData
 }
 
 # -----
+
+# -----
+# Sub-function for plotting TDR data in the importers (Ecotone, LAT2800).
+#
+# The importers keep all of the data and flag the deployment period with the deployed column, so
+# nothing needs to be clipped or filtered before saving. This only draws the plot of depth over time:
+# deployed data in black, undeployed data in red, and release and recapture times as dashed lines.
+# It returns nothing and does not pause between plots (unlike cleanTDRData()). A plot that cannot be
+# drawn gives a message or warning and never stops the data from being saved.
+
+.plot_tdr_check <- function(data, deployments) {
+
+  data <- as.data.frame(dplyr::ungroup(data))
+  data <- data[!is.na(data$depth_m), ]
+
+  for (id in unique(data$dep_id)) {
+
+    tt <- deployments[deployments$dep_id == id, ]
+    if (nrow(tt) == 0) next
+    tt <- tt[1, ]
+
+    temp <- data[data$dep_id == id, ]
+    temp <- temp[order(temp$time), ]
+
+    if (sum(temp$deployed == 1, na.rm = TRUE) <= 5) {
+      message('Less than 5 deployed depth records for ', id, ', plot not drawn (all data are still saved)')
+      next
+    }
+
+    # large datasets are thinned so the plot draws quickly
+    if (nrow(temp) > 100000) temp <- temp[seq(1, nrow(temp), 5), ]
+
+    release_recapture <- stats::na.omit(c(tt$time_released, tt$time_recaptured))
+
+    tryCatch({
+      p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth_m)) +
+        ggplot2::geom_line(col = 'red') +
+        ggplot2::geom_line(data = temp[temp$deployed == 1, ], ggplot2::aes(x = time, y = depth_m)) +
+        ggplot2::geom_vline(xintercept = release_recapture, linetype = 2, col = 'red') +
+        ggplot2::scale_y_reverse() +
+        ggplot2::theme_light() +
+        ggplot2::labs(title = id, y = 'Depth (m)', x = 'Time')
+      suppressWarnings(print(p))
+    },
+    error = function(e) warning('Plot could not be drawn for ', id, ': ', conditionMessage(e), call. = FALSE))
+  }
+
+  invisible(NULL)
+}
 

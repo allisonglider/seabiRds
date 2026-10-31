@@ -18,4 +18,5 @@ Find the modal value in a vector
 \examples{
 x <- c(1,2,1,2,4,5,7,8,4,2,3,4,4,4)
 getMode(x)
+
 }
