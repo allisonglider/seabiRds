@@ -111,17 +111,15 @@ axytrek_gps_to_dataset <- function(data,
     dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
 
-  cleanGPSData(data = data,
-               deployments = deployments,
-               speedThreshold = NA,
-               plot = F)
-
-  ss <- min(c(data$time[1],deployments$time_released), na.rm = T)
-  ee <- max(c(data$time[nrow(data)],deployments$time_recaptured), na.rm = T)
-  temp <- data |>
-    dplyr::mutate(coldist = getColDist(lon, lat, colonyLon = deployments$dep_lon, colonyLat = deployments$dep_lat))
-
+  # All data are kept and the deployed column flags the deployment period,
+  # so the plot only needs to show which locations are flagged.
   if (plot == T) {
+
+    ss <- min(c(data$time[1],deployments$time_released), na.rm = T)
+    ee <- max(c(data$time[nrow(data)],deployments$time_recaptured), na.rm = T)
+    temp <- data |>
+      dplyr::mutate(coldist = getColDist(lon, lat, colonyLon = deployments$dep_lon, colonyLat = deployments$dep_lat))
+
     suppressMessages(
       myPlot <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = coldist)) +
         ggplot2::geom_line(col = "red") +
@@ -143,7 +141,6 @@ axytrek_gps_to_dataset <- function(data,
                          existing_data_behavior = 'delete_matching')
 
 }
-
 # -----
 
 axytrek_acc_check <- function(file,
