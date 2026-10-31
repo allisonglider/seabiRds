@@ -1,9 +1,9 @@
 ---
-title: "Managing biologging deployments"
+title: "Managing biologging data"
 author: "Allison Patterson"
 output: rmarkdown::html_vignette
 vignette: >
-  %\VignetteIndexEntry{Managing biologging deployments}
+  %\VignetteIndexEntry{Managing biologging data}
   %\VignetteEngine{knitr::rmarkdown}
   %\VignetteEncoding{UTF-8}
 ---
