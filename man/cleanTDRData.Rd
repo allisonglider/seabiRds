@@ -17,7 +17,10 @@ cleanTDRData(data, deployments, plot = T)
 A new dataframe containing cleaned TDR data.
 }
 \description{
-Cleans up TDR data, by clipping to deployment times
+\strong{Legacy function.} This is an old data processing function that has been superseded by the
+\code{*_to_dataset} series of functions (\code{axytrek_to_dataset()}, \code{cattrack_to_dataset()},
+\code{ecotone_to_dataset()} and \code{lat2800_to_dataset()}) and is only retained here for backward compatibility.
+The newer functions keep all of the data and flag the deployment period with the \code{deployed} column.
 }
 \details{
 This function clips the TDR data to the start and end times of each TDR deployment. The link between deployment
