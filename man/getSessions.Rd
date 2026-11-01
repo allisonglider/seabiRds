@@ -34,4 +34,5 @@ getSessions(value = tt, ignore = FALSE)
 
 # example with text input that does not assign ID to colony
 getSessions(value = tt, ignore = TRUE, ignoreValue = 'colony')
+
 }

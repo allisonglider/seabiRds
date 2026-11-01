@@ -1,31 +1,31 @@
 # ---------------------------------------------------------------------------------------------------------------
 #' Find peak frequency
 #'
-#'@param data Vector of numeric values for finding peaks
-#'@param method Method for calculating peak frequency, options are 'pracma' or 'fft'
-#'@param time Vector of POSIXct times
-#'@param frequency Sampling frequency of data, in Hz, if missing the function will estimate frequency from time
-#'@param window Size of moving window for estimating peaks, in seconds
-#'@param threshold Minimum amplitude to be include as a true peak, results may differ with method
-#'@param sample Only used in fft method, only calculate paeaks at sample interval, in sec, to save processing time
-#'@param maxfreq Maximum frequency of interest using the FFT method
+#' @param data Vector of numeric values for finding peaks
+#' @param method Method for calculating peak frequency, options are 'pracma' or 'fft'
+#' @param time Vector of POSIXct times
+#' @param frequency Sampling frequency of data, in Hz, if missing the function will estimate frequency from time
+#' @param window Size of moving window for estimating peaks, in seconds
+#' @param threshold Minimum amplitude to be included as a true peak, results may differ with method
+#' @param sample Only used in fft method, only calculate peaks at sample interval, in sec, to save processing time
+#' @param maxfreq Maximum frequency of interest using the FFT method
 #'
-#'@details
+#' @details
 #'
-#'The pracma method uses pracma::findpeaks() to count the number of peaks within each window
-#'above a specified treshold. Results are returned as peaks per second. This approach is faster
-#'than the fft method and can be less impacted by noise in the data.If using this approach, I recommend
-#'exploring different threshold values to understand how this changes the result.
+#' The pracma method uses pracma::findpeaks() to count the number of peaks within each window
+#' above a specified threshold. Results are returned as peaks per second. This approach is faster
+#' than the fft method and can be less impacted by noise in the data. If using this approach, I recommend
+#' exploring different threshold values to understand how this changes the result.
 #'
-#'The fft method uses a Fast Fourier Transform to identify the peak frequency in the input data
-#'over a moving window defined the frequency * interval. The threshold paramter filters out peaks
-#'identified in samples with an inter-quartile range less than the threshold value. This helps eliminate
-#'noisy peaks with low amplitudes. This method can be slow for large data sets. Use sample to only
-#'calcualte peaks at a sampling interval (default is 1 sec), this can speed up the algorithm.
+#' The fft method uses a Fast Fourier Transform to identify the peak frequency in the input data
+#' over a moving window defined by window (in seconds) multiplied by frequency (in Hz). The threshold parameter
+#' filters out peaks identified in samples with an inter-quartile range less than the threshold value.
+#' This helps eliminate noisy peaks with low amplitudes. This method can be slow for large data sets.
+#' Use sample to only calculate peaks at a sampling interval (default is 1 sec), this can speed up the algorithm.
 #'
-#'@return A vector of frequencies (Hz).
+#' @return A vector of frequencies (Hz). Values at the start and end of the data, where there is not a full window, are NA.
 #'
-#'@examples
+#' @examples
 #'
 #' # generate data with a noisy sine wave in the middle
 #' ts <- 25 # sampling rate of 25 Hz
@@ -55,11 +55,15 @@
 #' plot(dat ~ tim, type = 'l')
 #' plot(myPeaks ~ tim, type = 'l')
 #' par(mfrow = c(1,1))
+#'
+#' @export
 
 
 # Version that accounts for unequal time intervals
 getPeakFrequency <- function(data, time, method = c('pracma', 'fft'), window, frequency = NULL,
                      threshold = 0.1, sample = 1, maxfreq = NULL) {
+
+  method <- match.arg(method)
 
   if (is.null(frequency)) frequency <- getFrequency(time = time)
 
@@ -68,7 +72,8 @@ getPeakFrequency <- function(data, time, method = c('pracma', 'fft'), window, fr
 
     tt <- rep(0, length(data))
 
-    tt[pracma::findpeaks(data, threshold = threshold)[,2]] <- 1
+    pk <- pracma::findpeaks(data, threshold = threshold)
+    if (!is.null(pk)) tt[pk[,2]] <- 1
 
     peaks <- zoo::rollsum(tt, window * frequency, sum, fill = 0)
 
@@ -140,7 +145,6 @@ getPeakFrequency <- function(data, time, method = c('pracma', 'fft'), window, fr
 
   return(peaks)
 
-  #' @export getPeakFrequency
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -152,6 +156,8 @@ getPeakFrequency <- function(data, time, method = c('pracma', 'fft'), window, fr
 #' @param window Size of moving window for estimating peaks, in seconds
 #'
 #' @details Calculates inter-quartile range using a moving window of time*frequency
+#'
+#' @export
 
 getAmplitude <- function(dat, window, time, frequency = NULL) {
 
@@ -165,7 +171,6 @@ getAmplitude <- function(dat, window, time, frequency = NULL) {
 
   return(amp)
 
-  #' @export getAmplitude
 }
 
 
@@ -182,6 +187,8 @@ getAmplitude <- function(dat, window, time, frequency = NULL) {
 #' @param standVar Variable to use in standardizing pitch values, if desired
 #' @param standMin Minimum value in standVar for standarization
 #' @param standMax Maximum value in standVar for standarization
+#'
+#' @export
 
 getPitch <- function(X, Y, Z, window, time, frequency = NULL,
                      standVar = NULL, standMin = NULL, standMax = NULL) {
@@ -227,7 +234,6 @@ getPitch <- function(X, Y, Z, window, time, frequency = NULL,
 
   return(pitch)
 
-  #' @export getPitch
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -240,6 +246,8 @@ getPitch <- function(X, Y, Z, window, time, frequency = NULL,
 #' @param window Size of moving window for estimating peaks, in seconds
 #' @param frequency Sampling frequency of data, in Hz, if missing the function will estimate frequency from time
 #' @param partial If TRUE, calculates partial dynamic body acceleration
+#'
+#' @export
 
 
 getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) {
@@ -264,7 +272,6 @@ getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) 
 
   return(ODBA)
 
-  #' @export getDBA
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -284,6 +291,8 @@ getDBA <- function(X, Y, Z = NULL, time, window, frequency = NULL, partial = F) 
 #' If ask is set to true, then the function will plot pitch and roll using the data, and ask the user if they want to
 #' flip the axes. On most seabirds there hould be more variability in the pitch than in the roll. If the
 #' roll plot appears more variable, then the axes should be flipped.
+#'
+#' @export
 
 
 checkAxes <- function(data, ask = T, force = F) {
@@ -297,16 +306,23 @@ checkAxes <- function(data, ask = T, force = F) {
 
   if (force == T) ask <- F
 
+  # readline() cannot prompt outside an interactive session, so ask = TRUE would
+  # silently answer 'no'. Warn instead of failing so existing scripts keep running.
+  if (ask == T & !interactive()) {
+    warning('ask = TRUE requires an interactive session, so axes were not checked or flipped. Use force = TRUE if the axes should be flipped.', call. = F)
+    ask <- F
+  }
+
   if (ask == T) {
 
     pp <- seabiRds::getPitch(X = data$x, Y = data$y, Z = data$z, time = data$time, window = 1)
     rr <- seabiRds::getPitch(X = data$y, Y = data$x, Z = data$z, time = data$time, window = 1)
 
-    par(mfrow = c(2,1))
+    graphics::par(mfrow = c(2,1))
     idx <- seq(1, nrow(data), getFrequency(data$time))
-    plot(pp[idx] ~ data$time[idx], type = 'l', xlab = '', ylab = 'Pitch', main = data$dep_id[1])
-    plot(rr[idx] ~ data$time[idx], type = 'l', xlab = '', ylab = 'Roll', main = data$dep_id[1])
-    par(mfrow = c(1,1))
+    graphics::plot(pp[idx] ~ data$time[idx], type = 'l', xlab = '', ylab = 'Pitch', main = data$dep_id[1])
+    graphics::plot(rr[idx] ~ data$time[idx], type = 'l', xlab = '', ylab = 'Roll', main = data$dep_id[1])
+    graphics::par(mfrow = c(1,1))
 
     flip <- readline("Should axes be flipped(1: yes, 2: no) ?")
     if (flip == 1) force <- T
@@ -317,7 +333,6 @@ checkAxes <- function(data, ask = T, force = F) {
   }
 
   return(data)
-  #' @export checkAxes
 }
 
 # ---------------------------------------------------------------------------------------------------------------
@@ -329,6 +344,8 @@ checkAxes <- function(data, ask = T, force = F) {
 #' an issue between different configurations of Technosmart AxyTrek units. This functions takes formatted
 #' accelerometer data, swaps the x and y axes and multiplies the original x-axis by -1. This makes the x, y, and z
 #' fields consistent with other acceleromters.
+#'
+#' @export
 
 fixAxes <- function(data) {
 
@@ -343,5 +360,4 @@ fixAxes <- function(data) {
   data$y <- temp * -1
 
   return(data)
-  #' @export fixAxes
 }

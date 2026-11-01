@@ -1,44 +1,50 @@
 
 <!-- README.md is generated from README.Rmd. Please edit that file -->
-seabiRds
-========
+
+# seabiRds
 
 <!-- badges: start -->
 <!-- badges: end -->
-Tools to analyse biologger data collected in the Arctic Ecology Lab. Primarily for GPS and accelerometer data, but maybe also some geolocators and heart rate loggers. Please add an issue to the GitHub issues page for the package if you encounter any problems, would like me to add something, or want to make a contribution to the package.
 
-Installation
-------------
+Tools to analyse biologger data collected in the Arctic Ecology Lab.
+Primarily for GPS and accelerometer data, but maybe also some
+geolocators and heart rate loggers. Please add an issue to the GitHub
+issues page for the package if you encounter any problems, would like me
+to add something, or want to make a contribution to the package.
 
-You can install this package with:
+## Installation
+
+You can install this package from [GitHub](https://github.com/) with:
 
 ``` r
 # install.packages("devtools")
 devtools::install_github("allisonglider/seabiRds")
 ```
 
-To install the package with vignettes containing helpful examples use:
+To install the package with the vignette, which contains helpful
+examples, use:
 
 ``` r
 # install.packages("devtools")
-devtools::install_github("allisonglider/seabiRds", build_vignettes = T)
+devtools::install_github("allisonglider/seabiRds", build_vignettes = TRUE)
 ```
 
-Vignettes
----------
+Importing biologger data into a dataset also needs the arrow package,
+which is not installed automatically:
 
-This will take you to an example of how to process data from Ecotone GPS devices:
+``` r
+install.packages("arrow")
+```
+
+## Vignette
+
+The vignette *Managing biologging data* is the best place to start. It
+shows how to record deployment metadata in the standard template,
+organize the files from your biologgers, check the records in R, and
+import the data into the lab’s biologging database.
 
 ``` r
 library(seabiRds)
 
-vignette(topic = 'Ecotone-GPS-Example', package = 'seabiRds')
-```
-
-This will take you to an example of how to process data from Technosmart GPS devices:
-
-``` r
-library(seabiRds)
-
-vignette(topic = 'Technosmart-GPS-Example', package = 'seabiRds')
+vignette(topic = 'Managing-biologging-data', package = 'seabiRds')
 ```

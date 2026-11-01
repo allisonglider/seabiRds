@@ -36,10 +36,9 @@ cattrack_gps_to_dataset <- function(data,
     dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
 
-  cleanGPSData(data = data,
-               deployments = deployments,
-               speedThreshold = NA,
-               plot = plot)
+  # All data are kept and the deployed column flags the deployment period,
+  # so the plot only needs to show which locations are flagged.
+  if (plot == T) .plot_gps_check(data = data, deployments = deployments)
 
   data |>
     arrow::write_dataset(paste0(output_dataset,'/gps'), format = "parquet",
@@ -49,11 +48,13 @@ cattrack_gps_to_dataset <- function(data,
 
 # -----
 #' @title Convert Cattrack biologger data to Arrow dataset
-#' @description Reads Cattrack biologger data and parses it into two arrow datasets for GPS and TDR
-#' @param files List of Cattrack .csv files, data must include logger IDs that match the gps_id in deployment data
+#' @description Reads Cattrack biologger data and parses it into an arrow dataset for GPS data
+#' @param files List of Cattrack .csv files, data must have file names that contain the dep_id in the deployment data
 #' @param deployments Deployment data formatted using seabiRds::formatDeployments()
 #' @param output_dataset Path where arrow dataset should be saved
 #' @param timezone Timezone of raw data, default is UTC
+#' @param dateFormat POSIXct format of the Date column in the files (e.g. \%d/\%m/\%Y). The Time column is
+#' read as \%H:\%M:\%S and added to this format. There is no default, so a value must be supplied.
 #' @param plot Should plot of data be generated, TRUE or FALSE?
 #'
 #' @export
@@ -65,12 +66,17 @@ cattrack_to_dataset <- function(files,
                                 dateFormat,
                                 plot = T) {
 
-  check_filetype <- grep('.csv', files)
-  if (length(check_filetype) != length(files)) stop('All files must be .csv format')
+  .check_arrow()
+  .check_csv_files(files)
+  .warn_ambiguous_files(files, deployments$dep_id)
 
-  for (i in 1:nrow(deployments)) {
+  if (missing(dateFormat)) stop("dateFormat must be supplied. It is the format of the Date column in the files, e.g. '%Y-%m-%d' or '%Y/%m/%d'.", call. = FALSE)
 
-    idx <- files[grep(deployments$dep_id[i], files)]
+  if (nrow(deployments) == 0) stop('deployments has no rows', call. = FALSE)
+
+  for (i in seq_len(nrow(deployments))) {
+
+    idx <- files[grep(deployments$dep_id[i], files, fixed = TRUE)]
 
     if (length(idx) > 0) {
 
@@ -81,13 +87,38 @@ cattrack_to_dataset <- function(files,
                              stringsAsFactors = F,
                              header = T)
 
+      if (nrow(output) == 0) {
+        print(paste0('No data in file [',i,']: ', deployments$dep_id[i]))
+        next
+      }
+
+      if (!all(c('Date', 'Time') %in% names(output))) {
+        stop('The Cattrack files for ', deployments$dep_id[i], ' must have columns named Date and Time', call. = FALSE)
+      }
+
+      # check that the date format matches the files, and say so clearly if it does not
+      raw_time <- paste(output$Date, output$Time, sep = ' ')
+      parsed_time <- as.POSIXct(raw_time, format = paste(dateFormat, "%H:%M:%S"), tz = timezone)
+
+      if (all(is.na(parsed_time))) {
+        warning(deployments$dep_id[i], ': the dates and times in the file could not be read, so this deployment was skipped. ',
+                'The first value in the file is "', raw_time[1], '", but dateFormat = "', dateFormat,
+                '" expects dates written like "', format(Sys.Date(), dateFormat), '". Check dateFormat (see ?strptime for formats).',
+                call. = FALSE, immediate. = TRUE)
+        next
+      }
+
+      if (any(is.na(parsed_time))) {
+        message(sum(is.na(parsed_time)), ' of ', length(parsed_time), ' rows for ', deployments$dep_id[i],
+                ' do not match dateFormat and were removed')
+      }
+
       output <- output |>
         dplyr::mutate(
-          time = paste(Date, Time, sep = ' '),
-          time = as.POSIXct(time, format = paste(dateFormat, "%H:%M:%S"), tz = timezone),
+          time = parsed_time,
           dep_id = deployments$dep_id[i],
         ) |>
-        dplyr::filter(time > as.POSIXct("1900-01-01", tz = timezone))
+        dplyr::filter(!is.na(time), time > as.POSIXct("1900-01-01", tz = timezone))
 
       dat <- output
 
@@ -100,8 +131,8 @@ cattrack_to_dataset <- function(files,
       if (nrow(dat) > 0) {
 
         dd <- deployments |>
-          filter(gps_id == deployments$gps_id[i]) |>
-          arrange(time_released)
+          dplyr::filter(gps_id == deployments$gps_id[i]) |>
+          dplyr::arrange(time_released)
         idx <- which(dd$dep_id == deployments$dep_id[i])
         if (idx > 1) start_time <- mean(c(dd$time_recaptured[idx - 1], deployments$time_released[i])) else start_time <- min(dat$time)
         if (idx < nrow(dd)) end_time <- mean(c(dd$time_released[idx + 1], deployments$time_recaptured[i])) else end_time <- max(dat$time)
@@ -121,7 +152,7 @@ cattrack_to_dataset <- function(files,
 
         print(paste0('Finished [',i,']: ', deployments$dep_id[i]))
 
-      }  else print(paste0('No matching data [',i,']: ', deployments$dep_id[i]))
+      }  else print(paste0('No valid data [',i,']: ', deployments$dep_id[i]))
     }  else print(paste0('No matching data [',i,']: ', deployments$dep_id[i]))
   }
 }

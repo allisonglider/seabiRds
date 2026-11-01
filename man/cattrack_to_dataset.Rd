@@ -14,7 +14,7 @@ cattrack_to_dataset(
 )
 }
 \arguments{
-\item{files}{List of Cattrack .csv files, data must include logger IDs that match the gps_id in deployment data}
+\item{files}{List of Cattrack .csv files, data must have file names that contain the dep_id in the deployment data}
 
 \item{deployments}{Deployment data formatted using seabiRds::formatDeployments()}
 
@@ -22,8 +22,11 @@ cattrack_to_dataset(
 
 \item{timezone}{Timezone of raw data, default is UTC}
 
+\item{dateFormat}{POSIXct format of the Date column in the files (e.g. \%d/\%m/\%Y). The Time column is
+read as \%H:\%M:\%S and added to this format. There is no default, so a value must be supplied.}
+
 \item{plot}{Should plot of data be generated, TRUE or FALSE?}
 }
 \description{
-Reads Cattrack biologger data and parses it into two arrow datasets for GPS and TDR
+Reads Cattrack biologger data and parses it into an arrow dataset for GPS data
 }

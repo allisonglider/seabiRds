@@ -27,7 +27,9 @@ readGPSData(
 A new dataframe containing all GPS data.
 }
 \description{
-Reads in raw GPS data and sets up standard field names.
+\strong{Legacy function.} This is an old data importer that has been superseded by the \code{*_to_dataset} series of
+functions (\code{axytrek_to_dataset()}, \code{cattrack_to_dataset()}, \code{ecotone_to_dataset()} and
+\code{lat2800_to_dataset()}) and is only retained here for backward compatibility.
 }
 \details{
 Technosmart can export GPS data with the following date formats: %d-%m-%Y, %m-%d-%Y, "%Y-%m-%d, %Y-%d-%m. All the files in the inputFolder need to have the same formatting.

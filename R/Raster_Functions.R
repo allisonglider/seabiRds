@@ -46,10 +46,11 @@
 #' intersect(locs$rn, names(r))
 #'
 #' # Extract values
-#' locs <- SpatialPointsDataFrame(coords = locs[,c('lon','lat')],
-#'                                data = locs, proj4string = CRS('+proj=longlat'))
+#' locs <- sf::st_as_sf(locs, coords = c('lon', 'lat'), crs = 4326)
 #'
 #' extract_raster_stack(raster_stack = r, locations = locs, names_var = 'rn')
+#'
+#' @export
 
 extract_raster_stack <- function(raster_stack, locations, names_var) {
 
@@ -58,7 +59,7 @@ extract_raster_stack <- function(raster_stack, locations, names_var) {
   }
 
   if (class(locations)[1] == 'sf') {
-    locations <- as(locations, 'Spatial')
+    locations <- methods::as(locations, 'Spatial')
   }
 
   if (!(class(locations) %in% c("SpatialPointsDataFrame"))) {
@@ -84,5 +85,4 @@ extract_raster_stack <- function(raster_stack, locations, names_var) {
 
   output
 
-  #' @export extract_raster_stack
 }

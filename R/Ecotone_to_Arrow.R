@@ -27,8 +27,8 @@ ecotone_tdr_to_dataset <- function(data,
   data$time[idx] <- data$time[idx] - 1
 
   data <- data |>
-    rename(temperature_c = Temp_sens, depth_m = Depth) |>
-    mutate(
+    dplyr::rename(temperature_c = Temp_sens, depth_m = Depth) |>
+    dplyr::mutate(
       Div.down = ifelse(is.na(Div.down), 0, Div.down),
       Div.up = ifelse(is.na(Div.up), 0, Div.up),
       depth_m = ifelse(Div.up == 1 | Div.down == 1, 0, depth_m),
@@ -43,8 +43,9 @@ ecotone_tdr_to_dataset <- function(data,
     dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
 
-  seabiRds::cleanTDRData(data = data |> dplyr::rename(depth = depth_m) |> dplyr::filter(!is.na(depth)),
-                         deployments = deployments, plot = plot)
+  # All data are kept and the deployed column flags the deployment period,
+  # so the plot only needs to show which records are flagged.
+  if (plot == T) .plot_tdr_check(data = data, deployments = deployments)
 
   data |>
     arrow::write_dataset(paste0(output_dataset,'/tdr'), format = "parquet",
@@ -137,10 +138,9 @@ ecotone_gps_to_dataset <- function(data,
     dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
 
-  cleanGPSData(data = data,
-               deployments = deployments,
-               speedThreshold = NA,
-               plot = plot)
+  # All data are kept and the deployed column flags the deployment period,
+  # so the plot only needs to show which locations are flagged.
+  if (plot == T) .plot_gps_check(data = data, deployments = deployments)
 
   data |>
     arrow::write_dataset(paste0(output_dataset,'/gps'), format = "parquet",
@@ -151,8 +151,8 @@ ecotone_gps_to_dataset <- function(data,
 
 # -----
 #' @title Convert Ecotone biologger data to Arrow dataset
-#' @description Reads ecotone biologger data and parses it into two arrow datasets for GPS and TDR
-#' @param files List of ecotone .csv files, data must include logger IDs that match the gps_id in deployment data
+#' @description Reads ecotone biologger data and parses it into arrow datasets for GPS data and, depending on the columns in the files, TDR data or dive data
+#' @param files List of ecotone .csv files, data must include logger IDs that match the gps_id in deployment data (file names do not need to match)
 #' @param deployments Deployment data formatted using seabiRds::formatDeployments()
 #' @param output_dataset Path where arrow dataset should be saved
 #' @param timezone Timezone of raw data, default is UTC
@@ -166,8 +166,8 @@ ecotone_to_dataset <- function(files,
                                timezone = 'UTC',
                                plot = T) {
 
-  check_filetype <- grep('.csv', files)
-  if (length(check_filetype) != length(files)) stop('All files must be .csv format')
+  .check_arrow()
+  .check_csv_files(files)
 
   output <- combineFiles(files = files,
                          pattern = "csv",
@@ -176,22 +176,43 @@ ecotone_to_dataset <- function(files,
                          stringsAsFactors = F,
                          header = T)
 
+  time_columns <- c('Year', 'Month', 'Day', 'Hour', 'Minute', 'Second', 'Logger.ID')
+  if (!all(time_columns %in% names(output))) {
+    stop('The Ecotone files must have columns named ', paste(time_columns, collapse = ', '),
+         '. Missing: ', paste(setdiff(time_columns, names(output)), collapse = ', '), call. = FALSE)
+  }
+
+  # check that the date columns can be read, and say so clearly if they cannot
+  raw_time <- paste(output$Year, output$Month, output$Day, output$Hour, output$Minute, output$Second, sep = '-')
+  parsed_time <- as.POSIXct(raw_time, format = "%Y-%m-%d-%H-%M-%S", tz = timezone)
+
+  if (all(is.na(parsed_time))) {
+    stop('The dates and times in the Ecotone files could not be read. The first value is "', raw_time[1],
+         '", but they should be in the form Year-Month-Day-Hour-Minute-Second (for example 2016-7-27-14-26-56). ',
+         'Check the Year, Month, Day, Hour, Minute and Second columns.', call. = FALSE)
+  }
+
+  if (any(is.na(parsed_time))) {
+    message(sum(is.na(parsed_time)), ' of ', length(parsed_time), ' rows have a date or time that could not be read and were removed')
+  }
+
   output <- output |>
     dplyr::mutate(
-      time = paste(Year, Month, Day, Hour, Minute, Second, sep = '-'),
-      time = as.POSIXct(time, format = "%Y-%m-%d-%H-%M-%S", tz = timezone),
+      time = parsed_time,
       tdr_id = Logger.ID,
     ) |>
-    dplyr::filter(time > as.POSIXct("1900-01-01", tz = timezone)) |>
+    dplyr::filter(!is.na(time), time > as.POSIXct("1900-01-01", tz = timezone)) |>
     dplyr::rename(gps_id = Logger.ID)
 
   if (!('HDOP' %in% names(output))) output$HDOP <- NA
   if (!('Sat..Count' %in% names(output))) output$`Sat..Count` <- NA
 
-  for (i in 1:nrow(deployments)) {
+  if (nrow(deployments) == 0) stop('deployments has no rows', call. = FALSE)
+
+  for (i in seq_len(nrow(deployments))) {
 
     dat <- output |>
-      filter(gps_id == deployments$gps_id[i])
+      dplyr::filter(gps_id == deployments$gps_id[i])
 
     if (nrow(dat) > 0 & is.na(deployments$time_recaptured[i])) {
       deployments$time_recaptured[i] <- max(dat$time)
@@ -202,8 +223,8 @@ ecotone_to_dataset <- function(files,
     if (nrow(dat) > 0) {
 
       dd <- deployments |>
-        filter(gps_id == deployments$gps_id[i]) |>
-        arrange(time_released)
+        dplyr::filter(gps_id == deployments$gps_id[i]) |>
+        dplyr::arrange(time_released)
       idx <- which(dd$dep_id == deployments$dep_id[i])
       if (idx > 1) start_time <- mean(c(dd$time_recaptured[idx - 1], deployments$time_released[i])) else start_time <- min(dat$time)
       if (idx < nrow(dd)) end_time <- mean(c(dd$time_released[idx + 1], deployments$time_recaptured[i])) else end_time <- max(dat$time)
