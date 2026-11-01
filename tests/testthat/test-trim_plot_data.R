@@ -2,11 +2,11 @@
 
 released <- as.POSIXct('2026-10-14 10:00', tz = 'UTC')
 
-testthat::test_that(".trim_plot_data drops records more than 30 days before release, and says so", {
+testthat::test_that(".trim_plot_data drops records more than 30 days before release", {
 
   dat <- data.frame(time = released + 3600 * c(-24 * 60, -2, -1, 0, 1, 2), value = 1:6)
 
-  testthat::expect_message(res <- .trim_plot_data(dat, released, 'A12'), 'more than 30 days before release')
+  testthat::expect_no_message(res <- .trim_plot_data(dat, released, 'A12'))
   testthat::expect_equal(nrow(res), 5)
   testthat::expect_equal(res$value, 2:6)
 
@@ -69,8 +69,8 @@ testthat::test_that("the GPS and TDR plot helpers leave out an early record from
   grDevices::pdf(NULL)
   on.exit(grDevices::dev.off(), add = TRUE)
 
-  testthat::expect_message(.plot_gps_check(gps, dep), 'not shown in the plot')
-  testthat::expect_message(.plot_tdr_check(tdr, dep), 'not shown in the plot')
+  testthat::expect_no_error(.plot_gps_check(gps, dep))
+  testthat::expect_no_error(.plot_tdr_check(tdr, dep))
 
   testthat::expect_identical(gps, gps_before)
   testthat::expect_identical(tdr, tdr_before)

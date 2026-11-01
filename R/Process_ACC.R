@@ -318,8 +318,17 @@ checkAxes <- function(data, ask = T, force = F) {
     pp <- seabiRds::getPitch(X = data$x, Y = data$y, Z = data$z, time = data$time, window = 1)
     rr <- seabiRds::getPitch(X = data$y, Y = data$x, Z = data$z, time = data$time, window = 1)
 
-    graphics::par(mfrow = c(2,1))
     idx <- seq(1, nrow(data), getFrequency(data$time))
+
+    # leave records from long before the deployment out of the plot (the data are not changed)
+    if ('deployed' %in% names(data) && any(data$deployed %in% 1)) {
+      keep <- .trim_plot_data(data.frame(time = data$time[idx], i = idx),
+                              min(data$time[data$deployed %in% 1]),
+                              data$dep_id[1])
+      idx <- keep$i
+    }
+
+    graphics::par(mfrow = c(2,1))
     graphics::plot(pp[idx] ~ data$time[idx], type = 'l', xlab = '', ylab = 'Pitch', main = data$dep_id[1])
     graphics::plot(rr[idx] ~ data$time[idx], type = 'l', xlab = '', ylab = 'Roll', main = data$dep_id[1])
     graphics::par(mfrow = c(1,1))
@@ -333,6 +342,7 @@ checkAxes <- function(data, ask = T, force = F) {
   }
 
   return(data)
+  #' @export checkAxes
 }
 
 # ---------------------------------------------------------------------------------------------------------------

@@ -1373,12 +1373,5 @@ cleanTDRData <- function(data,
   cutoff <- time_released - days * 24 * 3600
   early <- !is.na(data$time) & data$time < cutoff
 
-  if (any(early)) {
-    message('Records from ', format(min(data$time[early]), '%Y-%m-%d %H:%M', tz = 'UTC', usetz = TRUE),
-            ' (more than ', days, ' days before release) are not shown in the plot for ', id,
-            ' (they are still saved)')
-    data <- data[!early, ]
-  }
-
-  data
+  data[!early, ]
 }
