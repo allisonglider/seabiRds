@@ -35,10 +35,39 @@ lat2800_to_dataset <- function(files,
 
       dat <- files[idx] |>
         lapply(utils::read.csv, stringsAsFactors = F, nrows = max_rows, skip = 2) |>
-        dplyr::bind_rows() |>
+        dplyr::bind_rows()
+
+      if (nrow(dat) == 0) {
+        print(paste0('No data in file [',i,']: ', deployments$dep_id[i]))
+        next
+      }
+
+      if (!all(c('Date', 'Time') %in% names(dat))) {
+        stop('The LAT2800 files for ', deployments$dep_id[i], ' must have columns named Date and Time', call. = FALSE)
+      }
+
+      # check that the date format matches the files, and say so clearly if it does not
+      raw_time <- paste(dat$Date, dat$Time)
+      parsed_time <- as.POSIXct(raw_time, format = date_format, tz = timezone)
+
+      if (all(is.na(parsed_time))) {
+        warning(deployments$dep_id[i], ': the dates and times in the file could not be read, so this deployment was skipped. ',
+                'The first value in the file is "', raw_time[1], '", which does not match date_format = "', date_format,
+                '". Check date_format (see ?strptime for formats).',
+                call. = FALSE, immediate. = TRUE)
+        next
+      }
+
+      if (any(is.na(parsed_time))) {
+        message(sum(is.na(parsed_time)), ' of ', length(parsed_time), ' rows for ', deployments$dep_id[i],
+                ' do not match date_format and were removed')
+        dat <- dat[!is.na(parsed_time), ]
+        parsed_time <- parsed_time[!is.na(parsed_time)]
+      }
+
+      dat <- dat |>
         dplyr::mutate(
-          Timestamp = as.POSIXct(paste(Date, Time), format = date_format, tz = timezone),
-          Timestamp = lubridate::with_tz(Timestamp, tzone = 'UTC'),
+          Timestamp = lubridate::with_tz(parsed_time, tzone = 'UTC'),
           dep_id = deployments$dep_id[i],
           year = as.integer(strftime(Timestamp, '%Y')),
           deployed = ifelse(Timestamp >= deployments$time_released[i] &

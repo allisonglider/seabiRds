@@ -176,13 +176,32 @@ ecotone_to_dataset <- function(files,
                          stringsAsFactors = F,
                          header = T)
 
+  time_columns <- c('Year', 'Month', 'Day', 'Hour', 'Minute', 'Second', 'Logger.ID')
+  if (!all(time_columns %in% names(output))) {
+    stop('The Ecotone files must have columns named ', paste(time_columns, collapse = ', '),
+         '. Missing: ', paste(setdiff(time_columns, names(output)), collapse = ', '), call. = FALSE)
+  }
+
+  # check that the date columns can be read, and say so clearly if they cannot
+  raw_time <- paste(output$Year, output$Month, output$Day, output$Hour, output$Minute, output$Second, sep = '-')
+  parsed_time <- as.POSIXct(raw_time, format = "%Y-%m-%d-%H-%M-%S", tz = timezone)
+
+  if (all(is.na(parsed_time))) {
+    stop('The dates and times in the Ecotone files could not be read. The first value is "', raw_time[1],
+         '", but they should be in the form Year-Month-Day-Hour-Minute-Second (for example 2016-7-27-14-26-56). ',
+         'Check the Year, Month, Day, Hour, Minute and Second columns.', call. = FALSE)
+  }
+
+  if (any(is.na(parsed_time))) {
+    message(sum(is.na(parsed_time)), ' of ', length(parsed_time), ' rows have a date or time that could not be read and were removed')
+  }
+
   output <- output |>
     dplyr::mutate(
-      time = paste(Year, Month, Day, Hour, Minute, Second, sep = '-'),
-      time = as.POSIXct(time, format = "%Y-%m-%d-%H-%M-%S", tz = timezone),
+      time = parsed_time,
       tdr_id = Logger.ID,
     ) |>
-    dplyr::filter(time > as.POSIXct("1900-01-01", tz = timezone)) |>
+    dplyr::filter(!is.na(time), time > as.POSIXct("1900-01-01", tz = timezone)) |>
     dplyr::rename(gps_id = Logger.ID)
 
   if (!('HDOP' %in% names(output))) output$HDOP <- NA

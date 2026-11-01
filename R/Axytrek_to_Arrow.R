@@ -132,8 +132,8 @@ axytrek_acc_check <- function(file,
 
   if (sum(check_names) != 4) stop(paste0(file, 'does not contain columns named Timestamp, X, Y, and Z'))
 
-  date_error <- paste0(' --- Date format test failed for: ', file, ' \nCheck that the date format',
-                       tt$Timestamp, ' matches the date_format string: ', date_format, '. \n\n See ?strptime for help with POSIX string formats')
+  date_error <- paste0(' --- Date format test failed for: ', file, ' \nThe first Timestamp in the file is "',
+                       tt$Timestamp, '", which does not match the date_format string: ', date_format, '. \n\n See ?strptime for help with POSIX string formats')
   check_dateformat <- as.POSIXct(tt$Timestamp, format = date_format, tz = 'UTC')
   if (is.na(check_dateformat)) stop(date_error)
   if (check_dateformat < as.POSIXct('2000-01-01', tz = timezone)) stop(date_error)
@@ -165,8 +165,8 @@ axytrek_tdr_check <- function(file,
 
   if (sum(check_depth) != 1) warning(paste0(file, ' is missing Depth data'), call. = F)
 
-  date_error <- paste0(' --- Date format test failed for: ', file, ' \nCheck that the date format',
-                       tt$Timestamp, ' matches the date_format string: ', date_format, '. \n\n See ?strptime for help with POSIX string formats')
+  date_error <- paste0(' --- Date format test failed for: ', file, ' \nThe first Timestamp in the file is "',
+                       tt$Timestamp, '", which does not match the date_format string: ', date_format, '. \n\n See ?strptime for help with POSIX string formats')
   check_dateformat <- as.POSIXct(tt$Timestamp, format = date_format, tz = 'UTC')
   if (is.na(check_dateformat)) stop(date_error)
   if (check_dateformat < as.POSIXct('2000-01-01', tz = timezone)) stop(date_error)
@@ -192,8 +192,8 @@ axytrek_gps_check <- function(file,
 
   if (sum(check_names) != 4) stop(paste0(file, 'does not contain columns named height.msl, ground.speed, satellites, and/or hdop'))
 
-  date_error <- paste0(' --- Date format test failed for: ', file, ' \nCheck that the date format',
-                       tt$Timestamp, ' matches the date_format string: ', date_format, '. \n\n See ?strptime for help with POSIX string formats')
+  date_error <- paste0(' --- Date format test failed for: ', file, ' \nThe first Timestamp in the file is "',
+                       tt$Timestamp, '", which does not match the date_format string: ', date_format, '. \n\n See ?strptime for help with POSIX string formats')
   check_dateformat <- as.POSIXct(tt$Timestamp, format = date_format, tz = 'UTC')
   if (is.na(check_dateformat)) stop(date_error)
   if (check_dateformat < as.POSIXct('2000-01-01', tz = timezone)) stop(date_error)
@@ -274,7 +274,19 @@ axytrek_to_dataset <- function(files,
         dplyr::bind_rows() |>
         dplyr::mutate(
           Timestamp = as.POSIXct(Timestamp, format = date_format, tz = timezone),
-          Timestamp = lubridate::with_tz(Timestamp, tzone = 'UTC'),
+          Timestamp = lubridate::with_tz(Timestamp, tzone = 'UTC')
+        )
+
+      # the first row of the first file was checked above, this catches rows (or other files) that do not match
+      n_bad_time <- sum(is.na(dat$Timestamp))
+      if (n_bad_time > 0) {
+        message(n_bad_time, ' of ', nrow(dat), ' rows for ', deployments$dep_id[i],
+                ' do not match date_format and were removed')
+        dat <- dat[!is.na(dat$Timestamp), ]
+      }
+
+      dat <- dat |>
+        dplyr::mutate(
           dep_id = deployments$dep_id[i],
           year = as.integer(strftime(Timestamp, '%Y')),
           deployed = ifelse(Timestamp >= deployments$time_released[i] &
