@@ -766,11 +766,19 @@ cleanGPSData <- function(data,
       ggplot2::labs(title = paste(temp$dep_id[1]), y = yy, x = "Time")
   )
 
-  my_sf <- sf::st_as_sf(newData[!is.na(newData$lon),], coords = c('lon', 'lat'), crs = 4326)
+  # the map is zoomed to the deployed locations, or to all locations if there are fewer than two
+  extent_data <- newData[!is.na(newData$lon),]
+  if (nrow(extent_data) < 2) extent_data <- temp[!is.na(temp$lon),]
+
+  my_sf <- sf::st_as_sf(extent_data, coords = c('lon', 'lat'), crs = 4326)
   my_bb <- bbox_at_zoom(locs=my_sf)
 
   xran <- my_bb[c(1,3)]
   yran <- my_bb[c(2,4)]
+
+  # all locations at the same point (e.g. a logger that never moved) give a map with no width, so pad it
+  if (xran[2] - xran[1] <= 0) xran <- as.numeric(xran) + c(-0.05, 0.05)
+  if (yran[2] - yran[1] <= 0) yran <- as.numeric(yran) + c(-0.05, 0.05)
 
   suppressMessages(
     myMap<- ggplot2::ggplot(data = newData[!is.na(newData$lon),]) +
@@ -794,9 +802,10 @@ cleanGPSData <- function(data,
 #
 # The importers keep all of the data and flag the deployment period with the deployed column, so
 # nothing needs to be clipped or filtered before saving. This only draws the plot of distance from the
-# colony and the map: deployed locations in black, undeployed locations in red. It returns nothing and does
-# not pause between plots (unlike cleanGPSData()). A plot that cannot be drawn gives a message or warning
-# and never stops the data from being saved.
+# colony and the map: deployed locations in black, undeployed locations in red. All locations are drawn
+# even when few or none are deployed, because the undeployed data often show what went wrong. It returns
+# nothing and does not pause between plots (unlike cleanGPSData()). A plot that cannot be drawn gives a
+# message or warning and never stops the data from being saved.
 
 .plot_gps_check <- function(data, deployments) {
 
@@ -828,15 +837,20 @@ cleanGPSData <- function(data,
     }
     temp$coldist <- getColDist(lon = temp$lon, lat = temp$lat, colonyLon = colony_lon, colonyLat = colony_lat)
 
-    new_data <- temp[temp$deployed == 1, ]
+    new_data <- temp[temp$deployed %in% 1, ]
 
-    if (nrow(new_data) > 5) {
+    if (nrow(temp) > 5) {
+
+      if (nrow(new_data) <= 5) {
+        message('Less than 5 deployed locations for ', id, ', the plot shows all locations (undeployed locations are in red)')
+      }
+
       tryCatch(
         print(.cleanGPSDataPlot(temp, new_data, tt, yy)),
         error = function(e) warning('Plot could not be drawn for ', id, ': ', conditionMessage(e), call. = FALSE)
       )
     } else {
-      message('Less than 5 deployed locations for ', id, ', plot not drawn (all data are still saved)')
+      message('Less than 5 locations for ', id, ', plot not drawn (all data are still saved)')
     }
   }
 
@@ -1296,7 +1310,8 @@ cleanTDRData <- function(data,
 # The importers keep all of the data and flag the deployment period with the deployed column, so
 # nothing needs to be clipped or filtered before saving. This only draws the plot of depth over time:
 # deployed data in black, undeployed data in red, and release and recapture times as dashed lines.
-# It returns nothing and does not pause between plots (unlike cleanTDRData()). A plot that cannot be
+# All records are drawn even when few or none are deployed, because the undeployed data often show what
+# went wrong. It returns nothing and does not pause between plots (unlike cleanTDRData()). A plot that cannot be
 # drawn gives a message or warning and never stops the data from being saved.
 
 .plot_tdr_check <- function(data, deployments) {
@@ -1313,9 +1328,13 @@ cleanTDRData <- function(data,
     temp <- data[data$dep_id == id, ]
     temp <- temp[order(temp$time), ]
 
-    if (sum(temp$deployed == 1, na.rm = TRUE) <= 5) {
-      message('Less than 5 deployed depth records for ', id, ', plot not drawn (all data are still saved)')
+    if (nrow(temp) <= 5) {
+      message('Less than 5 depth records for ', id, ', plot not drawn (all data are still saved)')
       next
+    }
+
+    if (sum(temp$deployed %in% 1) <= 5) {
+      message('Less than 5 deployed depth records for ', id, ', the plot shows all records (undeployed records are in red)')
     }
 
     # large datasets are thinned so the plot draws quickly
@@ -1326,7 +1345,7 @@ cleanTDRData <- function(data,
     tryCatch({
       p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth_m)) +
         ggplot2::geom_line(col = 'red') +
-        ggplot2::geom_line(data = temp[temp$deployed == 1, ], ggplot2::aes(x = time, y = depth_m)) +
+        ggplot2::geom_line(data = temp[temp$deployed %in% 1, ], ggplot2::aes(x = time, y = depth_m)) +
         ggplot2::geom_vline(xintercept = release_recapture, linetype = 2, col = 'red') +
         ggplot2::scale_y_reverse() +
         ggplot2::theme_light() +
@@ -1338,4 +1357,3 @@ cleanTDRData <- function(data,
 
   invisible(NULL)
 }
-

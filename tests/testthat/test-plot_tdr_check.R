@@ -61,13 +61,29 @@ testthat::test_that(".plot_tdr_check works with no recapture time and with all d
   testthat::expect_no_error(.plot_tdr_check(all_na, make_tdr_deployment()))
 })
 
-testthat::test_that(".plot_tdr_check reports few deployed records and does not fail", {
+testthat::test_that(".plot_tdr_check still plots all records when few or none are deployed", {
   skip_if_no_tdr_plot_packages()
 
-  dat <- make_tdr_data()
-  dat$deployed <- c(0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0)
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
 
-  testthat::expect_message(.plot_tdr_check(dat, make_tdr_deployment()), 'Less than 5 deployed depth records')
+  few <- make_tdr_data()
+  few$deployed <- c(0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0)
+  testthat::expect_message(.plot_tdr_check(few, make_tdr_deployment()), 'Less than 5 deployed depth records')
+  testthat::expect_no_warning(suppressMessages(.plot_tdr_check(few, make_tdr_deployment())))
+
+  none <- make_tdr_data()
+  none$deployed <- 0
+  testthat::expect_message(.plot_tdr_check(none, make_tdr_deployment()), 'Less than 5 deployed depth records')
+  testthat::expect_no_warning(suppressMessages(.plot_tdr_check(none, make_tdr_deployment())))
+})
+
+testthat::test_that(".plot_tdr_check does not plot when there are almost no records", {
+  skip_if_no_tdr_plot_packages()
+
+  dat <- make_tdr_data()[1:3, ]
+
+  testthat::expect_message(.plot_tdr_check(dat, make_tdr_deployment()), 'Less than 5 depth records')
 })
 
 testthat::test_that("lat2800_tdr_to_dataset keeps all data and writes the same data with and without a plot", {

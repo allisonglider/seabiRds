@@ -73,13 +73,38 @@ testthat::test_that(".plot_gps_check works without a deployment location or reca
   testthat::expect_no_error(.plot_gps_check(make_plot_gps(), dep))
 })
 
-testthat::test_that(".plot_gps_check reports few deployed locations and does not fail", {
+testthat::test_that(".plot_gps_check still plots all locations when few or none are deployed", {
   skip_if_no_plot_packages()
 
-  dat <- make_plot_gps()
-  dat$deployed <- c(0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0)
+  grDevices::pdf(NULL)
+  on.exit(grDevices::dev.off(), add = TRUE)
 
-  testthat::expect_message(.plot_gps_check(dat, make_plot_deployment()), 'Less than 5 deployed locations')
+  # a few deployed locations
+  few <- make_plot_gps()
+  few$deployed <- c(0, 0, 1, 1, 0, 0, 0, 0, 0, 0, 0, 0)
+  testthat::expect_message(.plot_gps_check(few, make_plot_deployment()), 'Less than 5 deployed locations')
+  testthat::expect_no_warning(suppressMessages(.plot_gps_check(few, make_plot_deployment())))
+
+  # no deployed locations at all
+  none <- make_plot_gps()
+  none$deployed <- 0
+  testthat::expect_message(.plot_gps_check(none, make_plot_deployment()), 'Less than 5 deployed locations')
+  testthat::expect_no_warning(suppressMessages(.plot_gps_check(none, make_plot_deployment())))
+
+  # a logger that never moved: every location is the same point
+  still <- make_plot_gps()
+  still$lon <- -82.01
+  still$lat <- 62.95
+  still$deployed <- 0
+  testthat::expect_no_warning(suppressMessages(.plot_gps_check(still, make_plot_deployment())))
+})
+
+testthat::test_that(".plot_gps_check does not plot when there are almost no locations", {
+  skip_if_no_plot_packages()
+
+  dat <- make_plot_gps()[1:3, ]
+
+  testthat::expect_message(.plot_gps_check(dat, make_plot_deployment()), 'Less than 5 locations')
 })
 
 testthat::test_that("cattrack_gps_to_dataset keeps all data and writes the same data with and without a plot", {
