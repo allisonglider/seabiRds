@@ -819,6 +819,7 @@ cleanGPSData <- function(data,
 
     temp <- data[data$dep_id == id & !is.na(data$lon) & !is.na(data$lat), ]
     temp <- temp[order(temp$time), ]
+    temp <- .trim_plot_data(temp, tt$time_released, id)
     if (nrow(temp) == 0) next
 
     if (is.na(tt$time_recaptured)) tt$time_recaptured <- max(temp$time, na.rm = TRUE)
@@ -1303,8 +1304,6 @@ cleanTDRData <- function(data,
 }
 
 # -----
-
-# -----
 # Sub-function for plotting TDR data in the importers (Ecotone, LAT2800).
 #
 # The importers keep all of the data and flag the deployment period with the deployed column, so
@@ -1327,6 +1326,7 @@ cleanTDRData <- function(data,
 
     temp <- data[data$dep_id == id, ]
     temp <- temp[order(temp$time), ]
+    temp <- .trim_plot_data(temp, tt$time_released, id)
 
     if (nrow(temp) <= 5) {
       message('Less than 5 depth records for ', id, ', plot not drawn (all data are still saved)')
@@ -1356,4 +1356,22 @@ cleanTDRData <- function(data,
   }
 
   invisible(NULL)
+}
+
+# -----
+# Sub-function for plotting, used by the plots in the importers.
+#
+# A record from long before the deployment (for example a device that was switched on weeks earlier) stretches
+# the time axis and squashes the data of interest. This drops the records that are more than `days` before the
+# release time from the data used to draw a plot, and says so. The data written to the dataset are not changed,
+# these records are still saved with deployed = 0.
+
+.trim_plot_data <- function(data, time_released, id = NULL, days = 30) {
+
+  if (nrow(data) == 0 || is.na(time_released)) return(data)
+
+  cutoff <- time_released - days * 24 * 3600
+  early <- !is.na(data$time) & data$time < cutoff
+
+  data[!early, ]
 }

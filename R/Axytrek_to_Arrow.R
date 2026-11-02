@@ -23,6 +23,9 @@ axytrek_acc_to_dataset <- function(data,
   temp <- data[seq(1, nrow(data), 30 * getFrequency(data$time)),]
 
   if (plot == T) {
+
+    temp <- .trim_plot_data(temp, deployments$time_released, deployments$dep_id)
+
     suppressMessages(p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = x)) +
                        ggplot2::geom_line(linewidth = 0.1, col = 'red') +
                        ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = x), linewidth = 0.1, col = 'black') +
@@ -58,7 +61,7 @@ axytrek_tdr_to_dataset <- function(data,
       wet = vapply(strsplit(as.character(Activity), '/', fixed = TRUE),
                    function(x) x[2], character(1)),
       wet = ifelse(wet == 'Wet', 1, 0)
-      ) |>
+    ) |>
     dplyr::select(-Activity) |>
     dplyr::rename(time = Timestamp, depth_m = Depth) |>
     dplyr::inner_join(deployments[, c('dep_id', 'metal_band', 'species', 'site', 'subsite')], by = 'dep_id') |>
@@ -68,20 +71,7 @@ axytrek_tdr_to_dataset <- function(data,
     dplyr::arrange(time) |>
     dplyr::filter(duplicated(time) == F)
 
-  dd <- stats::na.omit(c(deployments$time_released, deployments$time_recaptured))
-  temp <- data[seq(1, nrow(data), 30 * getFrequency(data$time)),]
-
-  if (plot == T) {
-    p <- ggplot2::ggplot(temp, ggplot2::aes(x = time, y = depth_m)) +
-      ggplot2::geom_line(col = 'red', linewidth = 0.1) +
-      ggplot2::geom_line(data = temp[temp$deployed == 1,], ggplot2::aes(x = time, y = depth_m), linewidth = 0.1, col = 'black') +
-      ggplot2::geom_vline(xintercept = dd, linetype = 2, col = 'blue', linewidth = 0.5) +
-      ggplot2::labs(title = data$dep_id[1], x = 'Time', y = 'Depth (m)') +
-      ggplot2::scale_y_reverse() +
-      ggplot2::theme_light()
-
-    suppressWarnings(print(p))
-  }
+  if (plot == T) .plot_tdr_check(data, deployments)
 
   data |>
     arrow::write_dataset(paste0(output_dataset,'/tdr'), format = "parquet",
