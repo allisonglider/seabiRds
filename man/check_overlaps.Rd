@@ -6,7 +6,8 @@
 \usage{
 check_overlaps(
   deployments,
-  variables = c("metal_band", "gps_id", "gps_id", "tdr_id", "acc_id", "gls_id", "mag_id"),
+  variables = c("metal_band", "gps_id", "tdr_id", "acc_id", "gls_id", "mag_id", "cam_id",
+    "hrl_id"),
   verbose = FALSE
 )
 }
@@ -14,7 +15,7 @@ check_overlaps(
 \item{deployments}{data.frame with deployment data formatted using seabiRds::formatDeployments()}
 
 \item{variables}{list of variable names to check for overlapping deployments, options include:
-"metal_band", "gps_id", "gps_id","tdr_id","acc_id","gls_id","mag_id"}
+"metal_band", "gps_id", "tdr_id", "acc_id", "gls_id", "mag_id", "cam_id", "hrl_id"}
 
 \item{verbose}{logical. Print a success message if TRUE}
 }

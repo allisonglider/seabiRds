@@ -396,7 +396,7 @@ getFrequency <- function(time) {
 #'
 #' @param deployments data.frame with deployment data formatted using seabiRds::formatDeployments()
 #' @param variables list of variable names to check for overlapping deployments, options include:
-#' "metal_band", "gps_id", "gps_id","tdr_id","acc_id","gls_id","mag_id"
+#' "metal_band", "gps_id", "tdr_id", "acc_id", "gls_id", "mag_id", "cam_id", "hrl_id"
 #' @param verbose logical. Print a success message if TRUE
 #'
 #' @return
@@ -407,11 +407,11 @@ getFrequency <- function(time) {
 #'
 
 
-check_overlaps <- function(deployments, variables = c("metal_band", "gps_id", "gps_id","tdr_id","acc_id","gls_id","mag_id"), verbose = FALSE) {
+check_overlaps <- function(deployments, variables = c("metal_band", "gps_id", "tdr_id", "acc_id", "gls_id", "mag_id", "cam_id", "hrl_id"), verbose = FALSE) {
 
   flag <- 0
 
-  var_names <- c("metal_band", "gps_id", "gps_id","tdr_id","acc_id","gls_id","mag_id")
+  var_names <- c("metal_band", "gps_id", "tdr_id", "acc_id", "gls_id", "mag_id", "cam_id", "hrl_id")
 
   for (v in variables) {
 
@@ -423,16 +423,18 @@ check_overlaps <- function(deployments, variables = c("metal_band", "gps_id", "g
     if (!('time_recaptured' %in% names(deployments))) stop('time_recaptured column not found in deployments, deployments should be output from seabiRds::formatDeployments()')
 
 
-    mb <- stats::na.omit(unique(deployments[,v]))
+    # [[v]] gives a vector for both data frames and tibbles
+    mb <- stats::na.omit(unique(deployments[[v]]))
     for (m in mb) {
 
-      temp <- subset(deployments, deployments[,v]== m)
+      temp <- deployments[!is.na(deployments[[v]]) & deployments[[v]] == m, ]
       if (nrow(temp) > 1) {
         temp <- temp[order(temp$time_released),]
         for (i in 2:nrow(temp)) {
           idx <- which(temp$time_released[i:nrow(temp)] < temp$time_recaptured[i - 1])
-          if (length(idx > 0)) {
-            warning(paste0('dep_id ', temp$dep_id[i - 1],' overlaps with ', temp$dep_id[idx[1]], ' for ', v, ' ', m), call. = F)
+          if (length(idx) > 0) {
+            # idx counts from row i, so the overlapping row is i - 1 + idx[1]
+            warning(paste0('dep_id ', temp$dep_id[i - 1],' overlaps with ', temp$dep_id[i - 1 + idx[1]], ' for ', v, ' ', m), call. = F)
             flag <- flag + 1
           }
         }
