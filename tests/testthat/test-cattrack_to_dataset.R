@@ -81,6 +81,31 @@ testthat::test_that("cattrack_to_dataset imports files when dateFormat matches",
   unlink(c(folder, out), recursive = TRUE)
 })
 
+testthat::test_that("cattrack_to_dataset imports files when gps_id is blank", {
+  testthat::skip_if_not_installed('arrow')
+
+  folder <- make_cattrack_folder()
+  out <- tempfile('cattrack_dataset_')
+
+  dep <- make_cattrack_deployments()
+  dep$gps_id <- NA_character_
+
+  utils::capture.output(
+    cattrack_to_dataset(files = list.files(folder, pattern = '\\.csv$', full.names = TRUE),
+                        deployments = dep,
+                        output_dataset = out,
+                        timezone = 'UTC',
+                        dateFormat = '%Y/%m/%d',
+                        plot = FALSE)
+  )
+
+  res <- dplyr::collect(arrow::open_dataset(file.path(out, 'gps')))
+
+  testthat::expect_equal(nrow(res), 12)
+  testthat::expect_equal(sum(res$deployed == 1), 6)
+  unlink(c(folder, out), recursive = TRUE)
+})
+
 testthat::test_that("cattrack_to_dataset needs dateFormat", {
   testthat::skip_if_not_installed('arrow')
 

@@ -130,13 +130,7 @@ cattrack_to_dataset <- function(files,
 
       if (nrow(dat) > 0) {
 
-        dd <- deployments |>
-          dplyr::filter(gps_id == deployments$gps_id[i]) |>
-          dplyr::arrange(time_released)
-        idx <- which(dd$dep_id == deployments$dep_id[i])
-        if (idx > 1) start_time <- mean(c(dd$time_recaptured[idx - 1], deployments$time_released[i])) else start_time <- min(dat$time)
-        if (idx < nrow(dd)) end_time <- mean(c(dd$time_released[idx + 1], deployments$time_recaptured[i])) else end_time <- max(dat$time)
-
+        # Cattrack files are matched to deployments by file name, so gps_id is not needed here
         dat <- dat |>
           dplyr::mutate(
             dep_id = deployments$dep_id[i],
